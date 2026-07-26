@@ -1,0 +1,1 @@
+make "P=stjmp" "CEM=${CEM-acc}" "RUN=${RUN-}" -fsk ../makefile ${1-gen}

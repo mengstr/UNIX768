@@ -1,0 +1,62 @@
+.TH STRING 3 "$Revision$"
+.ad
+.SH NAME
+long2str,
+bts2str \- operations on and conversions between strings and row of bytes
+.SH SYNOPSIS
+.nf
+.B #include <ack_string.h>
+.PP
+.B char *long2str(long l, int b)
+.PP
+.B char *bts2str(char *b, int n, char *s)
+.fi
+.SH DESCRIPTION
+The 
+.IR str *
+functions operate on null-terminated strings.
+The
+.IR bts *
+functions operate on variable-length rows of bytes,
+regardless of null bytes.
+Neither of these functions check for overflow of any receiving area.
+.PP
+.I bts2str
+turns a row of
+.I n
+consecutive bytes, the first of which is pointed by
+.IR b ,
+into a null-terminated string, starting at
+.IR s .
+Printable characters are copied and non-printable characters are transformed
+into sequences of printable characters, representing those characters.
+Also, back-slashes and double quotes are escaped with a back-slash.
+The transformation agrees with the representation of non-printable
+characters in C strings.
+.br
+E.g., the row of 2 bytes
+.RS
+\&'\e0' '\en'
+.RE
+is turned into the string consisting of the following characters
+.RS
+\&'\e' '0' '0' '0' '\e' 'n' '\e0'
+.RE
+The latter string could be represented in C as "\e\e000\e\en".
+.PP
+.I long2str
+converts a long value
+.I l
+into a null-terminated string according to
+.IR base ,
+which indicates the base to use.
+This base may be any of 2..16.
+A negative base (in the range -16..-2) indicates that the long must be
+seen as unsigned.
+A pointer to the string is returned.
+.SH FILES
+~em/modules/lib/libstring.a
+.SH "SEE ALSO"
+string(3), bstring(3), atof(3)
+.SH BUGS
+No checks for overflow or illegal parameters.

@@ -1,0 +1,5 @@
+MACH=em22
+SUF=m
+ASAR=arch
+RANLIB=:
+MACHFL=-O -DUFS

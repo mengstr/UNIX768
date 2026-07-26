@@ -1,0 +1,5 @@
+MACH=xenix3
+SUF=o
+ASAR=aal
+RANLIB=:
+MACHFL=-O -DUFS

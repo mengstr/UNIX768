@@ -1,0 +1,75 @@
+                                LLGEN V1.0.4
+                                ============
+
+  Copyright ǒ 1991-2005 by the Vrije Universiteit, Amsterdam, the Netherlands.
+                                 2021-02-03
+
+INTRODUCTION
+============
+
+LLgen is a LL(1) parser in the style of yacc. It will generate an efficient
+recursive descent parser for Extended Context-Free grammars, with an optional
+non-correcting error recovery mechanism.
+
+For more information, see the white papers in the doc directory. (You may need
+to build LLgen first to be able to read them.)
+
+INSTALLATION
+============
+
+LLgen depends on the following software:
+
+    gcc: currently, LLgen only builds on gcc, due largely to the lack of any
+        non-gcc test systems. Please contact the support mailing list (see
+        below) if this is a problem.
+
+	groff and grap: this is used to build the documentation.
+        
+LLgen uses make as its build tool. To build, do:
+
+    make install
+
+This will compile LLgen and install it into /usr/local (which you must be able
+to write to). If you want it installed elsewhere, change the PREFIX variable:
+
+	make install PREFIX=/home/dg
+    
+(If you do change the prefix, you must do a `make clean` first, or else the
+installed binary will look for its libraries in the wrong place.)
+
+USING LLGEN
+===========
+
+Please see the white papers in PREFIX/share/doc/LLgen, or the man page (called
+LLgen).
+
+LLgen itself uses a parser compiled in LLgen, so you can study the files in the
+src directory for examples. If you wish to modify LLgen's own parser, the
+bootstrap.sh script will update LLgen's source from the parser *.g files.
+LLgen itself may then be recompiled in the usual way. (Although you may want to
+keep a copy of a known good LLgen around in case you break something!)
+
+SUPPORT
+=======
+
+LLgen is part of the Amsterdam Compiler Kit (although standalone and
+distributed seperately). For more details, please see:
+
+    http://tack.sourceforge.net
+
+There is a mailing list available at:
+
+    http://sourceforge.net/mail/?group_id=130811
+
+LICENSE
+=======
+
+LLgen is ǒ 1991-2005 by the Vrije Universiteit and is distributed under a
+license equivalent to the three-clause BSD license. See the COPYING file
+for details.
+
+-----------------------------------------------------------------------------
+David Given
+dg@cowlark.com
+2021-02-03
+

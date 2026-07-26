@@ -1,0 +1,60 @@
+name: C/C++ CI
+
+concurrency: 
+  group: environment-${{ github.head_ref }}
+  cancel-in-progress: true
+
+on: [push, pull_request]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: apt
+      run: sudo apt update && sudo apt install bison flex lua5.3
+    - name: make
+      run: make
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: brew
+      run: brew install python lua@5.4 coreutils make
+    - name: make
+      run: |
+        gmake
+
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+    - uses: msys2/setup-msys2@v2
+      with:
+        update: true
+        msystem: UCRT64
+        install: >-
+          make
+          mingw-w64-ucrt-x86_64-gcc
+          mingw-w64-ucrt-x86_64-lua
+          mingw-w64-ucrt-x86_64-nsis
+          mingw-w64-ucrt-x86_64-pkg-config
+          mingw-w64-ucrt-x86_64-python
+          bison
+          flex
+          zip
+          git
+          ninja
+          diffutils
+    - uses: actions/checkout@v3
+    - name: build
+      run: |
+        make LDFLAGS="-s -static" ack-setup.exe AB_SANDBOX=no
+    - name: upload setup
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ github.event.repository.name }}.${{ github.sha }}
+        path: ack-setup.exe

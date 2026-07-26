@@ -1,0 +1,383 @@
+/*
+ * (c) copyright 1987 by the Vrije Universiteit, Amsterdam, The Netherlands.
+ * See the copyright notice in the ACK home directory, in the file "Copyright".
+ */
+/*
+    chtabgen - character table generator
+
+    Author: Erik Baalbergen (..tjalk!erikb)
+    Many mods by Ceriel Jacobs
+*/
+
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#ifndef NORCSID
+static char* RcsId = "$Id$";
+#endif
+
+#define MAXBUF 256
+#define MAXTAB 10000
+#define COMCOM '-'
+#define FILECOM '%'
+
+int InputForm = 'c'; /* default input format (and, currently, only one) */
+char OutputForm[MAXBUF] = "%s,\n";
+/* format for spitting out a string */
+char* Table[MAXTAB];
+char* ProgCall; /* callname of this program */
+int TabSize = 128; /* default size of generated table */
+char* InitialValue; /* initial value of all table entries */
+
+void option(char*);
+void option_F(char*);
+void InitTable(char*);
+void PrintTable(void);
+int process(char*, int);
+int c_proc(char*, char*);
+int setval(int, char*);
+int quoted(char**);
+void DoFile(char*);
+
+int main(int argc, char* argv[])
+{
+
+	ProgCall = *argv++;
+	argc--;
+	while (argc-- > 0)
+	{
+		if (**argv == COMCOM)
+		{
+			option(*argv++);
+		}
+		else
+		{
+			if (!process(*argv++, InputForm))
+			{
+				exit(1);
+			}
+		}
+	}
+	exit(0);
+	UNREACHABLE_CODE;
+}
+
+void option(char* str)
+{
+	/*	note that *str indicates the source of the option:
+	    either COMCOM (from command line) or FILECOM (from a file).
+	*/
+	switch (*++str)
+	{
+
+		case ' ': /* command */
+		case '\t':
+		case '\0':
+			break;
+		case 'I': /* for future extension */
+			InputForm = *++str;
+			break;
+		case 'f': /* input from file ... */
+			if (*++str == '\0')
+			{
+				fprintf(stderr, "%s: -f: name expected\n", ProgCall);
+				exit(1);
+			}
+			DoFile(str);
+			break;
+		case 'F': /* new output format string */
+			option_F(++str);
+			break;
+		case 'T': /* insert text literally */
+			printf("%s\n", ++str);
+			break;
+		case 'p': /* print table */
+			PrintTable();
+			break;
+		case 'C': /* clear table */
+			InitTable((char*)0);
+			break;
+		case 'i': /* initialize table with given value */
+			if (*++str == '\0')
+			{
+				InitTable((char*)0);
+			}
+			else
+				InitTable(str);
+			break;
+		case 'S':
+		{
+			int i = atoi(++str);
+
+			if (i <= 0 || i > MAXTAB)
+			{
+				fprintf(stderr, "%s: size would exceed maximum\n", ProgCall);
+			}
+			else
+			{
+				TabSize = i;
+			}
+			break;
+		}
+		default:
+			fprintf(stderr, "%s: bad option -%s\n", ProgCall, str);
+	}
+}
+
+void option_F(char* form)
+{
+	int len;
+	char* cp;
+
+	/*
+	 * The format string must have one '%s' and no other '%'.
+	 * Don't allow '%99$s', '%ls', '%n'.
+	 */
+	cp = strchr(form, '%');
+	if (!cp || cp[1] != 's' || strchr(cp + 1, '%'))
+		goto bad;
+	len = snprintf(OutputForm, sizeof(OutputForm), "%s\n", form);
+	if (len < 0 && len >= sizeof(OutputForm))
+		goto bad;
+	return;
+
+bad:
+	fprintf(stderr, "%s: -F: bad format %s\n", ProgCall, form);
+	exit(1);
+}
+
+void InitTable(char* ival)
+{
+	int i;
+
+	for (i = 0; i < TabSize; i++)
+	{
+		Table[i] = 0;
+	}
+	InitialValue = 0;
+	if (ival)
+	{
+		InitialValue = strdup(ival);
+	}
+}
+
+void PrintTable(void)
+{
+	int i;
+
+	for (i = 0; i < TabSize; i++)
+	{
+		if (Table[i])
+		{
+			printf(OutputForm, Table[i]);
+		}
+		else if (InitialValue)
+		{
+			printf(OutputForm, InitialValue);
+		}
+		else
+		{
+			printf(OutputForm, "0");
+		}
+	}
+}
+
+int process(char* str, int format)
+{
+	char* cstr = str;
+	char* Name = cstr; /* overwrite original string!	*/
+
+	/* strip of the entry name
+	 */
+	while (*str && *str != ':')
+	{
+		if (*str == '\\')
+		{
+			++str;
+		}
+		*cstr++ = *str++;
+	}
+
+	if (*str != ':')
+	{
+		fprintf(stderr, "%s: bad specification: \"%s\", ignored\n", ProgCall, Name);
+		return 0;
+	}
+	*cstr = '\0';
+	str++;
+
+	switch (format)
+	{
+
+		case 'c':
+			return c_proc(str, Name);
+		default:
+			fprintf(stderr, "%s: bad input format\n", ProgCall);
+	}
+	return 0;
+}
+
+int c_proc(char* str, char* Name)
+{
+	int ch, ch2;
+	char* name = strdup(Name);
+
+	while (*str)
+	{
+		if (*str == '\\')
+		{
+			ch = quoted(&str);
+		}
+		else
+		{
+			ch = *str++ & 0377;
+		}
+		if (*str == '-')
+		{
+			if (*++str == '\\')
+			{
+				ch2 = quoted(&str);
+			}
+			else
+			{
+				ch2 = (*str++ & 0377);
+				if (!ch2)
+					str--;
+			}
+			if (ch > ch2)
+			{
+				fprintf(stderr, "%s: bad range\n", ProgCall);
+				return 0;
+			}
+			while (ch <= ch2)
+			{
+				if (!setval(ch, name))
+					return 0;
+				ch++;
+			}
+		}
+		else
+		{
+			if (!setval(ch, name))
+				return 0;
+		}
+	}
+	return 1;
+}
+
+int setval(int ch, char* nm)
+{
+	char** p = &Table[ch];
+
+	if (ch < 0 || ch >= TabSize)
+	{
+		fprintf(stderr, "Illegal index: %d\n", ch);
+		return 0;
+	}
+	if (*(p = &Table[ch]))
+	{
+		fprintf(stderr, "Warning: redefinition of index %d\n", ch);
+	}
+	*p = nm;
+	return 1;
+}
+
+int quoted(char** pstr)
+{
+	int ch;
+	int i;
+	char* str = *pstr;
+
+	if ((*++str >= '0') && (*str <= '9'))
+	{
+		ch = 0;
+		for (i = 0; i < 3; i++)
+		{
+			ch = 8 * ch + (*str - '0');
+			if (*++str < '0' || *str > '9')
+				break;
+		}
+	}
+	else
+	{
+		switch (*str++)
+		{
+			case 'n':
+				ch = '\n';
+				break;
+			case 't':
+				ch = '\t';
+				break;
+			case 'b':
+				ch = '\b';
+				break;
+			case 'r':
+				ch = '\r';
+				break;
+			case 'f':
+				ch = '\f';
+				break;
+			case 'v':
+				ch = 013;
+				break;
+			default:
+				ch = *(str - 1);
+				break;
+		}
+	}
+	*pstr = str;
+	return ch & 0377;
+}
+
+char* getln(char* s, int n, FILE* fp)
+{
+	int c = getc(fp);
+	char* str = s;
+
+	while (n--)
+	{
+		if (c == EOF)
+		{
+			return NULL;
+		}
+		else if (c == '\n')
+		{
+			*str++ = '\0';
+			return s;
+		}
+		*str++ = c;
+		c = getc(fp);
+	}
+	s[n - 1] = '\0';
+	return s;
+}
+
+#define BUFSIZE 1024
+
+void DoFile(char* name)
+{
+	char text[BUFSIZE];
+	FILE* fp;
+
+	if ((fp = fopen(name, "r")) == NULL)
+	{
+		fprintf(stderr, "%s: cannot read file %s\n", ProgCall, name);
+		exit(1);
+	}
+	while (getln(text, BUFSIZE, fp) != NULL)
+	{
+		if (text[0] == FILECOM)
+		{
+			option(text);
+		}
+		else
+		{
+			if (!process(text, InputForm))
+			{
+				exit(1);
+			}
+		}
+	}
+}

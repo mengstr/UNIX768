@@ -1,0 +1,5 @@
+MACH=arm
+SUF=so
+ASAR=arch
+RANLIB=:
+MACHFL=-O -DUFS

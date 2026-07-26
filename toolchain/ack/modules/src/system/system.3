@@ -1,0 +1,58 @@
+.TH SYSTEM 3 "$Revision$"
+.ad
+.SH NAME
+sys_filesize, sys_lock, sys_unlock, sys_stop \- system call interface
+.SH SYNOPSIS
+.nf
+.B #include <system.h>
+.PP
+.B long sys_filesize(path)
+.B char *path;
+.PP
+.B void sys_stop(how)
+.B int how;
+.fi
+.SH DESCRIPTION
+This package provides a rather system-independent set of "system" calls
+primarily intended for use in compilers.
+The include file contains a defined constant, 
+.IR BUFSIZ ,
+which gives the system-dependent block size.
+.PP
+The function 
+.I sys_filesize
+returns the size in bytes of the
+file specified by 
+.IR path ,
+if possible.
+The value \-1L is returned if the size cannot be retrieved for some reason.
+.PP
+.I Sys_stop
+should be called when the process is terminated due to
+the end of the program or some error.
+This routine closes all open files and causes the program to
+stop in a way specified by 
+.IR how ,
+which parameter has one of the following values:
+.IP S_END 15
+normal termination, indicate successful completion
+.IP S_EXIT 15
+terminate the process with status 
+.B 1
+.IP S_ABORT 15
+abort this process and produce a post-mortem dump
+.LP
+.PP
+.I Sys_time
+returns a long value that stands for the system's time.
+Its return value is a long that stands for the time
+since 00:00:00 GMT, Jan. 1, 1970, measured in seconds.
+.SH FILES
+.nf
+~em/modules/h/system.h
+~em/modules/lib/libsystem.a
+.fi
+.SH BUGS
+The current implementation does not allow the use of anonymous files.
+.SH "SEE ALSO"
+UNIX version 7 manual volume 1, chapter 2

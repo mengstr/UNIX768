@@ -1,0 +1,14 @@
+#!/bin/sh
+# $Id$
+
+echo '/* This file is generated from '$1'; do not edit */'
+
+cat $1 |
+grep '^\.Wn' |
+sed '
+	s/^\.Wn[	 ]*/	{/
+	s/[	 ]*[0-9][0-9]*$/},/
+	s/"[	 ][	 ]*W/", W/
+	s/\\-/-/g
+'
+

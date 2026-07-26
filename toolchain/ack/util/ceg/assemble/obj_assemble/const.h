@@ -1,0 +1,2 @@
+#define MAX_OPERANDS	4
+#define MAX_MNEMONICS	100

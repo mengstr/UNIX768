@@ -1,0 +1,5 @@
+MACH=m68k4
+SUF=o
+ASAR=aal
+RANLIB=:
+MACHFL=-O -DUFS

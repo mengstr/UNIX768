@@ -1,0 +1,40 @@
+# $Source$
+# $State$
+# $Revision$
+
+6.1pre1
+
+  Threw away the make-based build system, because it just didn't work. Wrote
+  ackbuilder. Many, many little bugfixes and cleanups, too many to remember.
+
+6.0pre4
+
+  Fixed some minor bit-rotting issues that were preventing compilation on
+  modern Linux systems.
+  
+6.0pre3
+
+  Added the cpm platform. Made some optimisations to the i80 code generator,
+  including getting topgen up and running and adding some peephole optimiser
+  rules. Fixed loads of bugs in ego so that it now works on platforms that
+  support it (pc86 and linux386). Made the floating point work on platforms
+  that support it (pc86 and linux386 again). Made stdint.h work. Lots and lots
+  of bugfixes and tweaks everywhere.
+  
+6.0pre2
+
+  Much simplified the syscall interface by disabling libmon and instead
+  calling the syscalls directly. Disabled the K&R C compiler and libc because
+  it doesn't actually gain us anything and has a high maintenance load --- the
+  ANSI C compiler works fine with K&R C. Adapted the rest of the system to
+  build with the ANSI C compiler. Rewrote the pc86 syscall interface and added
+  linux386 support, using the i386 code generator. Lots and lots of bugfixes
+  and tweaks everywhere.
+  
+6.0pre1
+
+  First working version of the 6.0 release stream. Working frontends: both C
+  compilers, Pascal, Modula-2, Basic and Occam. Working backends: i86. Working
+  platforms: pc86, the very noddy testbed setup that produces floppy disk
+  images.
+  

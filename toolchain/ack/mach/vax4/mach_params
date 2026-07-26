@@ -1,0 +1,5 @@
+MACH=vax4
+SUF=o
+ASAR=aal
+RANLIB=:
+MACHFL=-O -DBFS

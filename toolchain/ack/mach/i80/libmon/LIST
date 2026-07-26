@@ -1,0 +1,7 @@
+libmon_s.a
+mon.s
+trp.s
+inn2.s
+prstring.s
+prdec.s
+char.her.s
