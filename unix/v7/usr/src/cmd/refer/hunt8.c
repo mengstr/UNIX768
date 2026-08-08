@@ -1,7 +1,9 @@
-# include "stdio.h"
-# include "assert.h"
+# include "refer.h"
 # define unopen(fil) {if (fil!=NULL) {fclose(fil); fil=NULL;}}
-extern long indexdate, gdate();
+extern long indexdate;
+static void runbib(char *);
+
+static void
 runbib (s)
 	char *s;
 {
@@ -10,6 +12,7 @@ char tmp[200];
 sprintf(tmp, "/usr/lib/refer/mkey %s >%s.ig", s,s);
 system(tmp);
 }
+int
 makefgrep(indexname)
 	char *indexname;
 {
@@ -47,6 +50,7 @@ makefgrep(indexname)
 		return(0);
 return(1); /* success */
 }
+int
 ckexist(s, t)
 	char *s, *t;
 {
@@ -55,6 +59,7 @@ strcpy (fnam, s);
 strcat (fnam, t);
 return (access(fnam, 04) != -1);
 }
+FILE *
 iopen (s, t)
 	char *s, *t;
 {

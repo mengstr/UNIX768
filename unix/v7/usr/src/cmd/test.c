@@ -4,19 +4,33 @@
  */
 
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <stdlib.h>
+
+char *nxtarg(int mt);
+int exp(void);
+int e1(void);
+int e2(void);
+int e3(void);
+int tio(char *a, int f);
+int ftype(char *f);
+int fsizep(char *f);
+int synbad(char *s1, char *s2);
+int length(char *s);
 #define EQ(a,b)	((tmp=a)==0?0:(strcmp(tmp,b)==0))
 
 #define DIR 1
 #define FIL 2
-int	ap;
-int	ac;
+i32	ap;
+i32	ac;
 char	**av;
 char	*tmp;
 
-main(argc, argv)
-char *argv[];
+int
+main (int argc, char *argv[])
 {
 
 	ac = argc; av = argv; ap = 1;
@@ -29,7 +43,8 @@ char *argv[];
 	exit(exp()?0:1);
 }
 
-char *nxtarg(mt) {
+char *
+nxtarg (int mt) {
 
 	if (ap>=ac) {
 		if(mt) {
@@ -41,7 +56,8 @@ char *nxtarg(mt) {
 	return(av[ap++]);
 }
 
-exp() {
+int
+exp (void) {
 	int p1;
 
 	p1 = e1();
@@ -50,7 +66,8 @@ exp() {
 	return(p1);
 }
 
-e1() {
+int
+e1 (void) {
 	int p1;
 
 	p1 = e2();
@@ -59,14 +76,16 @@ e1() {
 	return(p1);
 }
 
-e2() {
+int
+e2 (void) {
 	if (EQ(nxtarg(0), "!"))
 		return(!e3());
 	ap--;
 	return(e3());
 }
 
-e3() {
+int
+e3 (void) {
 	int p1;
 	register char *a;
 	char *p2;
@@ -136,9 +155,8 @@ e3() {
 	synbad("unknown operator ",p2);
 }
 
-tio(a, f)
-char *a;
-int f;
+int
+tio (char *a, int f)
 {
 
 	f = open(a, f);
@@ -149,8 +167,8 @@ int f;
 	return(0);
 }
 
-ftype(f)
-char *f;
+int
+ftype (char *f)
 {
 	struct stat statb;
 
@@ -161,8 +179,8 @@ char *f;
 	return(FIL);
 }
 
-fsizep(f)
-char *f;
+int
+fsizep (char *f)
 {
 	struct stat statb;
 	if(stat(f,&statb)<0)
@@ -170,8 +188,8 @@ char *f;
 	return(statb.st_size>0);
 }
 
-synbad(s1,s2)
-char *s1, *s2;
+int
+synbad (char *s1, char *s2)
 {
 	write(2, "test: ", 6);
 	write(2, s1, strlen(s1));
@@ -180,8 +198,8 @@ char *s1, *s2;
 	exit(255);
 }
 
-length(s)
-	char *s;
+int
+length (char *s)
 {
 	char *es=s;
 	while(*es++);

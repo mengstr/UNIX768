@@ -1,0 +1,9 @@
+set -e
+
+if test "x$ROOT" = x
+then
+	ROOT=
+fi
+test -d $ROOT/bin || mkdir $ROOT/bin
+cp m4 $ROOT/bin/m4
+chmod 0755 $ROOT/bin/m4

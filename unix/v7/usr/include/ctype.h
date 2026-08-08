@@ -19,6 +19,6 @@ extern	char	_ctype_[];	/* in /usr/src/libc/gen/ctype_.h */
 #define isprint(c)	((_ctype_+1)[c]&(_P|_U|_L|_N))
 #define iscntrl(c)	((_ctype_+1)[c]&_C)
 #define isascii(c)	((unsigned)(c)<=0177)
-#define toupper(c)	((c)-'a'+'A')
-#define tolower(c)	((c)-'A'+'a')
+#define toupper(c)	(((c) >= 'a' && (c) <= 'z') ? (c)-'a'+'A' : (c))
+#define tolower(c)	(((c) >= 'A' && (c) <= 'Z') ? (c)-'A'+'a' : (c))
 #define toascii(c)	((c)&0177)

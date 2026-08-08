@@ -1,0 +1,5 @@
+cp $1/usr/sys/conf/unix $1/unix.new
+chmod 0755 $1/unix.new
+cp $1/usr/sys/conf/ksyms $1/etc/ksyms.new
+chmod 0644 $1/etc/ksyms.new
+echo install.kernel: complete

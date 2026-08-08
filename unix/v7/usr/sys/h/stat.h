@@ -1,8 +1,11 @@
+#ifndef V7_SYS_STAT_H
+#define V7_SYS_STAT_H
+
 struct	stat
 {
 	dev_t	st_dev;
 	ino_t	st_ino;
-	unsigned short st_mode;
+	mode_t	st_mode;
 	short	st_nlink;
 	short  	st_uid;
 	short  	st_gid;
@@ -26,3 +29,16 @@ struct	stat
 #define	S_IREAD	0000400		/* read permission, owner */
 #define	S_IWRITE	0000200		/* write permission, owner */
 #define	S_IEXEC	0000100		/* execute/search permission, owner */
+
+#define S_IRUSR S_IREAD
+#define S_IWUSR S_IWRITE
+#define S_IXUSR S_IEXEC
+#define S_IRGRP (S_IREAD >> 3)
+#define S_IWGRP (S_IWRITE >> 3)
+#define S_IXGRP (S_IEXEC >> 3)
+#define S_IROTH (S_IREAD >> 6)
+#define S_IWOTH (S_IWRITE >> 6)
+#define S_IXOTH (S_IEXEC >> 6)
+#define S_ISDIR(mode) (((mode) & S_IFMT) == S_IFDIR)
+
+#endif /* V7_SYS_STAT_H */

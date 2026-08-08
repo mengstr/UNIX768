@@ -1,5 +1,32 @@
 /* Yacc productions for "expr" command: */
 
+%{
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+static char *rel(int, char *, char *);
+static char *arith(int, char *, char *);
+static char *conj(int, char *, char *);
+static char *expr_substr(char *, char *, char *);
+static char *expr_length(char *);
+static char *expr_index(char *, char *);
+static char *expr_match(char *, char *);
+static int ematch(char *, char *);
+static void errxx(int);
+static char *expr_compile(char *, char *, char *, int);
+static int step(char *, char *);
+static int advance(char *, char *);
+static void getrnge(char *);
+static int ecmp(char *, char *, int);
+static long expr_atol(char *);
+
+int yylex(void);
+int yyerror(char *);
+int yyparse(void);
+extern long yylval;
+%}
+
 %token OR AND ADD SUBT MULT DIV REM EQ GT GEQ LT LEQ NEQ
 %token A_STRING SUBSTR LENGTH INDEX NOARG MATCH
 
@@ -38,33 +65,30 @@ expr:	'(' expr ')' = { $$ = $2; }
 	| expr MULT expr   = { $$ = arith(MULT, $1, $3); }
 	| expr DIV expr   = { $$ = arith(DIV, $1, $3); }
 	| expr REM expr   = { $$ = arith(REM, $1, $3); }
-	| expr MCH expr	 = { $$ = match($1, $3); }
-	| MATCH expr expr = { $$ = match($2, $3); }
-	| SUBSTR expr expr expr = { $$ = substr($2, $3, $4); }
-	| LENGTH expr       = { $$ = length($2); }
-	| INDEX expr expr = { $$ = index($2, $3); }
+	| expr MCH expr	 = { $$ = expr_match($1, $3); }
+	| MATCH expr expr = { $$ = expr_match($2, $3); }
+	| SUBSTR expr expr expr = { $$ = expr_substr($2, $3, $4); }
+	| LENGTH expr       = { $$ = expr_length($2); }
+	| INDEX expr expr = { $$ = expr_index($2, $3); }
 	| A_STRING
 	;
 %%
 /*	expression command */
-#include <stdio.h>
 #define ESIZE	256
 #define error(c)	errxx(c)
 #define EQL(x,y) !strcmp(x,y)
-long atol();
 char	**Av;
 int	Ac;
 int	Argi;
 
 char Mstring[1][128];
-char *malloc();
 extern int nbra;
 
-main(argc, argv) char **argv; {
+int main(int argc, char **argv) {
 	Ac = argc;
 	Argi = 1;
 	Av = argv;
-	yyparse();
+	return yyparse();
 }
 
 char *operators[] = { "|", "&", "+", "-", "*", "/", "%", ":",
@@ -73,7 +97,7 @@ char *operators[] = { "|", "&", "+", "-", "*", "/", "%", ":",
 int op[] = { OR, AND, ADD,  SUBT, MULT, DIV, REM, MCH,
 	EQ, EQ, LT, LEQ, GT, GEQ, NEQ,
 	MATCH, SUBSTR, LENGTH, INDEX };
-yylex() {
+int yylex(void) {
 	register char *p;
 	register i;
 
@@ -83,19 +107,19 @@ yylex() {
 
 	if(*p == '(' || *p == ')')
 		return (int)*p;
-	for(i = 0; *operator[i]; ++i)
-		if(EQL(operator[i], p))
+	for(i = 0; *operators[i]; ++i)
+		if(EQL(operators[i], p))
 			return op[i];
 
 	yylval = p;
 	return A_STRING;
 }
 
-char *rel(op, r1, r2) register char *r1, *r2; {
+static char *rel(op, r1, r2) int op; register char *r1, *r2; {
 	register i;
 
 	if(ematch(r1, "-*[0-9]*$") && ematch(r2, "[0-9]*$"))
-		i = atol(r1) - atol(r2);
+		i = expr_atol(r1) - expr_atol(r2);
 	else
 		i = strcmp(r1, r2);
 	switch(op) {
@@ -103,20 +127,20 @@ char *rel(op, r1, r2) register char *r1, *r2; {
 	case GT: i = i>0; break;
 	case GEQ: i = i>=0; break;
 	case LT: i = i<0; break;
-	case LEQ: i = i>=0; break;
+	case LEQ: i = i<=0; break;
 	case NEQ: i = i!=0; break;
 	}
 	return i? "1": "0";
 }
 
-char *arith(op, r1, r2) char *r1, *r2; {
+static char *arith(op, r1, r2) int op; char *r1, *r2; {
 	long i1, i2;
 	register char *rv;
 
 	if(!(ematch(r1, "[0-9]*$") && ematch(r2, "[0-9]*$")))
 		yyerror("non-numeric argument");
-	i1 = atol(r1);
-	i2 = atol(r2);
+	i1 = expr_atol(r1);
+	i2 = expr_atol(r2);
 
 	switch(op) {
 	case ADD: i1 = i1 + i2; break;
@@ -126,10 +150,10 @@ char *arith(op, r1, r2) char *r1, *r2; {
 	case REM: i1 = i1 % i2; break;
 	}
 	rv = malloc(16);
-	sprintf(rv, "%D", i1);
+	sprintf(rv, "%ld", i1);
 	return rv;
 }
-char *conj(op, r1, r2) char *r1, *r2; {
+static char *conj(op, r1, r2) int op; char *r1, *r2; {
 	register char *rv;
 
 	switch(op) {
@@ -159,12 +183,12 @@ char *conj(op, r1, r2) char *r1, *r2; {
 	return rv;
 }
 
-char *substr(v, s, w) char *v, *s, *w; {
+static char *expr_substr(v, s, w) char *v, *s, *w; {
 register si, wi;
 register char *res;
 
-	si = atol(s);
-	wi = atol(w);
+	si = expr_atol(s);
+	wi = expr_atol(w);
 	while(--si) if(*v) ++v;
 
 	res = v;
@@ -175,7 +199,7 @@ register char *res;
 	return res;
 }
 
-char *length(s) register char *s; {
+static char *expr_length(s) register char *s; {
 	register i = 0;
 	register char *rv;
 
@@ -186,7 +210,7 @@ char *length(s) register char *s; {
 	return rv;
 }
 
-char *index(s, t) char *s, *t; {
+static char *expr_index(s, t) char *s, *t; {
 	register i, j;
 	register char *rv;
 
@@ -199,7 +223,8 @@ char *index(s, t) char *s, *t; {
 	return "0";
 }
 
-char *match(s, p)
+static char *expr_match(s, p)
+char *s, *p;
 {
 	register char *rv;
 
@@ -215,20 +240,19 @@ char *match(s, p)
 #define GETC()		(*sp++)
 #define PEEKC()		(*sp)
 #define UNGETC(c)	(--sp)
-#define RETURN(c)	return
+#define RETURN(c)	return(c)
 #define ERROR(c)	errxx(c)
 
 
-ematch(s, p)
+static int ematch(s, p)
 char *s;
 register char *p;
 {
 	static char expbuf[ESIZE];
-	char *compile();
 	register num;
 	extern char *braslist[], *braelist[], *loc2;
 
-	compile(p, expbuf, &expbuf[512], 0);
+	expr_compile(p, expbuf, &expbuf[ESIZE], 0);
 	if(nbra > 1)
 		yyerror("Too many '\\('s");
 	if(advance(s, expbuf)) {
@@ -243,8 +267,10 @@ register char *p;
 	return(0);
 }
 
-errxx(c)
+static void errxx(c)
+int c;
 {
+	(void)c;
 	yyerror("RE error");
 }
 
@@ -286,8 +312,7 @@ char	bittab[] = {
 	128
 };
 
-char *
-compile(instring, ep, endbuf, seof)
+static char *expr_compile(instring, ep, endbuf, seof)
 register char *ep;
 char *instring, *endbuf;
 {
@@ -465,7 +490,7 @@ char *instring, *endbuf;
 	}
 }
 
-step(p1, p2)
+static int step(p1, p2)
 register char *p1, *p2;
 {
 	register c;
@@ -497,7 +522,7 @@ register char *p1, *p2;
 	return(0);
 }
 
-advance(lp, ep)
+static int advance(lp, ep)
 register char *lp, *ep;
 {
 	register char *curlp;
@@ -643,14 +668,14 @@ register char *lp, *ep;
 	}
 }
 
-getrnge(str)
+static void getrnge(str)
 register char *str;
 {
 	low = *str++ & 0377;
 	size = *str == 255 ? 20000 : (*str &0377) - low;
 }
 
-ecmp(a, b, count)
+static int ecmp(a, b, count)
 register char	*a, *b;
 register	count;
 {
@@ -661,9 +686,27 @@ register	count;
 	return(1);
 }
 
-yyerror(s)
+static long expr_atol(s)
+register char *s;
+{
+	register int neg;
+	register long n;
 
+	neg = 0;
+	if (*s == '-') {
+		neg = 1;
+		s++;
+	}
+	n = 0;
+	while (*s >= '0' && *s <= '9')
+		n = n * 10 + *s++ - '0';
+	return neg ? -n : n;
+}
+
+int yyerror(s)
+char *s;
 {
 	fprintf(stderr, "%s\n", s);
 	exit(2);
+	return 2;
 }

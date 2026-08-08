@@ -8,16 +8,16 @@
 
 TYPE char	CHAR;
 TYPE char	BOOL;
-TYPE int	UFD;
-TYPE int	INT;
+TYPE i16	UFD;
+TYPE i16	INT;
 TYPE float	REAL;
 TYPE char	*ADDRESS;
-TYPE long int	L_INT;
-TYPE int	VOID;
-TYPE unsigned	POS;
+TYPE i32	L_INT;
+TYPE i32	VOID;
+TYPE u16	POS;
 TYPE char	*STRING;
 TYPE char	MSG[];
-TYPE int	PIPE[];
+TYPE i16	PIPE[];
 TYPE char	*STKPTR;
 TYPE char	*BYTPTR;
 
@@ -44,7 +44,7 @@ STRUCT namnod	*NAMPTR;
 STRUCT sysnod	SYSNOD;
 STRUCT sysnod	*SYSPTR;
 STRUCT sysnod	SYSTAB[];
-#define NIL	((char*)0)
+#define NIL	0
 
 
 /* the following nonsense is required
@@ -52,9 +52,9 @@ STRUCT sysnod	SYSTAB[];
  * into an Rvalue so two cheats
  * are necessary, one for each context.
  */
-union { int _cheat;};
+union { long _cheat;};
 #define Lcheat(a)	((a)._cheat)
-#define Rcheat(a)	((int)(a))
+#define Rcheat(a)	((long)(a))
 
 
 /* address puns for storage allocation */

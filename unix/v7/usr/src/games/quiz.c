@@ -1,5 +1,9 @@
 #include <stdio.h>
 #include <signal.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
 
 #define NF 10
 #define NL 300
@@ -23,9 +27,29 @@ char line[150];
 char response[100];
 char *tmp[NF];
 int select[NF];
-char	*malloc();
+static i32 readline(void);
+static i32 cmp(char *left, char *right);
+static i32 disj(i32 strict);
+static i32 string(i32 strict);
+static i32 eat(i32 strict, char c);
+static i32 fold(char c);
+static void publish(char *text);
+static void pub1(i32 show);
+static i32 segment(char *text, char *words[]);
+static i32 perm(char *left[], int left_count, char *right[], int right_count,
+	int permutation[]);
+static i32 find(char *words[], int word_count);
+static void readindex(void);
+static void talloc(void);
+static i32 query(char *reply);
+static i32 next(void);
+static void done(i16 signo);
+static void instruct(char *info);
+static void badinfo(void);
+static void dunno(void);
 
-readline()
+static i32
+readline(void)
 {
 	char *t;
 	register c;
@@ -57,8 +81,8 @@ loop:
 
 char *eu;
 char *ev;
-cmp(u,v)
-char *u, *v;
+static i32
+cmp(char *u, char *v)
 {
 	int x;
 	eu = u;
@@ -69,7 +93,8 @@ char *u, *v;
 	return(eat(1,0));
 }
 
-disj(s)
+static i32
+disj(i32 s)
 {
 	int t, x;
 	char *u;
@@ -108,7 +133,8 @@ disj(s)
 	}
 }
 
-string(s)
+static i32
+string(i32 s)
 {
 	int x;
 	for(;;) {
@@ -152,8 +178,8 @@ string(s)
 	}
 }
 
-eat(s,c)
-char c;
+static i32
+eat(i32 s, char c)
 {
 	if(*ev!=c)
 		return(2);
@@ -168,22 +194,23 @@ char c;
 	return(1);
 }
 
-fold(c)
-char c;
+static i32
+fold(char c)
 {
 	if(c<'A'||c>'Z')
 		return(c);
 	return(c|040);
 }
 
-publish(t)
-char *t;
+static void
+publish(char *t)
 {
 	ev = t;
 	pub1(1);
 }
 
-pub1(s)
+static void
+pub1(i32 s)
 {
 	for(;;ev++){
 		switch(*ev) {
@@ -209,8 +236,8 @@ pub1(s)
 	}
 }
 
-segment(u,w)
-char *u, *w[];
+static i32
+segment(char *u, char *w[])
 {
 	char *s;
 	int i;
@@ -241,9 +268,8 @@ char *u, *w[];
 	return(0);
 }
 
-perm(u,m,v,n,p)
-int p[];
-char *u[], *v[];
+static i32
+perm(char *u[], int m, char *v[], int n, int p[])
 {
 	int i, j;
 	int x;
@@ -262,8 +288,8 @@ uloop:		;
 	return(1);
 }
 
-find(u,m)
-char *u[];
+static i32
+find(char *u[], int m)
 {
 	int n;
 	while(readline()){
@@ -274,7 +300,8 @@ char *u[];
 	return(0);
 }
 
-readindex()
+static void
+readindex(void)
 {
 	xx[0] = nc = 0;
 	while(readline()) {
@@ -287,23 +314,23 @@ readindex()
 	}
 }
 
-talloc()
+static void
+talloc(void)
 {
 	int i;
 	for(i=0;i<NF;i++)
 		tmp[i] = malloc(SL);
 }
 
-main(argc,argv)
-char *argv[];
+int
+main(int argc, char *argv[])
 {
 	register j;
 	int i;
 	int x;
 	int z;
 	char *info;
-	long tm;
-	extern done();
+	time_t tm;
 	int count;
 	info = "/usr/games/quiz.k/index";
 	time(&tm);
@@ -382,13 +409,13 @@ loop:
 	}
 }
 
-query(r)
-char *r;
+static i32
+query(char *r)
 {
 	char *t;
 	for(t=r;;t++) {
 		if(read(0,t,1)==0)
-			done();
+			done(0);
 		if(*t==' '&&(t==r||t[-1]==' '))
 			t--;
 		if(*t=='\n') {
@@ -401,7 +428,8 @@ char *r;
 	return(t-r);
 }
 
-next()
+static i32
+next(void)
 {
 	int flag;
 	inc = inc*3125&077777;
@@ -410,22 +438,24 @@ next()
 	while(score[ptr]>0)
 		if(++ptr>=na) {
 			ptr = 0;
-			if(flag) done();
+			if(flag) done(0);
 			flag = 1;
 		}
 	return(ptr);
 }
 
-done()
+static void
+done(i16 signo)
 {
+	(void)signo;
 	printf("\nRights %d, wrongs %d, ", rights, wrongs);
 	if(guesses)
 		printf("extra guesses %d, ", guesses);
 	printf("score %d%%\n",100*rights/(rights+wrongs));
 	exit(0);
 }
-instruct(info)
-char *info;
+static void
+instruct(char *info)
 {
 	int i, n;
 	printf("Subjects:\n\n");
@@ -462,11 +492,14 @@ char *info;
 	exit(0);
 }
 
-badinfo(){
+static void
+badinfo(void)
+{
 	printf("Bad info %s\n",line);
 }
 
-dunno()
+static void
+dunno(void)
 {
 	printf("I don't know about that\n");
 	exit(0);

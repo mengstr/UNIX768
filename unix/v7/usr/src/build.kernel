@@ -1,0 +1,99 @@
+rm -f $1/usr/sys/sys/*.o
+rm -f $1/usr/sys/dev/*.o
+rm -f $1/usr/sys/conf/*.o
+rm -f $1/usr/sys/conf/unix.out
+rm -f $1/usr/sys/conf/unix
+rm -f $1/usr/sys/conf/ksyms
+
+cd $1/usr/sys/sys
+echo CC main.c
+$1/bin/cc -c main.c
+echo CC globals.c
+$1/bin/cc -c globals.c
+echo CC machdep.c
+$1/bin/cc -c machdep.c
+echo CC prim.c
+$1/bin/cc -c prim.c
+echo CC iget.c
+$1/bin/cc -c iget.c
+echo CC slp.c
+$1/bin/cc -c slp.c
+echo CC ureg.c
+$1/bin/cc -c ureg.c
+echo CC prf.c
+$1/bin/cc -c prf.c
+echo CC subr.c
+$1/bin/cc -c subr.c
+echo CC malloc.c
+$1/bin/cc -c malloc.c
+echo CC fio.c
+$1/bin/cc -c fio.c
+echo CC sig.c
+$1/bin/cc -c sig.c
+echo CC alloc.c
+$1/bin/cc -c alloc.c
+echo CC pipe.c
+$1/bin/cc -c pipe.c
+echo CC rdwri.c
+$1/bin/cc -c rdwri.c
+echo CC text.c
+$1/bin/cc -c text.c
+echo CC nami.c
+$1/bin/cc -c nami.c
+echo CC sys1.c
+$1/bin/cc -c sys1.c
+echo CC sys2.c
+$1/bin/cc -c sys2.c
+echo CC sys3.c
+$1/bin/cc -c sys3.c
+echo CC sys4.c
+$1/bin/cc -c sys4.c
+echo CC acct.c
+$1/bin/cc -c acct.c
+echo CC clock.c
+$1/bin/cc -c clock.c
+
+cd $1/usr/sys/dev
+echo CC bio.c
+$1/bin/cc -c bio.c
+echo CC kl.c
+$1/bin/cc -c kl.c
+echo CC mem.c
+$1/bin/cc -c mem.c
+echo CC mm58167.c
+$1/bin/cc -c mm58167.c
+echo CC partab.c
+$1/bin/cc -c partab.c
+echo CC rd.c
+$1/bin/cc -c rd.c
+echo CC sd.c
+$1/bin/cc -c sd.c
+echo CC tty.c
+$1/bin/cc -c tty.c
+
+cd $1/usr/sys/conf
+echo CC c.c
+$1/bin/cc -c c.c
+echo CC stubs.c
+$1/bin/cc -c stubs.c
+echo CC usermem.c
+$1/bin/cc -c usermem.c
+echo CC trap0.c
+$1/bin/cc -c trap0.c
+echo CC uart_trace.c
+$1/bin/cc -c uart_trace.c
+echo AS mch.s
+$1/usr/lib/ack/as -o mch.o mch.s
+echo AS kfixed.s
+$1/usr/lib/ack/as -o kfixed.o kfixed.s
+echo AS lmath.s
+$1/usr/lib/ack/as -o lmath.o lmath.s
+echo LD unix.out
+$1/usr/lib/ack/led -a0:4 -a1:4 -a2:4 -a3:4 -b0:0x1000 -o unix.out mch.o ../sys/*.o ../dev/*.o c.o stubs.o usermem.o trap0.o uart_trace.o kfixed.o lmath.o $1/lib/libc.a
+echo CV unix
+$1/usr/lib/ack/cv unix.out unix
+chmod 0755 unix
+echo KSYMS ksyms
+$1/bin/nm unix.out | $1/bin/sed -n -f ksyms.sed > ksyms
+chmod 0644 ksyms
+echo build.kernel: complete

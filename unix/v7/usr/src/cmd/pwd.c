@@ -5,6 +5,7 @@
 #include	<sys/param.h>
 #include	<sys/stat.h>
 #include	<sys/dir.h>
+#include	<unistd.h>
 
 char	dot[]	= ".";
 char	dotdot[] = "..";
@@ -14,9 +15,16 @@ int	off	= -1;
 struct	stat	d, dd;
 struct	direct	dir;
 
-main()
+static void prname(void);
+static void cat(void);
+
+int
+main(int argc, char **argv)
 {
 	int rdev, rino;
+
+	(void)argc;
+	(void)argv;
 
 	stat("/", &d);
 	rdev = d.st_dev;
@@ -53,6 +61,7 @@ main()
 	}
 }
 
+static void
 prname()
 {
 	write(1, "/", 1);
@@ -63,6 +72,7 @@ prname()
 	exit(0);
 }
 
+static void
 cat()
 {
 	register i, j;

@@ -9,7 +9,7 @@
 
 #include	"defs.h"
 #include	"dup.h"
-
+#include	<sys/inttypes.h>
 
 /* ========	input output and file copying ======== */
 
@@ -57,7 +57,7 @@ pop()
 }
 
 chkpipe(pv)
-	INT		*pv;
+	i16		*pv;
 {
 	IF pipe(pv)<0 ORF pv[INPIPE]<0 ORF pv[OTPIPE]<0
 	THEN	error(piperr);
@@ -79,7 +79,7 @@ rename(f1,f2)
 	REG INT		f1, f2;
 {
 	IF f1!=f2
-	THEN	dup(f1|DUPFLG, f2);
+	THEN	dup2(f1, f2);
 		close(f1);
 		IF f2==0 THEN ioset|=1 FI
 	FI
@@ -103,7 +103,7 @@ tmpfil()
 }
 
 /* set by trim */
-BOOL		nosubst;
+extern BOOL	nosubst;
 
 copy(ioparg)
 	IOPTR		ioparg;

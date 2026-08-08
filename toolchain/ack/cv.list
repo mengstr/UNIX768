@@ -1,0 +1,8 @@
+./shared/modules/src/object/rd.c
+shared/modules/src/object/rd_arhdr.c
+shared/modules/src/object/rd_bytes.c
+shared/modules/src/object/rd_int2.c
+shared/modules/src/object/rd_int4.c
+shared/modules/src/object/rd_ranlib.c
+shared/modules/src/object/rd_unsig2.c
+cv/cv.c

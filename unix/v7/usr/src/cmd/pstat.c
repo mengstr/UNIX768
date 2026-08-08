@@ -141,7 +141,7 @@ doinode()
 		printf("%4d", ip->i_nlink);
 		printf("%4d", ip->i_uid);
 		if ((ip->i_mode&IFMT)==IFBLK || (ip->i_mode&IFMT)==IFCHR)
-			printf("%6d,%3d", major(ip->i_un.i_rdev), minor(ip->i_un.i_rdev));
+			printf("%6d,%3d", major(ip->i_un.i_special.i_rdev), minor(ip->i_un.i_special.i_rdev));
 		else
 			printf("%10ld", ip->i_size);
 		printf("\n");

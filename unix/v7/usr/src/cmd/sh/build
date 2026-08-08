@@ -1,0 +1,18 @@
+set -e
+
+FLAGS="-Dvoid=sh_void -Dgetenv=sh_getenv -I."
+
+for file in globals main args blok builtin cmd ctype error expand fault io
+do
+	echo CC $file.c
+	cc -c $FLAGS $file.c
+done
+
+for file in macro msg name print service setbrk stak string word xec
+do
+	echo CC $file.c
+	cc -c $FLAGS $file.c
+done
+
+echo LD sh
+cc -s -o sh globals.o main.o args.o blok.o builtin.o cmd.o ctype.o error.o expand.o fault.o io.o macro.o msg.o name.o print.o service.o setbrk.o stak.o string.o word.o xec.o

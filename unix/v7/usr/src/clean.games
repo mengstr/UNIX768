@@ -1,0 +1,10 @@
+set -e
+
+cd games
+
+for game in quiz wump backgammon fish hangman fortune arithmetic banner moo maze
+do
+	rm -f $game
+done
+rm -f *.o
+exit 0

@@ -1,6 +1,7 @@
  /* tb.c: check which entries exist, also storage allocation */
 # include "t..c"
-checkuse()
+void
+checkuse(void)
 {
 int i,c, k;
 for(c=0; c<ncol; c++)
@@ -24,6 +25,7 @@ for(c=0; c<ncol; c++)
 		}
 	}
 }
+int
 real(s)
 	char *s;
 {
@@ -32,11 +34,11 @@ if (!point(s)) return(1);
 if (*s==0) return(0);
 return(1);
 }
-int spcount = 0;
-extern char * calloc();
+static int spcount = 0;
 # define MAXVEC 20
-char *spvecs[MAXVEC];
-chspace()
+static char *spvecs[MAXVEC];
+char *
+chspace(void)
 {
 char *pp;
 if (spvecs[spcount])
@@ -44,17 +46,19 @@ if (spvecs[spcount])
 if (spcount>=MAXVEC)
 	error("Too many characters in table");
 spvecs[spcount++]= pp = calloc(MAXCHS+200,1);
-if (pp== -1 || pp == 0)
+if (pp == 0)
 	error("no space for characters");
 return(pp);
 }
 # define MAXPC 50
-char *thisvec;
-int tpcount = -1;
-char *tpvecs[MAXPC];
+static char *thisvec;
+static int tpcount = -1;
+static char *tpvecs[MAXPC];
+struct colstr *
 alocv(n)
+	int n;
 {
-int *tp, *q;
+char *tp, *q;
 if (tpcount<0 || thisvec+n > tpvecs[tpcount]+MAXCHS)
 	{
 	tpcount++;
@@ -63,16 +67,17 @@ if (tpcount<0 || thisvec+n > tpvecs[tpcount]+MAXCHS)
 		tpvecs[tpcount] = calloc(MAXCHS,1);
 		}
 	thisvec = tpvecs[tpcount];
-	if (thisvec == -1)
+	if (thisvec == 0)
 		error("no space for vectors");
 	}
 tp=thisvec;
 thisvec+=n;
 for(q=tp; q<thisvec; q++)
 	*q=0;
-return(tp);
+return((struct colstr *)tp);
 }
-release()
+void
+release(void)
 {
 extern char *exstore;
 /* give back unwanted space in some vectors */

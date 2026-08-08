@@ -1,0 +1,8 @@
+#!/bin/sh
+
+cc -O2 -o 68kasm \
+	assemble.c build.c codegen.c directive.c error.c eval.c globals.c \
+	include.c instlookup.c insttable.c listing.c main.c movem.c \
+	object.c opparse.c symbol.c
+
+cc -O2 -o srec2aout srec2aout.c

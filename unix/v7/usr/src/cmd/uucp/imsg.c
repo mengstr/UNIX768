@@ -15,9 +15,8 @@ char Msync[2] = "\020";
  *		0 - message returned
  */
 
-imsg(msg, fn)
-char *msg;
-int fn;
+int
+imsg (char *msg, int fn)
 {
 	int ret;
 	DEBUG(7, "imsg %s>", "");
@@ -53,9 +52,8 @@ int fn;
  *	return code:  always 0
  */
 
-omsg(type, msg, fn)
-char *msg, type;
-int fn;
+int
+omsg (int type, char *msg, int fn)
 {
 	char buf[BUFSIZ], *c;
 

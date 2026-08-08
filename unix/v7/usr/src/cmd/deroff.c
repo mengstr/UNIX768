@@ -1,7 +1,8 @@
-char *xxxvers = "\nDeroff Version 1.02    24 July 1978\n";
-
-
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+char *xxxvers = "\nDeroff Version 1.02    24 July 1978\n";
 
 /* Deroff command -- strip troff, eqn, and Tbl sequences from
 a file.  Has one flag argument, -w, to cause output one word per line
@@ -26,40 +27,50 @@ All input is through the C macro; the most recently read character is in c.
 #define DIGIT 2
 #define LETTER 3
 
-int wordflag = NO;
-int inmacro = NO;
-int intable = NO;
+static int wordflag = NO;
+static int inmacro = NO;
+static int intable = NO;
 
-char chars[128];  /* SPECIAL, APOS, DIGIT, or LETTER */
+static char chars[128];  /* SPECIAL, APOS, DIGIT, or LETTER */
 
-char line[512];
-char *lp;
+static char line[512];
+static char *lp;
 
-int c;
-int ldelim	= NOCHAR;
-int rdelim	= NOCHAR;
-
-
-int argc;
-char **argv;
-
-char fname[50];
-FILE *files[15];
-FILE **filesp;
-FILE *infile;
-
-char *calloc();
+static int c;
+static int ldelim	= NOCHAR;
+static int rdelim	= NOCHAR;
 
 
+static int argc;
+static char **argv;
 
-main(ac, av)
-int ac;
-char **av;
+static char fname[50];
+static FILE *files[15];
+static FILE **filesp;
+static FILE *infile;
+
+static int skeqn(void);
+static FILE *opn(char *p);
+static int eof(void);
+static void getfname(void);
+static void fatal(char *s, char *p);
+static void work(void);
+static void regline(int macline);
+static void putmac(char *s);
+static void putwords(int macline);
+static void comline(void);
+static void macro(void);
+static void tbl(void);
+static void eqn(void);
+static void backsl(void);
+static char *copys(char *s);
+
+int
+main(int ac, char **av)
 {
 register int i;
 register char *p;
 static char onechar[2] = "X";
-FILE *opn();
 
 argc = ac - 1;
 argv = av + 1;
@@ -100,28 +111,31 @@ chars['\''] = APOS;
 chars['&'] = APOS;
 
 work();
+return(0);
 }
 
 
 
-skeqn()
+static int
+skeqn(void)
 {
 while((c = getc(infile)) != rdelim)
 	if(c == EOF)
 		c = eof();
 	else if(c == '"')
-		while( (c = getc(infile)) != '"')
+		while( (c = getc(infile)) != '"') {
 			if(c == EOF)
 				c = eof();
 			else if(c == '\\')
 				if((c = getc(infile)) == EOF)
 					c = eof();
+		}
 return(c = ' ');
 }
 
 
-FILE *opn(p)
-register char *p;
+static FILE *
+opn(char *p)
 {
 FILE *fd;
 
@@ -135,7 +149,8 @@ return(fd);
 
 
 
-eof()
+static int
+eof(void)
 {
 if(infile != stdin)
 	fclose(infile);
@@ -155,13 +170,13 @@ return(C);
 
 
 
-getfname()
+static void
+getfname(void)
 {
 register char *p;
 struct chain { struct chain *nextp; char *datap; } *chainblock;
 register struct chain *q;
 static struct chain *namechain	= NULL;
-char *copys();
 
 while(C == ' ') ;
 
@@ -189,15 +204,16 @@ namechain = q;
 
 
 
-fatal(s,p)
-char *s, *p;
+static void
+fatal(char *s, char *p)
 {
 fprintf(stderr, "Deroff: ");
 fprintf(stderr, s, p);
 exit(1);
 }
 
-work()
+static void
+work(void)
 {
 
 for( ;; )
@@ -212,8 +228,8 @@ for( ;; )
 
 
 
-regline(macline)
-int macline;
+static void
+regline(int macline)
 {
 line[0] = c;
 lp = line;
@@ -239,20 +255,22 @@ for( ; ; )
 
 *lp = '\0';
 
-if(line[0] != '\0')
-	if(wordflag)
+if(line[0] != '\0') {
+	if(wordflag) {
 		putwords(macline);
-	else if(macline)
+	} else if(macline) {
 		putmac(line);
-	else
+	} else {
 		puts(line);
+	}
+}
 }
 
 
 
 
-putmac(s)
-register char *s;
+static void
+putmac(char *s)
 {
 register char *t;
 
@@ -262,7 +280,8 @@ while(*s)
 		putchar(*s++);
 	for(t = s ; *t!=' ' && *t!='\t' && *t!='\0' ; ++t)
 		;
-	if(t>s+2 && chars[ s[0] ]==LETTER && chars[ s[1] ]==LETTER)
+	if(t>s+2 && chars[(unsigned char)s[0]]==LETTER &&
+	    chars[(unsigned char)s[1]]==LETTER)
 		while(s < t)
 			putchar(*s++);
 	else
@@ -273,8 +292,8 @@ putchar('\n');
 
 
 
-putwords(macline)	/* break into words for -w option */
-int macline;
+static void
+putwords(int macline)	/* break into words for -w option */
 {
 register char *p, *p1;
 int i, nlet;
@@ -283,14 +302,15 @@ int i, nlet;
 for(p1 = line ; ;)
 	{
 	/* skip initial specials ampersands and apostrophes */
-	while( chars[*p1] < DIGIT)
+	while(chars[(unsigned char)*p1] < DIGIT)
 		if(*p1++ == '\0') return;
 	nlet = 0;
-	for(p = p1 ; (i=chars[*p]) != SPECIAL ; ++p)
+	for(p = p1 ; (i=chars[(unsigned char)*p]) != SPECIAL ; ++p)
 		if(i == LETTER) ++nlet;
 
 	if( (!macline && nlet>1)   /* MDM definition of word */
-	   || (macline && nlet>2 && chars[ p1[0] ]==LETTER && chars[ p1[1] ]==LETTER) )
+	   || (macline && nlet>2 && chars[(unsigned char)p1[0]]==LETTER &&
+	       chars[(unsigned char)p1[1]]==LETTER) )
 		{
 		/* delete trailing ampersands and apostrophes */
 		while(p[-1]=='\'' || p[-1]=='&')
@@ -305,7 +325,8 @@ for(p1 = line ; ;)
 
 
 
-comline()
+static void
+comline(void)
 {
 register int c1, c2;
 
@@ -360,11 +381,13 @@ else
 
 
 
-macro()
+static void
+macro(void)
 {
 /*
 do { SKIP; }
-	while(C!='.' || C!='.' || C=='.');	/* look for  .. */
+	while(C!='.' || C!='.' || C=='.');	look for  ..
+*/
 SKIP;
 inmacro = YES;
 }
@@ -372,14 +395,16 @@ inmacro = YES;
 
 
 
-tbl()
+static void
+tbl(void)
 {
 while(C != '.');
 SKIP;
 intable = YES;
 }
 
-eqn()
+static void
+eqn(void)
 {
 register int c1, c2;
 
@@ -422,7 +447,8 @@ for( ;;)
 
 
 
-backsl()	/* skip over a complete backslash construction */
+static void
+backsl(void)	/* skip over a complete backslash construction */
 {
 int bdelim;
 
@@ -480,15 +506,15 @@ sw:  switch(C)
 
 
 
-char *copys(s)
-register char *s;
+static char *
+copys(char *s)
 {
 register char *t, *t0;
 
 if( (t0 = t = calloc( strlen(s)+1, sizeof(*t) ) ) == NULL)
 	fatal("Cannot allocate memory", (char *) NULL);
 
-while( *t++ = *s++ )
+while((*t++ = *s++) != '\0')
 	;
 return(t0);
 }

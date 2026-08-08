@@ -3,18 +3,22 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <grp.h>
+#include <unistd.h>
 
-struct	group	*gr,*getgrnam();
+struct	group	*gr,*getgrnam(char *);
 struct	stat	stbuf;
 int	gid;
 int	status;
 
-main(argc, argv)
-char *argv[];
+static i32 isnumber(char *s);
+
+int
+main(int argc, char *argv[])
 {
 	register c;
 
@@ -41,6 +45,7 @@ char *argv[];
 	exit(status);
 }
 
+static i32
 isnumber(s)
 char *s;
 {

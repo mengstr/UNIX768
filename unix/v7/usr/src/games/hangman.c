@@ -1,4 +1,7 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #define DICT "/usr/dict/words"
@@ -10,8 +13,19 @@ char *dictfile;
 int alive,lost;
 FILE *dict;
 long int dictlen;
-float errors=0, words=0;
-main(argc,argv) char **argv;
+long errors=0, words=0;
+static void setup(void);
+static void startnew(void);
+static void stateout(void);
+static void getguess(void);
+static void wordout(void);
+static void youwon(void);
+static void fatal(char *message);
+static void getword(void);
+static void pscore(void);
+
+int
+main(int argc, char **argv)
 {
 	if(argc==1) dictfile=DICT;
 	else if(*argv[1]=='-') dictfile=EDICT;
@@ -28,33 +42,32 @@ main(argc,argv) char **argv;
 		else youwon();
 	}
 }
-setup()
+static void
+setup(void)
 {	int tvec[2];
 	struct stat statb;
-	time(tvec);
+	time((time_t *)tvec);
 	srand(tvec[1]+tvec[2]);
 	if((dict=fopen(dictfile,"r"))==NULL) fatal("no dictionary");
 	if(stat(dictfile,&statb)<0) fatal("can't stat");
 	dictlen=statb.st_size;
 }
-double frand()
-{
-	return(rand()/32768.);
-}
 char word[26],alph[26],realword[26];
-startnew()
+static void
+startnew(void)
 {	int i;
 	long int pos;
 	char buf[128];
 	for(i=0;i<26;i++) word[i]=alph[i]=realword[i]=0;
-	pos=frand()*dictlen;
+	pos=((long)rand()*dictlen)/32768;
 	fseek(dict,pos,0);
 	fscanf(dict,"%s\n",buf);
 	getword();
 	alive=MAXERR;
 	lost=0;
 }
-stateout()
+static void
+stateout(void)
 {	int i;
 	printf("guesses: ");
 	for(i=0;i<26;i++)
@@ -62,12 +75,13 @@ stateout()
 	printf(" word: %s ",word);
 	printf("errors: %d/%d\n",MAXERR-alive,MAXERR);
 }
-getguess()
+static void
+getguess(void)
 {	char gbuf[128],c;
 	int ok=0,i;
 loop:
 	printf("guess: ");
-	if(gets(gbuf)==NULL)
+	if(fgets(gbuf, sizeof(gbuf), stdin)==NULL)
 	{	putchar('\n');
 		exit(0);
 	}
@@ -97,21 +111,25 @@ loop:
 	lost=0;
 	return;
 }
-wordout()
+static void
+wordout(void)
 {
 	errors=errors+2;
 	printf("the answer was %s, you blew it\n",realword);
 }
-youwon()
+static void
+youwon(void)
 {
 	printf("you win, the word is %s\n",realword);
 }
-fatal(s) char *s;
+static void
+fatal(char *s)
 {
 	fprintf(stderr,"%s\n",s);
 	exit(1);
 }
-getword()
+static void
+getword(void)
 {	char wbuf[128],c;
 	int i,j;
 loop:
@@ -132,7 +150,7 @@ loop:
 	strcpy(realword,wbuf);
 	for(j=0;j<i;word[j++]='.');
 }
-long int freq[]
+long int freq[] =
 {	42066,	9228,	24412,	14500,	55162,
 	6098,	11992,	12648,	48241,	639,
 	2944,	33351,	15545,	35618,	36211,
@@ -140,7 +158,8 @@ long int freq[]
 	17621,	5453,	3028,	1556,	12875,
 	1743
 };
-pscore()
+static void
+pscore(void)
 {
-	if(words!=0) printf("(%4.2f/%.0f) ",errors/words,words);
+	if(words!=0) printf("(%d/%d) ",errors,words);
 }

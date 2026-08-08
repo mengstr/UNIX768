@@ -1,6 +1,7 @@
 # include "e.h"
 
-lpile(type, p1, p2) int type, p1, p2; {
+void
+lpile(int type, int p1, int p2) {
 	int bi, hi, i, gap, h, b, nlist, nlist2, mid;
 	yyval = oalloc();
 	gap = VERT( (ps*6*4)/10 ); /* 4/10 m between blocks */
@@ -18,20 +19,20 @@ lpile(type, p1, p2) int type, p1, p2; {
 	ebase[yyval] = (nlist%2) ? b + ebase[lp[mid]]
 			: b - VERT( (ps*6*5)/10 ) - gap;
 	if(dbg) {
-		printf(".\tS%d <- %c pile of:", yyval, type);
+		printf(".\tS%d <- %c pile of:", YV, type);
 		for( i=p1; i<p2; i++)
 			printf(" S%d", lp[i]);
 		printf(";h=%d b=%d\n", eht[yyval], ebase[yyval]);
 	}
 	nrwid(lp[p1], ps, lp[p1]);
-	printf(".nr %d \\n(%d\n", yyval, lp[p1]);
+	printf(".nr %d \\n(%d\n", YV, lp[p1]);
 	for( i = p1+1; i<p2; i++ ) {
 		nrwid(lp[i], ps, lp[i]);
 		printf(".if \\n(%d>\\n(%d .nr %d \\n(%d\n", 
-			lp[i], yyval, yyval, lp[i]);
+			lp[i], YV, YV, lp[i]);
 	}
-	printf(".ds %d \\v'%du'\\h'%du*\\n(%du'\\\n", yyval, ebase[yyval], 
-		type=='R' ? 1 : 0, yyval);
+	printf(".ds %d \\v'%du'\\h'%du*\\n(%du'\\\n", YV, ebase[yyval],
+		type=='R' ? 1 : 0, YV);
 	for(i = p2-1; i >=p1; i--) {
 		hi = eht[lp[i]]; 
 		bi = ebase[lp[i]];
@@ -48,14 +49,14 @@ lpile(type, p1, p2) int type, p1, p2; {
 	case 'C':
 	case '-':
 		printf("\\v'%du'\\h'\\n(%du-\\n(%du/2u'\\*(%d", 
-			-bi, yyval, lp[i], lp[i]);
+			-bi, YV, lp[i], lp[i]);
 		printf("\\h'-\\n(%du-\\n(%du/2u'\\v'0-%du'\\\n", 
-			yyval, lp[i], hi-bi+gap);
+			YV, lp[i], hi-bi+gap);
 		continue;
 		}
 	}
 	printf("\\v'%du'\\h'%du*\\n(%du'\n", eht[yyval]-ebase[yyval]+gap, 
-		type!='R' ? 1 : 0, yyval);
+		type!='R' ? 1 : 0, YV);
 	for( i=p1; i<p2; i++ )
 		ofree(lp[i]);
 	lfont[yyval] = rfont[yyval] = 0;

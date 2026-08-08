@@ -1,7 +1,22 @@
 # include "ldefs.c"
-cfoll(v)
-	int v;
-	{
+static void add(int **, int);
+static void nextstate(int, int);
+static int notin(int);
+static void packtrans(int, char *, int *, int, int);
+static int member(int, char *);
+static void acompute(int);
+static void rprint(int *, char *, int);
+static void shiftr(int *, int);
+static void upone(int *, int);
+static void bprint(char *, char *, int);
+# ifdef PP
+static void padd(int **, int);
+# endif
+# ifdef DEBUG
+static void pstate(int);
+# endif
+
+void cfoll(int v) {
 	register int i,j,k;
 	char *p;
 	i = name[v];
@@ -22,7 +37,7 @@ cfoll(v)
 			else if(i == RCCL || i == RNCCL){	/* compress ccl list */
 				for(j=1; j<NCH;j++)
 					symbol[j] = (i==RNCCL);
-				p = left[v];
+				p = (char *)left[v];
 				while(*p)
 					symbol[*p++] = (i == RCCL);
 				p = pcptr;
@@ -36,7 +51,7 @@ cfoll(v)
 				*pcptr++ = 0;
 				if(pcptr > pchar + pchlen)
 					error("Too many packed character classes");
-				left[v] = p;
+				left[v] = (i32)p;
 				name[v] = RCCL;	/* RNCCL eliminated */
 # ifdef DEBUG
 				if(debug && *p){
@@ -70,7 +85,7 @@ cfoll(v)
 	return;
 	}
 # ifdef DEBUG
-pfoll()
+void pfoll(void)
 	{
 	register int i,k,*p;
 	int j;
@@ -89,9 +104,7 @@ pfoll()
 	return;
 	}
 # endif
-add(array,n)
-  int **array;
-  int n; {
+static void add(int **array, int n) {
 	register int i, *temp;
 	register char *ctemp;
 	temp = nxtpos;
@@ -106,9 +119,7 @@ add(array,n)
 		error("Too many positions %s",(maxpos== MAXPOS?"\nTry using %p num":""));
 	return;
 	}
-follow(v)
-  int v;
-	{
+void follow(int v) {
 	register int p;
 	if(v >= tptr-1)return;
 	p = parent[v];
@@ -146,8 +157,7 @@ follow(v)
 		}
 	return;
 	}
-first(v)	/* calculate set of positions with v as root which can be active initially */
-  int v; {
+void first(int v) {	/* calculate set of positions with v as root which can be active initially */
 	register int i;
 	register char *p;
 	i = name[v];
@@ -169,7 +179,7 @@ first(v)	/* calculate set of positions with v as root which can be active initia
 			break;
 		case RSCON:
 			i = stnum/2 +1;
-			p = right[v];
+			p = (char *)right[v];
 			while(*p)
 				if(*p++ == i){
 					first(left[v]);
@@ -191,7 +201,7 @@ first(v)	/* calculate set of positions with v as root which can be active initia
 		}
 	return;
 	}
-cgoto(){
+void cgoto(void){
 	register int i, j, s;
 	int npos, curpos, n;
 	int tryit;
@@ -237,7 +247,7 @@ cgoto(){
 			else switch(name[curpos]){
 			case RCCL:
 				tryit = TRUE;
-				q = left[curpos];
+				q = (char *)left[curpos];
 				while(*q){
 					for(j=1;j<NCH;j++)
 						if(cindex[j] == *q)
@@ -308,8 +318,7 @@ cgoto(){
 	}
 	/*	Beware -- 70% of total CPU time is spent in this subroutine -
 		if you don't believe me - try it yourself ! */
-nextstate(s,c)
-  int s,c; {
+static void nextstate(int s, int c) {
 	register int j, *newpos;
 	register char *temp, *tz;
 	int *pos, i, *f, num, curpos, number;
@@ -322,7 +331,7 @@ nextstate(s,c)
 		j = name[curpos];
 		if(j < NCH && j == c
 		|| j == RSTR && c == right[curpos]
-		|| j == RCCL && member(c,left[curpos])){
+		|| j == RCCL && member(c,(char *)left[curpos])){
 			f = foll[curpos];
 			number = *f;
 			newpos = f+1;
@@ -342,8 +351,7 @@ nextstate(s,c)
 	count = j;
 	return;
 	}
-notin(n)
-  int n;	{	/* see if tmpstat occurs previously */
+static int notin(int n) {	/* see if tmpstat occurs previously */
 	register int *j,k;
 	register char *temp;
 	int i;
@@ -361,9 +369,7 @@ notin(n)
 		}
 	return(-1);
 	}
-packtrans(st,tch,tst,cnt,tryit)
-  int st, *tst, cnt,tryit;
-  char *tch; {
+static void packtrans(int st, char *tch, int *tst, int cnt, int tryit) {
 	/* pack transitions into nchar, nexts */
 	/* nchar is terminated by '\0', nexts uses cnt, followed by elements */
 	/* gotof[st] = index into nchr, nexts for state st */
@@ -379,7 +385,7 @@ packtrans(st,tch,tst,cnt,tryit)
 	char cwork[NCH];
 	int upper;
 
-	rcount =+ cnt;
+	rcount += cnt;
 	cmin = -1;
 	cval = NCH;
 	ast = tst;
@@ -524,8 +530,7 @@ nopack:
 	return;
 	}
 # ifdef DEBUG
-pstate(s)
-  int s; {
+static void pstate(int s) {
 	register int *p,i,j;
 	printf("State %d:\n",s);
 	p = state[s];
@@ -540,9 +545,7 @@ pstate(s)
 	return;
 	}
 # endif
-member(d,t)
-  int d;
-  char *t;	{
+static int member(int d, char *t) {
 	register int c;
 	register char *s;
 	c = d;
@@ -553,8 +556,7 @@ member(d,t)
 	return(0);
 	}
 # ifdef DEBUG
-stprt(i)
-  int i; {
+void stprt(int i) {
 	register int p, t;
 	printf("State %d:",i);
 	/* print actions, if any */
@@ -585,8 +587,7 @@ stprt(i)
 	return;
 	}
 # endif
-acompute(s)	/* compute action list = set of poss. actions */
-  int s; {
+static void acompute(int s) {	/* compute action list = set of poss. actions */
 	register int *p, i, j;
 	int cnt, m;
 	int temp[300], k, neg[300], n;
@@ -651,7 +652,7 @@ acompute(s)	/* compute action list = set of poss. actions */
 	return;
 	}
 # ifdef DEBUG
-pccl() {
+void pccl(void) {
 	/* print character class sets */
 	register int i, j;
 	printf("char class intersection\n");
@@ -681,7 +682,7 @@ pccl() {
 	return;
 	}
 # endif
-mkmatch(){
+void mkmatch(void){
 	register int i;
 	char tab[NCH];
 	for(i=0; i<ccount; i++)
@@ -694,7 +695,7 @@ mkmatch(){
 		match[i] = tab[cindex[i]];
 	return;
 	}
-layout(){
+void layout(void){
 	/* format and output final program's tables */
 	register int i, j, k;
 	int  top, bot, startup, omin;
@@ -731,7 +732,7 @@ layout(){
 # endif
 		if(chset){
 			do {
-				startup =+ 1;
+				startup += 1;
 				if(startup > outsize - ZCH)
 					error("output table overflow");
 				for(j = bot; j<= top; j++){
@@ -754,7 +755,7 @@ layout(){
 			}
 		else {
 			do {
-				startup =+ 1;
+				startup += 1;
 				if(startup > outsize - ZCH)
 					error("output table overflow");
 				for(j = bot; j<= top; j++){
@@ -794,7 +795,7 @@ layout(){
 		}
 	fprintf(fout,"# define YYTYPE %s\n",stnum+1 > NCH ? "int" : "char");
 	fprintf(fout,"struct yywork { YYTYPE verify, advance; } yycrank[] ={\n");
-	for(i=0;i<=yytop;i=+4){
+	for(i=0;i<=yytop;i+=4){
 		for(j=0;j<4;j++){
 			k = i+j;
 			if(verify[k])
@@ -834,7 +835,7 @@ layout(){
 		fprintf(fout,"char yymatch[] ={\n");
 		if (chset==0) /* no chset, put out in normal order */
 			{
-			for(i=0; i<NCH; i=+8){
+			for(i=0; i<NCH; i+=8){
 				for(j=0; j<8; j++){
 					int fbch;
 					fbch = match[i+j];
@@ -867,7 +868,7 @@ layout(){
 		}
 	/* put out yyextra */
 	fprintf(fout,"char yyextra[] ={\n");
-	for(i=0;i<casecount;i=+8){
+	for(i=0;i<casecount;i+=8){
 		for(j=0;j<8;j++)
 			fprintf(fout, "%d,", i+j<NACTIONS ?
 				extra[i+j] : 0);
@@ -876,9 +877,7 @@ layout(){
 	fprintf(fout,"0};\n");
 	return;
 	}
-rprint(a,s,n)
-  char *s;
-  int *a, n; {
+static void rprint(int *a, char *s, int n) {
 	register int i;
 	fprintf(fout,"block data\n");
 	fprintf(fout,"common /L%s/ %s\n",s,s);
@@ -892,29 +891,23 @@ rprint(a,s,n)
 		}
 	fprintf(fout,"end\n");
 	}
-shiftr(a, n)
-	int *a;
-{
+static void shiftr(int *a, int n) {
 int i;
 for(i=n; i>=0; i--)
 	a[i+1]=a[i];
 }
-upone(a,n)
-	int *a;
-{
+static void upone(int *a, int n) {
 int i;
 for(i=0; i<=n ; i++)
 	a[i]++;
 }
-bprint(a,s,n)
- char *s,  *a;
- int  n; {
+static void bprint(char *a, char *s, int n) {
 	register int i, j, k;
 	fprintf(fout,"block data\n");
 	fprintf(fout,"common /L%s/ %s\n",s,s);
 	fprintf(fout,"define S%s %d\n",s,n);
 	fprintf(fout,"integer %s (S%s)\n",s,s);
-	for(i=1;i<n;i=+8){
+	for(i=1;i<n;i+=8){
 		fprintf(fout,"data %s (%d)/%d/",s,i,a[i]);
 		for(j=1;j<8;j++){
 			k = i+j;
@@ -925,9 +918,7 @@ bprint(a,s,n)
 	fprintf(fout,"end\n");
 	}
 # ifdef PP
-padd(array,n)
-  int **array;
-  int n; {
+static void padd(int **array, int n) {
 	register int i, *j, k;
 	array[n] = nxtpos;
 	if(count == 0){

@@ -1,0 +1,1317 @@
+ROOT := .
+ifneq ($(filter ack ACK,$(notdir $(CURDIR))),)
+ROOT := ../..
+endif
+
+HOST_CC ?= clang
+
+BUILD_DIR = $(ROOT)/build/toolchain/ack/clang
+BIN_DIR = $(ROOT)/build/bin
+CPP_BIN = $(BIN_DIR)/cpp
+C1_BIN = $(BIN_DIR)/c1
+OPT_BIN = $(BIN_DIR)/opt
+OPT2_BIN = $(BIN_DIR)/opt2
+C2_BIN = $(BIN_DIR)/ncg
+AS_BIN = $(BIN_DIR)/as
+CV_BIN = $(BIN_DIR)/cv
+LN_BIN = $(BIN_DIR)/led
+AAL_BIN = $(BIN_DIR)/aal
+ACK_CFLAGS = -L -Vw2.2i2.2p4.2f4.2s2.2l4.2d8.2x8.2
+CPP_CFLAGS = -g -Os \
+	-Werror=return-type \
+	-Werror=implicit-function-declaration \
+	-Werror=strict-prototypes \
+	-Wno-format-security \
+	-Wno-constant-conversion \
+	-DACK_HOST_BUILD=1 \
+	-DUNREACHABLE_CODE='__builtin_unreachable()' \
+	-DNORETURN=_Noreturn
+
+CPP_INCLUDES = \
+	-I$(ROOT)/toolchain/ack/shared/generated/h \
+	-I$(ROOT)/toolchain/ack/shared/generated/em_data \
+	-I$(ROOT)/toolchain/ack/shared/includes/ack-h \
+	-I$(ROOT)/toolchain/ack/shared/includes/modules-h \
+	-I$(ROOT)/toolchain/ack/shared/includes/read_em \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/alloc \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/data \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/em_code \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/em_data \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/flt_arith \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/idf \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/input \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/read_em \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/string \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/system \
+	-I$(ROOT)/toolchain/ack/cpp \
+	-I$(ROOT)/toolchain/ack/cpp/generated
+
+CPP_OBJS = \
+	$(BUILD_DIR)/system_basename.o \
+	$(BUILD_DIR)/system_filesize.o \
+	$(BUILD_DIR)/system_maketempfile.o \
+	$(BUILD_DIR)/system_setbinarymode.o \
+	$(BUILD_DIR)/system_strndup.o \
+	$(BUILD_DIR)/system_syssystem.o \
+	$(BUILD_DIR)/system_tmpdir.o \
+	$(BUILD_DIR)/alloc_st_alloc.o \
+	$(BUILD_DIR)/alloc_std_alloc.o \
+	$(BUILD_DIR)/data_array.o \
+	$(BUILD_DIR)/data_astring.o \
+	$(BUILD_DIR)/data_imap.o \
+	$(BUILD_DIR)/data_pmap.o \
+	$(BUILD_DIR)/data_smap.o \
+	$(BUILD_DIR)/data_stringlist.o \
+	$(BUILD_DIR)/string_bts2str.o \
+	$(BUILD_DIR)/string_long2str.o \
+	$(BUILD_DIR)/read_em_EM_vars.o \
+	$(BUILD_DIR)/em_code_C_out.o \
+	$(BUILD_DIR)/em_code_bhcst.o \
+	$(BUILD_DIR)/em_code_bhdlb.o \
+	$(BUILD_DIR)/em_code_bhdnam.o \
+	$(BUILD_DIR)/em_code_bhfcon.o \
+	$(BUILD_DIR)/em_code_bhicon.o \
+	$(BUILD_DIR)/em_code_bhilb.o \
+	$(BUILD_DIR)/em_code_bhpnam.o \
+	$(BUILD_DIR)/em_code_bhucon.o \
+	$(BUILD_DIR)/em_code_crcst.o \
+	$(BUILD_DIR)/em_code_crdlb.o \
+	$(BUILD_DIR)/em_code_crdnam.o \
+	$(BUILD_DIR)/em_code_crilb.o \
+	$(BUILD_DIR)/em_code_crpnam.o \
+	$(BUILD_DIR)/em_code_crscon.o \
+	$(BUILD_DIR)/em_code_crxcon.o \
+	$(BUILD_DIR)/em_code_cst.o \
+	$(BUILD_DIR)/em_code_dfdlb.o \
+	$(BUILD_DIR)/em_code_dfdnam.o \
+	$(BUILD_DIR)/em_code_dfilb.o \
+	$(BUILD_DIR)/em_code_dlb.o \
+	$(BUILD_DIR)/em_code_dnam.o \
+	$(BUILD_DIR)/em_code_em.o \
+	$(BUILD_DIR)/em_code_end.o \
+	$(BUILD_DIR)/em_code_endarg.o \
+	$(BUILD_DIR)/em_code_exc.o \
+	$(BUILD_DIR)/em_code_failed.o \
+	$(BUILD_DIR)/em_code_fcon.o \
+	$(BUILD_DIR)/em_code_getid.o \
+	$(BUILD_DIR)/em_code_icon.o \
+	$(BUILD_DIR)/em_code_ilb.o \
+	$(BUILD_DIR)/em_code_insert.o \
+	$(BUILD_DIR)/em_code_internerr.o \
+	$(BUILD_DIR)/em_code_msend.o \
+	$(BUILD_DIR)/em_code_msstart.o \
+	$(BUILD_DIR)/em_code_op.o \
+	$(BUILD_DIR)/em_code_opcst.o \
+	$(BUILD_DIR)/em_code_opdlb.o \
+	$(BUILD_DIR)/em_code_opdnam.o \
+	$(BUILD_DIR)/em_code_opilb.o \
+	$(BUILD_DIR)/em_code_opnarg.o \
+	$(BUILD_DIR)/em_code_oppnam.o \
+	$(BUILD_DIR)/em_code_pnam.o \
+	$(BUILD_DIR)/em_code_pro.o \
+	$(BUILD_DIR)/em_code_pronarg.o \
+	$(BUILD_DIR)/em_code_psdlb.o \
+	$(BUILD_DIR)/em_code_psdnam.o \
+	$(BUILD_DIR)/em_code_pspnam.o \
+	$(BUILD_DIR)/em_code_scon.o \
+	$(BUILD_DIR)/em_code_ucon.o \
+	$(BUILD_DIR)/em_data_em_ptyp.o \
+	$(BUILD_DIR)/em_data_flag.o \
+	$(BUILD_DIR)/em_data_mnem.o \
+	$(BUILD_DIR)/em_data_pseu.o \
+	$(BUILD_DIR)/em_mes_C_ms_com.o \
+	$(BUILD_DIR)/em_mes_C_ms_ego.o \
+	$(BUILD_DIR)/em_mes_C_ms_emx.o \
+	$(BUILD_DIR)/em_mes_C_ms_err.o \
+	$(BUILD_DIR)/em_mes_C_ms_flt.o \
+	$(BUILD_DIR)/em_mes_C_ms_gto.o \
+	$(BUILD_DIR)/em_mes_C_ms_opt.o \
+	$(BUILD_DIR)/em_mes_C_ms_par.o \
+	$(BUILD_DIR)/em_mes_C_ms_reg.o \
+	$(BUILD_DIR)/em_mes_C_ms_src.o \
+	$(BUILD_DIR)/em_mes_C_ms_stb.o \
+	$(BUILD_DIR)/em_mes_C_ms_std.o \
+	$(BUILD_DIR)/flt_arith_b64_add.o \
+	$(BUILD_DIR)/flt_arith_b64_sft.o \
+	$(BUILD_DIR)/flt_arith_flt_add.o \
+	$(BUILD_DIR)/flt_arith_flt_ar2flt.o \
+	$(BUILD_DIR)/flt_arith_flt_chk.o \
+	$(BUILD_DIR)/flt_arith_flt_cmp.o \
+	$(BUILD_DIR)/flt_arith_flt_div.o \
+	$(BUILD_DIR)/flt_arith_flt_flt2ar.o \
+	$(BUILD_DIR)/flt_arith_flt_modf.o \
+	$(BUILD_DIR)/flt_arith_flt_mul.o \
+	$(BUILD_DIR)/flt_arith_flt_nrm.o \
+	$(BUILD_DIR)/flt_arith_flt_str2fl.o \
+	$(BUILD_DIR)/flt_arith_flt_umin.o \
+	$(BUILD_DIR)/flt_arith_split.o \
+	$(BUILD_DIR)/cpp_LLlex.o \
+	$(BUILD_DIR)/cpp_LLmessage.o \
+	$(BUILD_DIR)/cpp_ch3bin.o \
+	$(BUILD_DIR)/cpp_ch3mon.o \
+	$(BUILD_DIR)/cpp_domacro.o \
+	$(BUILD_DIR)/cpp_error.o \
+	$(BUILD_DIR)/cpp_expr.o \
+	$(BUILD_DIR)/cpp_idf.o \
+	$(BUILD_DIR)/cpp_init.o \
+	$(BUILD_DIR)/cpp_input.o \
+	$(BUILD_DIR)/cpp_main.o \
+	$(BUILD_DIR)/cpp_options.o \
+	$(BUILD_DIR)/cpp_preprocess.o \
+	$(BUILD_DIR)/cpp_replace.o \
+	$(BUILD_DIR)/cpp_skip.o \
+	$(BUILD_DIR)/cpp_tokenname.o \
+	$(BUILD_DIR)/cpp_gen_Lpars.o \
+	$(BUILD_DIR)/cpp_gen_expression.o \
+	$(BUILD_DIR)/cpp_gen_next.o \
+	$(BUILD_DIR)/cpp_gen_symbol2str.o \
+	$(BUILD_DIR)/cpp_gen_tabgen.o \
+	$(BUILD_DIR)/cpp_gen_tokenfile.o
+
+.PHONY: all clean test-cpp test-opt test-opt2 test-ncg test-as extra-optimizers
+
+C1_INCLUDES = \
+	-I$(ROOT)/toolchain/ack/shared/generated/h \
+	-I$(ROOT)/toolchain/ack/shared/generated/em_data \
+	-I$(ROOT)/toolchain/ack/shared/includes/ack-h \
+	-I$(ROOT)/toolchain/ack/shared/includes/modules-h \
+	-I$(ROOT)/toolchain/ack/shared/includes/read_em \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/alloc \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/data \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/em_code \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/em_data \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/flt_arith \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/idf \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/input \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/read_em \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/string \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/system \
+	-I$(ROOT)/toolchain/ack/c1 \
+	-I$(ROOT)/toolchain/ack/c1/generated
+
+C1_SHARED_OBJS = $(filter-out \
+	$(BUILD_DIR)/em_code_failed.o \
+	$(BUILD_DIR)/cpp_LLlex.o \
+	$(BUILD_DIR)/cpp_LLmessage.o \
+	$(BUILD_DIR)/cpp_ch3bin.o \
+	$(BUILD_DIR)/cpp_ch3mon.o \
+	$(BUILD_DIR)/cpp_domacro.o \
+	$(BUILD_DIR)/cpp_error.o \
+	$(BUILD_DIR)/cpp_expr.o \
+	$(BUILD_DIR)/cpp_idf.o \
+	$(BUILD_DIR)/cpp_init.o \
+	$(BUILD_DIR)/cpp_input.o \
+	$(BUILD_DIR)/cpp_main.o \
+	$(BUILD_DIR)/cpp_options.o \
+	$(BUILD_DIR)/cpp_preprocess.o \
+	$(BUILD_DIR)/cpp_replace.o \
+	$(BUILD_DIR)/cpp_skip.o \
+	$(BUILD_DIR)/cpp_tokenname.o \
+	$(BUILD_DIR)/cpp_gen_Lpars.o \
+	$(BUILD_DIR)/cpp_gen_expression.o \
+	$(BUILD_DIR)/cpp_gen_next.o \
+	$(BUILD_DIR)/cpp_gen_symbol2str.o \
+	$(BUILD_DIR)/cpp_gen_tabgen.o \
+	$(BUILD_DIR)/cpp_gen_tokenfile.o, \
+	$(CPP_OBJS))
+
+C1_OBJS = $(C1_SHARED_OBJS) \
+	$(BUILD_DIR)/c1_LLlex.o \
+	$(BUILD_DIR)/c1_LLmessage.o \
+	$(BUILD_DIR)/c1_arith.o \
+	$(BUILD_DIR)/c1_blocks.o \
+	$(BUILD_DIR)/c1_ch3.o \
+	$(BUILD_DIR)/c1_ch3bin.o \
+	$(BUILD_DIR)/c1_ch3mon.o \
+	$(BUILD_DIR)/c1_code.o \
+	$(BUILD_DIR)/c1_conversion.o \
+	$(BUILD_DIR)/c1_cstoper.o \
+	$(BUILD_DIR)/c1_dataflow.o \
+	$(BUILD_DIR)/c1_declarator.o \
+	$(BUILD_DIR)/c1_decspecs.o \
+	$(BUILD_DIR)/c1_domacro.o \
+	$(BUILD_DIR)/c1_dumpidf.o \
+	$(BUILD_DIR)/c1_error.o \
+	$(BUILD_DIR)/c1_eval.o \
+	$(BUILD_DIR)/c1_expr.o \
+	$(BUILD_DIR)/c1_field.o \
+	$(BUILD_DIR)/c1_fltcstoper.o \
+	$(BUILD_DIR)/c1_idf.o \
+	$(BUILD_DIR)/c1_input.o \
+	$(BUILD_DIR)/c1_l_comment.o \
+	$(BUILD_DIR)/c1_l_ev_ord.o \
+	$(BUILD_DIR)/c1_l_lint.o \
+	$(BUILD_DIR)/c1_l_misc.o \
+	$(BUILD_DIR)/c1_l_outdef.o \
+	$(BUILD_DIR)/c1_l_states.o \
+	$(BUILD_DIR)/c1_label.o \
+	$(BUILD_DIR)/c1_main.o \
+	$(BUILD_DIR)/c1_options.o \
+	$(BUILD_DIR)/c1_pragma.o \
+	$(BUILD_DIR)/c1_proto.o \
+	$(BUILD_DIR)/c1_skip.o \
+	$(BUILD_DIR)/c1_stab.o \
+	$(BUILD_DIR)/c1_stack.o \
+	$(BUILD_DIR)/c1_stb.o \
+	$(BUILD_DIR)/c1_struct.o \
+	$(BUILD_DIR)/c1_switch.o \
+	$(BUILD_DIR)/c1_tokenname.o \
+	$(BUILD_DIR)/c1_type.o \
+	$(BUILD_DIR)/c1_util.o \
+	$(BUILD_DIR)/c1_gen_Lpars.o \
+	$(BUILD_DIR)/c1_gen_declar.o \
+	$(BUILD_DIR)/c1_gen_expression.o \
+	$(BUILD_DIR)/c1_gen_ival.o \
+	$(BUILD_DIR)/c1_gen_next.o \
+	$(BUILD_DIR)/c1_gen_program.o \
+	$(BUILD_DIR)/c1_gen_statement.o \
+	$(BUILD_DIR)/c1_gen_symbol2str.o \
+	$(BUILD_DIR)/c1_gen_tabgen.o \
+	$(BUILD_DIR)/c1_gen_tokenfile.o
+
+OPT_INCLUDES = \
+	-I$(ROOT)/toolchain/ack/shared/generated/h \
+	-I$(ROOT)/toolchain/ack/shared/generated/em_data \
+	-I$(ROOT)/toolchain/ack/shared/includes/ack-h \
+	-I$(ROOT)/toolchain/ack/shared/includes/modules-h \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/system \
+	-I$(ROOT)/toolchain/ack/opt \
+	-I$(ROOT)/toolchain/ack/opt/generated
+
+OPT_OBJS = \
+	$(BUILD_DIR)/system_filesize.o \
+	$(BUILD_DIR)/system_maketempfile.o \
+	$(BUILD_DIR)/system_setbinarymode.o \
+	$(BUILD_DIR)/system_tmpdir.o \
+	$(BUILD_DIR)/data_astring.o \
+	$(BUILD_DIR)/em_data_flag.o \
+	$(BUILD_DIR)/em_data_mnem.o \
+	$(BUILD_DIR)/opt_alloc.o \
+	$(BUILD_DIR)/opt_backward.o \
+	$(BUILD_DIR)/opt_cleanup.o \
+	$(BUILD_DIR)/opt_flow.o \
+	$(BUILD_DIR)/opt_getline.o \
+	$(BUILD_DIR)/opt_lookup.o \
+	$(BUILD_DIR)/opt_main.o \
+	$(BUILD_DIR)/opt_peephole.o \
+	$(BUILD_DIR)/opt_process.o \
+	$(BUILD_DIR)/opt_putline.o \
+	$(BUILD_DIR)/opt_reg.o \
+	$(BUILD_DIR)/opt_special.o \
+	$(BUILD_DIR)/opt_tes.o \
+	$(BUILD_DIR)/opt_util.o \
+	$(BUILD_DIR)/opt_var.o \
+	$(BUILD_DIR)/opt_gen_pattern.o \
+	$(BUILD_DIR)/opt_gen_pop_push.o
+
+OPT2_OBJS = \
+	$(filter-out $(BUILD_DIR)/opt_reg.o,$(OPT_OBJS)) \
+	$(BUILD_DIR)/opt2_reg.o
+
+C2_CFLAGS = $(CPP_CFLAGS) -DWORD_SIZE=2 -DTBL68000=1 -DNOSTACKTEST
+
+C2_INCLUDES = \
+	-I$(ROOT)/toolchain/ack/shared/generated/h \
+	-I$(ROOT)/toolchain/ack/shared/generated/em_data \
+	-I$(ROOT)/toolchain/ack/shared/includes/ack-h \
+	-I$(ROOT)/toolchain/ack/shared/includes/modules-h \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/flt_arith \
+	-I$(ROOT)/toolchain/ack/c2 \
+	-I$(ROOT)/toolchain/ack/c2/generated
+
+C2_OBJS = \
+	$(BUILD_DIR)/em_data_flag.o \
+	$(BUILD_DIR)/em_data_mnem.o \
+	$(BUILD_DIR)/em_data_em_ptyp.o \
+	$(BUILD_DIR)/flt_arith_b64_add.o \
+	$(BUILD_DIR)/flt_arith_b64_sft.o \
+	$(BUILD_DIR)/flt_arith_flt_add.o \
+	$(BUILD_DIR)/flt_arith_flt_ar2flt.o \
+	$(BUILD_DIR)/flt_arith_flt_chk.o \
+	$(BUILD_DIR)/flt_arith_flt_cmp.o \
+	$(BUILD_DIR)/flt_arith_flt_div.o \
+	$(BUILD_DIR)/flt_arith_flt_flt2ar.o \
+	$(BUILD_DIR)/flt_arith_flt_modf.o \
+	$(BUILD_DIR)/flt_arith_flt_mul.o \
+	$(BUILD_DIR)/flt_arith_flt_nrm.o \
+	$(BUILD_DIR)/flt_arith_flt_str2fl.o \
+	$(BUILD_DIR)/flt_arith_flt_umin.o \
+	$(BUILD_DIR)/flt_arith_split.o \
+	$(BUILD_DIR)/c2_codegen.o \
+	$(BUILD_DIR)/c2_compute.o \
+	$(BUILD_DIR)/c2_equiv.o \
+	$(BUILD_DIR)/c2_fillem.o \
+	$(BUILD_DIR)/c2_gencode.o \
+	$(BUILD_DIR)/c2_glosym.o \
+	$(BUILD_DIR)/c2_label.o \
+	$(BUILD_DIR)/c2_main.o \
+	$(BUILD_DIR)/c2_move.o \
+	$(BUILD_DIR)/c2_nextem.o \
+	$(BUILD_DIR)/c2_reg.o \
+	$(BUILD_DIR)/c2_regvar.o \
+	$(BUILD_DIR)/c2_salloc.o \
+	$(BUILD_DIR)/c2_state.o \
+	$(BUILD_DIR)/c2_subr.o \
+	$(BUILD_DIR)/c2_var.o \
+	$(BUILD_DIR)/c2_gen_tables.o
+
+AS_INCLUDES = \
+	-I$(ROOT)/toolchain/ack/shared/generated/h \
+	-I$(ROOT)/toolchain/ack/shared/generated/em_data \
+	-I$(ROOT)/toolchain/ack/shared/includes/ack-h \
+	-I$(ROOT)/toolchain/ack/shared/includes/modules-h \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/flt_arith \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/object \
+	-I$(ROOT)/toolchain/ack/as \
+	-I$(ROOT)/toolchain/ack/as/generated
+
+AS_OBJS = \
+	$(BUILD_DIR)/flt_arith_b64_add.o \
+	$(BUILD_DIR)/flt_arith_b64_sft.o \
+	$(BUILD_DIR)/flt_arith_flt_add.o \
+	$(BUILD_DIR)/flt_arith_flt_ar2flt.o \
+	$(BUILD_DIR)/flt_arith_flt_chk.o \
+	$(BUILD_DIR)/flt_arith_flt_cmp.o \
+	$(BUILD_DIR)/flt_arith_flt_div.o \
+	$(BUILD_DIR)/flt_arith_flt_flt2ar.o \
+	$(BUILD_DIR)/flt_arith_flt_modf.o \
+	$(BUILD_DIR)/flt_arith_flt_mul.o \
+	$(BUILD_DIR)/flt_arith_flt_nrm.o \
+	$(BUILD_DIR)/flt_arith_flt_str2fl.o \
+	$(BUILD_DIR)/flt_arith_flt_umin.o \
+	$(BUILD_DIR)/flt_arith_split.o \
+	$(BUILD_DIR)/object_wr.o \
+	$(BUILD_DIR)/object_wr_arhdr.o \
+	$(BUILD_DIR)/object_wr_bytes.o \
+	$(BUILD_DIR)/object_wr_int2.o \
+	$(BUILD_DIR)/object_wr_int4.o \
+	$(BUILD_DIR)/object_wr_putc.o \
+	$(BUILD_DIR)/object_wr_ranlib.o \
+	$(BUILD_DIR)/as_comm3.o \
+	$(BUILD_DIR)/as_comm4.o \
+	$(BUILD_DIR)/as_comm5.o \
+	$(BUILD_DIR)/as_comm6.o \
+	$(BUILD_DIR)/as_comm7.o \
+	$(BUILD_DIR)/as_comm8.o \
+	$(BUILD_DIR)/as_gen_comm2.o
+
+CV_INCLUDES = \
+	-I$(ROOT)/toolchain/ack/shared/generated/h \
+	-I$(ROOT)/toolchain/ack/shared/generated/em_data \
+	-I$(ROOT)/toolchain/ack/shared/includes/ack-h \
+	-I$(ROOT)/toolchain/ack/shared/includes/modules-h \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/object \
+	-I$(ROOT)/toolchain/ack/cv
+
+CV_OBJS = \
+	$(BUILD_DIR)/object_rd.o \
+	$(BUILD_DIR)/object_rd_arhdr.o \
+	$(BUILD_DIR)/object_rd_bytes.o \
+	$(BUILD_DIR)/object_rd_int2.o \
+	$(BUILD_DIR)/object_rd_int4.o \
+	$(BUILD_DIR)/object_rd_ranlib.o \
+	$(BUILD_DIR)/object_rd_unsig2.o \
+	$(BUILD_DIR)/cv_main.o
+
+LN_INCLUDES = \
+	-I$(ROOT)/toolchain/ack/shared/generated/h \
+	-I$(ROOT)/toolchain/ack/shared/generated/em_data \
+	-I$(ROOT)/toolchain/ack/shared/includes/ack-h \
+	-I$(ROOT)/toolchain/ack/shared/includes/modules-h \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/object \
+	-I$(ROOT)/toolchain/ack/ln
+
+LN_OBJS = \
+	$(BUILD_DIR)/object_rd.o \
+	$(BUILD_DIR)/object_rd_arhdr.o \
+	$(BUILD_DIR)/object_rd_bytes.o \
+	$(BUILD_DIR)/object_rd_int2.o \
+	$(BUILD_DIR)/object_rd_int4.o \
+	$(BUILD_DIR)/object_rd_ranlib.o \
+	$(BUILD_DIR)/object_rd_unsig2.o \
+	$(BUILD_DIR)/object_wr.o \
+	$(BUILD_DIR)/object_wr_arhdr.o \
+	$(BUILD_DIR)/object_wr_bytes.o \
+	$(BUILD_DIR)/object_wr_int2.o \
+	$(BUILD_DIR)/object_wr_int4.o \
+	$(BUILD_DIR)/object_wr_putc.o \
+	$(BUILD_DIR)/object_wr_ranlib.o \
+	$(BUILD_DIR)/ln_archive.o \
+	$(BUILD_DIR)/ln_error.o \
+	$(BUILD_DIR)/ln_extract.o \
+	$(BUILD_DIR)/ln_finish.o \
+	$(BUILD_DIR)/ln_main.o \
+	$(BUILD_DIR)/ln_memory.o \
+	$(BUILD_DIR)/ln_output.o \
+	$(BUILD_DIR)/ln_read.o \
+	$(BUILD_DIR)/ln_relocate.o \
+	$(BUILD_DIR)/ln_save.o \
+	$(BUILD_DIR)/ln_scan.o \
+	$(BUILD_DIR)/ln_sym.o \
+	$(BUILD_DIR)/ln_write.o
+
+AAL_INCLUDES = \
+	-I$(ROOT)/toolchain/ack/shared/generated/h \
+	-I$(ROOT)/toolchain/ack/shared/generated/em_data \
+	-I$(ROOT)/toolchain/ack/shared/includes/ack-h \
+	-I$(ROOT)/toolchain/ack/shared/includes/modules-h \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/data \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/object \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/string \
+	-I$(ROOT)/toolchain/ack/shared/modules/src/system \
+	-I$(ROOT)/toolchain/ack/arch
+
+AAL_OBJS = \
+	$(BUILD_DIR)/system_basename.o \
+	$(BUILD_DIR)/system_maketempfile.o \
+	$(BUILD_DIR)/system_tmpdir.o \
+	$(BUILD_DIR)/data_astring.o \
+	$(BUILD_DIR)/object_rd.o \
+	$(BUILD_DIR)/object_rd_arhdr.o \
+	$(BUILD_DIR)/object_rd_bytes.o \
+	$(BUILD_DIR)/object_rd_int2.o \
+	$(BUILD_DIR)/object_rd_int4.o \
+	$(BUILD_DIR)/object_rd_ranlib.o \
+	$(BUILD_DIR)/object_rd_unsig2.o \
+	$(BUILD_DIR)/object_wr.o \
+	$(BUILD_DIR)/object_wr_arhdr.o \
+	$(BUILD_DIR)/object_wr_bytes.o \
+	$(BUILD_DIR)/object_wr_int2.o \
+	$(BUILD_DIR)/object_wr_int4.o \
+	$(BUILD_DIR)/object_wr_putc.o \
+	$(BUILD_DIR)/object_wr_ranlib.o \
+	$(BUILD_DIR)/aal_archiver.o
+
+all: $(CPP_BIN) $(C1_BIN) $(OPT_BIN) $(OPT2_BIN) $(C2_BIN) $(AS_BIN) $(CV_BIN) $(LN_BIN) $(AAL_BIN)
+
+extra-optimizers: $(OPT2_BIN)
+
+$(BIN_DIR):
+	@mkdir -p $(BIN_DIR)
+
+$(BUILD_DIR):
+	@mkdir -p $(BUILD_DIR)
+
+$(CPP_BIN): $(BUILD_DIR) $(BIN_DIR) $(CPP_OBJS)
+	@printf '%-6s %s\n' 'LD' '$(notdir $@)'
+	@$(HOST_CC) -o $(CPP_BIN) $(CPP_OBJS)
+
+$(C1_BIN): $(BUILD_DIR) $(BIN_DIR) $(C1_OBJS)
+	@printf '%-6s %s\n' 'LD' '$(notdir $@)'
+	@$(HOST_CC) -o $(C1_BIN) $(C1_OBJS)
+
+$(OPT_BIN): $(BUILD_DIR) $(BIN_DIR) $(OPT_OBJS)
+	@printf '%-6s %s\n' 'LD' '$(notdir $@)'
+	@$(HOST_CC) -o $(OPT_BIN) $(OPT_OBJS)
+
+$(OPT2_BIN): $(BUILD_DIR) $(BIN_DIR) $(OPT2_OBJS)
+	@printf '%-6s %s\n' 'LD' '$(notdir $@)'
+	@$(HOST_CC) -o $(OPT2_BIN) $(OPT2_OBJS)
+
+$(C2_BIN): $(BUILD_DIR) $(BIN_DIR) $(C2_OBJS)
+	@printf '%-6s %s\n' 'LD' '$(notdir $@)'
+	@$(HOST_CC) -o $(C2_BIN) $(C2_OBJS)
+
+$(AS_BIN): $(BUILD_DIR) $(BIN_DIR) $(AS_OBJS)
+	@printf '%-6s %s\n' 'LD' '$(notdir $@)'
+	@$(HOST_CC) -o $(AS_BIN) $(AS_OBJS)
+
+$(CV_BIN): $(BUILD_DIR) $(BIN_DIR) $(CV_OBJS)
+	@printf '%-6s %s\n' 'LD' '$(notdir $@)'
+	@$(HOST_CC) -o $(CV_BIN) $(CV_OBJS)
+
+$(LN_BIN): $(BUILD_DIR) $(BIN_DIR) $(LN_OBJS)
+	@printf '%-6s %s\n' 'LD' '$(notdir $@)'
+	@$(HOST_CC) -o $(LN_BIN) $(LN_OBJS)
+
+$(AAL_BIN): $(BUILD_DIR) $(BIN_DIR) $(AAL_OBJS)
+	@printf '%-6s %s\n' 'LD' '$(notdir $@)'
+	@$(HOST_CC) -o $(AAL_BIN) $(AAL_OBJS)
+
+$(BUILD_DIR)/system_basename.o: $(ROOT)/toolchain/ack/shared/modules/src/system/basename.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/system/basename.c -o $(BUILD_DIR)/system_basename.o
+$(BUILD_DIR)/system_filesize.o: $(ROOT)/toolchain/ack/shared/modules/src/system/filesize.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/system/filesize.c -o $(BUILD_DIR)/system_filesize.o
+$(BUILD_DIR)/system_maketempfile.o: $(ROOT)/toolchain/ack/shared/modules/src/system/maketempfile.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/system/maketempfile.c -o $(BUILD_DIR)/system_maketempfile.o
+$(BUILD_DIR)/system_setbinarymode.o: $(ROOT)/toolchain/ack/shared/modules/src/system/setbinarymode.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/system/setbinarymode.c -o $(BUILD_DIR)/system_setbinarymode.o
+$(BUILD_DIR)/system_strndup.o: $(ROOT)/toolchain/ack/shared/modules/src/system/strndup.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/system/strndup.c -o $(BUILD_DIR)/system_strndup.o
+$(BUILD_DIR)/system_syssystem.o: $(ROOT)/toolchain/ack/shared/modules/src/system/syssystem.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/system/syssystem.c -o $(BUILD_DIR)/system_syssystem.o
+$(BUILD_DIR)/system_tmpdir.o: $(ROOT)/toolchain/ack/shared/modules/src/system/tmpdir.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/system/tmpdir.c -o $(BUILD_DIR)/system_tmpdir.o
+
+$(BUILD_DIR)/alloc_st_alloc.o: $(ROOT)/toolchain/ack/shared/modules/src/alloc/st_alloc.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/alloc/st_alloc.c -o $(BUILD_DIR)/alloc_st_alloc.o
+$(BUILD_DIR)/alloc_std_alloc.o: $(ROOT)/toolchain/ack/shared/modules/src/alloc/std_alloc.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/alloc/std_alloc.c -o $(BUILD_DIR)/alloc_std_alloc.o
+
+$(BUILD_DIR)/data_array.o: $(ROOT)/toolchain/ack/shared/modules/src/data/array.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/data/array.c -o $(BUILD_DIR)/data_array.o
+$(BUILD_DIR)/data_astring.o: $(ROOT)/toolchain/ack/shared/modules/src/data/astring.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/data/astring.c -o $(BUILD_DIR)/data_astring.o
+$(BUILD_DIR)/data_imap.o: $(ROOT)/toolchain/ack/shared/modules/src/data/imap.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/data/imap.c -o $(BUILD_DIR)/data_imap.o
+$(BUILD_DIR)/data_pmap.o: $(ROOT)/toolchain/ack/shared/modules/src/data/pmap.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/data/pmap.c -o $(BUILD_DIR)/data_pmap.o
+$(BUILD_DIR)/data_smap.o: $(ROOT)/toolchain/ack/shared/modules/src/data/smap.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/data/smap.c -o $(BUILD_DIR)/data_smap.o
+$(BUILD_DIR)/data_stringlist.o: $(ROOT)/toolchain/ack/shared/modules/src/data/stringlist.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/data/stringlist.c -o $(BUILD_DIR)/data_stringlist.o
+$(BUILD_DIR)/data_warnings.o: $(ROOT)/toolchain/ack/shared/modules/src/data/warnings.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/data/warnings.c -o $(BUILD_DIR)/data_warnings.o
+
+$(BUILD_DIR)/string_bts2str.o: $(ROOT)/toolchain/ack/shared/modules/src/string/bts2str.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/string/bts2str.c -o $(BUILD_DIR)/string_bts2str.o
+$(BUILD_DIR)/string_long2str.o: $(ROOT)/toolchain/ack/shared/modules/src/string/long2str.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/string/long2str.c -o $(BUILD_DIR)/string_long2str.o
+
+$(BUILD_DIR)/input_AtEoIF.o: $(ROOT)/toolchain/ack/shared/modules/src/input/AtEoIF.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/input/AtEoIF.c -o $(BUILD_DIR)/input_AtEoIF.o
+$(BUILD_DIR)/input_AtEoIT.o: $(ROOT)/toolchain/ack/shared/modules/src/input/AtEoIT.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/input/AtEoIT.c -o $(BUILD_DIR)/input_AtEoIT.o
+
+$(BUILD_DIR)/read_em_EM_vars.o: $(ROOT)/toolchain/ack/shared/modules/src/read_em/EM_vars.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/read_em/EM_vars.c -o $(BUILD_DIR)/read_em_EM_vars.o
+
+$(BUILD_DIR)/em_code_C_out.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/C_out.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/C_out.c -o $(BUILD_DIR)/em_code_C_out.o
+$(BUILD_DIR)/em_code_bhcst.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/bhcst.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/bhcst.c -o $(BUILD_DIR)/em_code_bhcst.o
+$(BUILD_DIR)/em_code_bhdlb.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/bhdlb.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/bhdlb.c -o $(BUILD_DIR)/em_code_bhdlb.o
+$(BUILD_DIR)/em_code_bhdnam.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/bhdnam.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/bhdnam.c -o $(BUILD_DIR)/em_code_bhdnam.o
+$(BUILD_DIR)/em_code_bhfcon.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/bhfcon.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/bhfcon.c -o $(BUILD_DIR)/em_code_bhfcon.o
+$(BUILD_DIR)/em_code_bhicon.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/bhicon.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/bhicon.c -o $(BUILD_DIR)/em_code_bhicon.o
+$(BUILD_DIR)/em_code_bhilb.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/bhilb.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/bhilb.c -o $(BUILD_DIR)/em_code_bhilb.o
+$(BUILD_DIR)/em_code_bhpnam.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/bhpnam.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/bhpnam.c -o $(BUILD_DIR)/em_code_bhpnam.o
+$(BUILD_DIR)/em_code_bhucon.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/bhucon.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/bhucon.c -o $(BUILD_DIR)/em_code_bhucon.o
+$(BUILD_DIR)/em_code_crcst.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/crcst.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/crcst.c -o $(BUILD_DIR)/em_code_crcst.o
+$(BUILD_DIR)/em_code_crdlb.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/crdlb.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/crdlb.c -o $(BUILD_DIR)/em_code_crdlb.o
+$(BUILD_DIR)/em_code_crdnam.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/crdnam.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/crdnam.c -o $(BUILD_DIR)/em_code_crdnam.o
+$(BUILD_DIR)/em_code_crilb.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/crilb.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/crilb.c -o $(BUILD_DIR)/em_code_crilb.o
+$(BUILD_DIR)/em_code_crpnam.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/crpnam.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/crpnam.c -o $(BUILD_DIR)/em_code_crpnam.o
+$(BUILD_DIR)/em_code_crscon.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/crscon.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/crscon.c -o $(BUILD_DIR)/em_code_crscon.o
+$(BUILD_DIR)/em_code_crxcon.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/crxcon.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/crxcon.c -o $(BUILD_DIR)/em_code_crxcon.o
+$(BUILD_DIR)/em_code_cst.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/cst.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/cst.c -o $(BUILD_DIR)/em_code_cst.o
+$(BUILD_DIR)/em_code_dfdlb.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/dfdlb.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/dfdlb.c -o $(BUILD_DIR)/em_code_dfdlb.o
+$(BUILD_DIR)/em_code_dfdnam.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/dfdnam.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/dfdnam.c -o $(BUILD_DIR)/em_code_dfdnam.o
+$(BUILD_DIR)/em_code_dfilb.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/dfilb.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/dfilb.c -o $(BUILD_DIR)/em_code_dfilb.o
+$(BUILD_DIR)/em_code_dlb.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/dlb.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/dlb.c -o $(BUILD_DIR)/em_code_dlb.o
+$(BUILD_DIR)/em_code_dnam.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/dnam.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/dnam.c -o $(BUILD_DIR)/em_code_dnam.o
+$(BUILD_DIR)/em_code_em.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/em.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/em.c -o $(BUILD_DIR)/em_code_em.o
+$(BUILD_DIR)/em_code_end.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/end.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/end.c -o $(BUILD_DIR)/em_code_end.o
+$(BUILD_DIR)/em_code_endarg.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/endarg.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/endarg.c -o $(BUILD_DIR)/em_code_endarg.o
+$(BUILD_DIR)/em_code_exc.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/exc.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/exc.c -o $(BUILD_DIR)/em_code_exc.o
+$(BUILD_DIR)/em_code_failed.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/failed.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/failed.c -o $(BUILD_DIR)/em_code_failed.o
+$(BUILD_DIR)/em_code_fcon.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/fcon.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/fcon.c -o $(BUILD_DIR)/em_code_fcon.o
+$(BUILD_DIR)/em_code_getid.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/getid.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/getid.c -o $(BUILD_DIR)/em_code_getid.o
+$(BUILD_DIR)/em_code_icon.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/icon.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/icon.c -o $(BUILD_DIR)/em_code_icon.o
+$(BUILD_DIR)/em_code_ilb.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/ilb.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/ilb.c -o $(BUILD_DIR)/em_code_ilb.o
+$(BUILD_DIR)/em_code_insert.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/insert.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/insert.c -o $(BUILD_DIR)/em_code_insert.o
+$(BUILD_DIR)/em_code_internerr.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/internerr.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/internerr.c -o $(BUILD_DIR)/em_code_internerr.o
+$(BUILD_DIR)/em_code_msend.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/msend.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/msend.c -o $(BUILD_DIR)/em_code_msend.o
+$(BUILD_DIR)/em_code_msstart.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/msstart.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/msstart.c -o $(BUILD_DIR)/em_code_msstart.o
+$(BUILD_DIR)/em_code_op.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/op.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/op.c -o $(BUILD_DIR)/em_code_op.o
+$(BUILD_DIR)/em_code_opcst.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/opcst.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/opcst.c -o $(BUILD_DIR)/em_code_opcst.o
+$(BUILD_DIR)/em_code_opdlb.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/opdlb.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/opdlb.c -o $(BUILD_DIR)/em_code_opdlb.o
+$(BUILD_DIR)/em_code_opdnam.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/opdnam.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/opdnam.c -o $(BUILD_DIR)/em_code_opdnam.o
+$(BUILD_DIR)/em_code_opilb.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/opilb.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/opilb.c -o $(BUILD_DIR)/em_code_opilb.o
+$(BUILD_DIR)/em_code_opnarg.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/opnarg.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/opnarg.c -o $(BUILD_DIR)/em_code_opnarg.o
+$(BUILD_DIR)/em_code_oppnam.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/oppnam.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/oppnam.c -o $(BUILD_DIR)/em_code_oppnam.o
+$(BUILD_DIR)/em_code_pnam.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/pnam.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/pnam.c -o $(BUILD_DIR)/em_code_pnam.o
+$(BUILD_DIR)/em_code_pro.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/pro.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/pro.c -o $(BUILD_DIR)/em_code_pro.o
+$(BUILD_DIR)/em_code_pronarg.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/pronarg.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/pronarg.c -o $(BUILD_DIR)/em_code_pronarg.o
+$(BUILD_DIR)/em_code_psdlb.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/psdlb.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/psdlb.c -o $(BUILD_DIR)/em_code_psdlb.o
+$(BUILD_DIR)/em_code_psdnam.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/psdnam.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/psdnam.c -o $(BUILD_DIR)/em_code_psdnam.o
+$(BUILD_DIR)/em_code_pspnam.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/pspnam.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/pspnam.c -o $(BUILD_DIR)/em_code_pspnam.o
+$(BUILD_DIR)/em_code_scon.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/scon.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/scon.c -o $(BUILD_DIR)/em_code_scon.o
+$(BUILD_DIR)/em_code_ucon.o: $(ROOT)/toolchain/ack/shared/modules/src/em_code/ucon.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_code/ucon.c -o $(BUILD_DIR)/em_code_ucon.o
+
+$(BUILD_DIR)/em_data_em_ptyp.o: $(ROOT)/toolchain/ack/shared/modules/src/em_data/em_ptyp.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_data/em_ptyp.c -o $(BUILD_DIR)/em_data_em_ptyp.o
+$(BUILD_DIR)/em_data_flag.o: $(ROOT)/toolchain/ack/shared/generated/em_data/flag.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/generated/em_data/flag.c -o $(BUILD_DIR)/em_data_flag.o
+$(BUILD_DIR)/em_data_mnem.o: $(ROOT)/toolchain/ack/shared/generated/em_data/mnem.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/generated/em_data/mnem.c -o $(BUILD_DIR)/em_data_mnem.o
+$(BUILD_DIR)/em_data_pseu.o: $(ROOT)/toolchain/ack/shared/generated/em_data/pseu.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/generated/em_data/pseu.c -o $(BUILD_DIR)/em_data_pseu.o
+
+$(BUILD_DIR)/em_mes_C_ms_com.o: $(ROOT)/toolchain/ack/shared/modules/src/em_mes/C_ms_com.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_mes/C_ms_com.c -o $(BUILD_DIR)/em_mes_C_ms_com.o
+$(BUILD_DIR)/em_mes_C_ms_ego.o: $(ROOT)/toolchain/ack/shared/modules/src/em_mes/C_ms_ego.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_mes/C_ms_ego.c -o $(BUILD_DIR)/em_mes_C_ms_ego.o
+$(BUILD_DIR)/em_mes_C_ms_emx.o: $(ROOT)/toolchain/ack/shared/modules/src/em_mes/C_ms_emx.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_mes/C_ms_emx.c -o $(BUILD_DIR)/em_mes_C_ms_emx.o
+$(BUILD_DIR)/em_mes_C_ms_err.o: $(ROOT)/toolchain/ack/shared/modules/src/em_mes/C_ms_err.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_mes/C_ms_err.c -o $(BUILD_DIR)/em_mes_C_ms_err.o
+$(BUILD_DIR)/em_mes_C_ms_flt.o: $(ROOT)/toolchain/ack/shared/modules/src/em_mes/C_ms_flt.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_mes/C_ms_flt.c -o $(BUILD_DIR)/em_mes_C_ms_flt.o
+$(BUILD_DIR)/em_mes_C_ms_gto.o: $(ROOT)/toolchain/ack/shared/modules/src/em_mes/C_ms_gto.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_mes/C_ms_gto.c -o $(BUILD_DIR)/em_mes_C_ms_gto.o
+$(BUILD_DIR)/em_mes_C_ms_opt.o: $(ROOT)/toolchain/ack/shared/modules/src/em_mes/C_ms_opt.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_mes/C_ms_opt.c -o $(BUILD_DIR)/em_mes_C_ms_opt.o
+$(BUILD_DIR)/em_mes_C_ms_par.o: $(ROOT)/toolchain/ack/shared/modules/src/em_mes/C_ms_par.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_mes/C_ms_par.c -o $(BUILD_DIR)/em_mes_C_ms_par.o
+$(BUILD_DIR)/em_mes_C_ms_reg.o: $(ROOT)/toolchain/ack/shared/modules/src/em_mes/C_ms_reg.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_mes/C_ms_reg.c -o $(BUILD_DIR)/em_mes_C_ms_reg.o
+$(BUILD_DIR)/em_mes_C_ms_src.o: $(ROOT)/toolchain/ack/shared/modules/src/em_mes/C_ms_src.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_mes/C_ms_src.c -o $(BUILD_DIR)/em_mes_C_ms_src.o
+$(BUILD_DIR)/em_mes_C_ms_stb.o: $(ROOT)/toolchain/ack/shared/modules/src/em_mes/C_ms_stb.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_mes/C_ms_stb.c -o $(BUILD_DIR)/em_mes_C_ms_stb.o
+$(BUILD_DIR)/em_mes_C_ms_std.o: $(ROOT)/toolchain/ack/shared/modules/src/em_mes/C_ms_std.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/em_mes/C_ms_std.c -o $(BUILD_DIR)/em_mes_C_ms_std.o
+
+$(BUILD_DIR)/flt_arith_b64_add.o: $(ROOT)/toolchain/ack/shared/modules/src/flt_arith/b64_add.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/flt_arith/b64_add.c -o $(BUILD_DIR)/flt_arith_b64_add.o
+$(BUILD_DIR)/flt_arith_b64_sft.o: $(ROOT)/toolchain/ack/shared/modules/src/flt_arith/b64_sft.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/flt_arith/b64_sft.c -o $(BUILD_DIR)/flt_arith_b64_sft.o
+$(BUILD_DIR)/flt_arith_flt_add.o: $(ROOT)/toolchain/ack/shared/modules/src/flt_arith/flt_add.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/flt_arith/flt_add.c -o $(BUILD_DIR)/flt_arith_flt_add.o
+$(BUILD_DIR)/flt_arith_flt_ar2flt.o: $(ROOT)/toolchain/ack/shared/modules/src/flt_arith/flt_ar2flt.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/flt_arith/flt_ar2flt.c -o $(BUILD_DIR)/flt_arith_flt_ar2flt.o
+$(BUILD_DIR)/flt_arith_flt_chk.o: $(ROOT)/toolchain/ack/shared/modules/src/flt_arith/flt_chk.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/flt_arith/flt_chk.c -o $(BUILD_DIR)/flt_arith_flt_chk.o
+$(BUILD_DIR)/flt_arith_flt_cmp.o: $(ROOT)/toolchain/ack/shared/modules/src/flt_arith/flt_cmp.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/flt_arith/flt_cmp.c -o $(BUILD_DIR)/flt_arith_flt_cmp.o
+$(BUILD_DIR)/flt_arith_flt_div.o: $(ROOT)/toolchain/ack/shared/modules/src/flt_arith/flt_div.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/flt_arith/flt_div.c -o $(BUILD_DIR)/flt_arith_flt_div.o
+$(BUILD_DIR)/flt_arith_flt_flt2ar.o: $(ROOT)/toolchain/ack/shared/modules/src/flt_arith/flt_flt2ar.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/flt_arith/flt_flt2ar.c -o $(BUILD_DIR)/flt_arith_flt_flt2ar.o
+$(BUILD_DIR)/flt_arith_flt_modf.o: $(ROOT)/toolchain/ack/shared/modules/src/flt_arith/flt_modf.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/flt_arith/flt_modf.c -o $(BUILD_DIR)/flt_arith_flt_modf.o
+$(BUILD_DIR)/flt_arith_flt_mul.o: $(ROOT)/toolchain/ack/shared/modules/src/flt_arith/flt_mul.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/flt_arith/flt_mul.c -o $(BUILD_DIR)/flt_arith_flt_mul.o
+$(BUILD_DIR)/flt_arith_flt_nrm.o: $(ROOT)/toolchain/ack/shared/modules/src/flt_arith/flt_nrm.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/flt_arith/flt_nrm.c -o $(BUILD_DIR)/flt_arith_flt_nrm.o
+$(BUILD_DIR)/flt_arith_flt_str2fl.o: $(ROOT)/toolchain/ack/shared/modules/src/flt_arith/flt_str2fl.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/flt_arith/flt_str2fl.c -o $(BUILD_DIR)/flt_arith_flt_str2fl.o
+$(BUILD_DIR)/flt_arith_flt_umin.o: $(ROOT)/toolchain/ack/shared/modules/src/flt_arith/flt_umin.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/flt_arith/flt_umin.c -o $(BUILD_DIR)/flt_arith_flt_umin.o
+$(BUILD_DIR)/flt_arith_split.o: $(ROOT)/toolchain/ack/shared/modules/src/flt_arith/split.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/flt_arith/split.c -o $(BUILD_DIR)/flt_arith_split.o
+
+$(BUILD_DIR)/cpp_LLlex.o: $(ROOT)/toolchain/ack/cpp/LLlex.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/cpp/LLlex.c -o $(BUILD_DIR)/cpp_LLlex.o
+$(BUILD_DIR)/cpp_LLmessage.o: $(ROOT)/toolchain/ack/cpp/LLmessage.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/cpp/LLmessage.c -o $(BUILD_DIR)/cpp_LLmessage.o
+$(BUILD_DIR)/cpp_ch3bin.o: $(ROOT)/toolchain/ack/cpp/ch3bin.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/cpp/ch3bin.c -o $(BUILD_DIR)/cpp_ch3bin.o
+$(BUILD_DIR)/cpp_ch3mon.o: $(ROOT)/toolchain/ack/cpp/ch3mon.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/cpp/ch3mon.c -o $(BUILD_DIR)/cpp_ch3mon.o
+$(BUILD_DIR)/cpp_domacro.o: $(ROOT)/toolchain/ack/cpp/domacro.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/cpp/domacro.c -o $(BUILD_DIR)/cpp_domacro.o
+$(BUILD_DIR)/cpp_error.o: $(ROOT)/toolchain/ack/cpp/error.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/cpp/error.c -o $(BUILD_DIR)/cpp_error.o
+$(BUILD_DIR)/cpp_expr.o: $(ROOT)/toolchain/ack/cpp/expr.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/cpp/expr.c -o $(BUILD_DIR)/cpp_expr.o
+$(BUILD_DIR)/cpp_idf.o: $(ROOT)/toolchain/ack/cpp/idf.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/cpp/idf.c -o $(BUILD_DIR)/cpp_idf.o
+$(BUILD_DIR)/cpp_init.o: $(ROOT)/toolchain/ack/cpp/init.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/cpp/init.c -o $(BUILD_DIR)/cpp_init.o
+$(BUILD_DIR)/cpp_input.o: $(ROOT)/toolchain/ack/cpp/input.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/cpp/input.c -o $(BUILD_DIR)/cpp_input.o
+$(BUILD_DIR)/cpp_main.o: $(ROOT)/toolchain/ack/cpp/main.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/cpp/main.c -o $(BUILD_DIR)/cpp_main.o
+$(BUILD_DIR)/cpp_options.o: $(ROOT)/toolchain/ack/cpp/options.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/cpp/options.c -o $(BUILD_DIR)/cpp_options.o
+$(BUILD_DIR)/cpp_preprocess.o: $(ROOT)/toolchain/ack/cpp/preprocess.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/cpp/preprocess.c -o $(BUILD_DIR)/cpp_preprocess.o
+$(BUILD_DIR)/cpp_replace.o: $(ROOT)/toolchain/ack/cpp/replace.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/cpp/replace.c -o $(BUILD_DIR)/cpp_replace.o
+$(BUILD_DIR)/cpp_skip.o: $(ROOT)/toolchain/ack/cpp/skip.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/cpp/skip.c -o $(BUILD_DIR)/cpp_skip.o
+$(BUILD_DIR)/cpp_tokenname.o: $(ROOT)/toolchain/ack/cpp/tokenname.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/cpp/tokenname.c -o $(BUILD_DIR)/cpp_tokenname.o
+
+$(BUILD_DIR)/cpp_gen_Lpars.o: $(ROOT)/toolchain/ack/cpp/generated/Lpars.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/cpp/generated/Lpars.c -o $(BUILD_DIR)/cpp_gen_Lpars.o
+$(BUILD_DIR)/cpp_gen_expression.o: $(ROOT)/toolchain/ack/cpp/generated/expression.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/cpp/generated/expression.c -o $(BUILD_DIR)/cpp_gen_expression.o
+$(BUILD_DIR)/cpp_gen_next.o: $(ROOT)/toolchain/ack/cpp/generated/next.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/cpp/generated/next.c -o $(BUILD_DIR)/cpp_gen_next.o
+$(BUILD_DIR)/cpp_gen_symbol2str.o: $(ROOT)/toolchain/ack/cpp/generated/symbol2str.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/cpp/generated/symbol2str.c -o $(BUILD_DIR)/cpp_gen_symbol2str.o
+$(BUILD_DIR)/cpp_gen_tabgen.o: $(ROOT)/toolchain/ack/cpp/generated/tabgen.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/cpp/generated/tabgen.c -o $(BUILD_DIR)/cpp_gen_tabgen.o
+$(BUILD_DIR)/cpp_gen_tokenfile.o: $(ROOT)/toolchain/ack/cpp/generated/tokenfile.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CPP_INCLUDES) -c $(ROOT)/toolchain/ack/cpp/generated/tokenfile.c -o $(BUILD_DIR)/cpp_gen_tokenfile.o
+
+$(BUILD_DIR)/c1_LLlex.o: $(ROOT)/toolchain/ack/c1/LLlex.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/LLlex.c -o $(BUILD_DIR)/c1_LLlex.o
+$(BUILD_DIR)/c1_LLmessage.o: $(ROOT)/toolchain/ack/c1/LLmessage.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/LLmessage.c -o $(BUILD_DIR)/c1_LLmessage.o
+$(BUILD_DIR)/c1_arith.o: $(ROOT)/toolchain/ack/c1/arith.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/arith.c -o $(BUILD_DIR)/c1_arith.o
+$(BUILD_DIR)/c1_blocks.o: $(ROOT)/toolchain/ack/c1/blocks.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/blocks.c -o $(BUILD_DIR)/c1_blocks.o
+$(BUILD_DIR)/c1_ch3.o: $(ROOT)/toolchain/ack/c1/ch3.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/ch3.c -o $(BUILD_DIR)/c1_ch3.o
+$(BUILD_DIR)/c1_ch3bin.o: $(ROOT)/toolchain/ack/c1/ch3bin.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/ch3bin.c -o $(BUILD_DIR)/c1_ch3bin.o
+$(BUILD_DIR)/c1_ch3mon.o: $(ROOT)/toolchain/ack/c1/ch3mon.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/ch3mon.c -o $(BUILD_DIR)/c1_ch3mon.o
+$(BUILD_DIR)/c1_code.o: $(ROOT)/toolchain/ack/c1/code.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/code.c -o $(BUILD_DIR)/c1_code.o
+$(BUILD_DIR)/c1_conversion.o: $(ROOT)/toolchain/ack/c1/conversion.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/conversion.c -o $(BUILD_DIR)/c1_conversion.o
+$(BUILD_DIR)/c1_cstoper.o: $(ROOT)/toolchain/ack/c1/cstoper.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/cstoper.c -o $(BUILD_DIR)/c1_cstoper.o
+$(BUILD_DIR)/c1_dataflow.o: $(ROOT)/toolchain/ack/c1/dataflow.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/dataflow.c -o $(BUILD_DIR)/c1_dataflow.o
+$(BUILD_DIR)/c1_declarator.o: $(ROOT)/toolchain/ack/c1/declarator.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/declarator.c -o $(BUILD_DIR)/c1_declarator.o
+$(BUILD_DIR)/c1_decspecs.o: $(ROOT)/toolchain/ack/c1/decspecs.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/decspecs.c -o $(BUILD_DIR)/c1_decspecs.o
+$(BUILD_DIR)/c1_domacro.o: $(ROOT)/toolchain/ack/c1/domacro.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/domacro.c -o $(BUILD_DIR)/c1_domacro.o
+$(BUILD_DIR)/c1_dumpidf.o: $(ROOT)/toolchain/ack/c1/dumpidf.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/dumpidf.c -o $(BUILD_DIR)/c1_dumpidf.o
+$(BUILD_DIR)/c1_error.o: $(ROOT)/toolchain/ack/c1/error.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/error.c -o $(BUILD_DIR)/c1_error.o
+$(BUILD_DIR)/c1_eval.o: $(ROOT)/toolchain/ack/c1/eval.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/eval.c -o $(BUILD_DIR)/c1_eval.o
+$(BUILD_DIR)/c1_expr.o: $(ROOT)/toolchain/ack/c1/expr.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/expr.c -o $(BUILD_DIR)/c1_expr.o
+$(BUILD_DIR)/c1_field.o: $(ROOT)/toolchain/ack/c1/field.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/field.c -o $(BUILD_DIR)/c1_field.o
+$(BUILD_DIR)/c1_fltcstoper.o: $(ROOT)/toolchain/ack/c1/fltcstoper.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/fltcstoper.c -o $(BUILD_DIR)/c1_fltcstoper.o
+$(BUILD_DIR)/c1_idf.o: $(ROOT)/toolchain/ack/c1/idf.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/idf.c -o $(BUILD_DIR)/c1_idf.o
+$(BUILD_DIR)/c1_input.o: $(ROOT)/toolchain/ack/c1/input.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/input.c -o $(BUILD_DIR)/c1_input.o
+$(BUILD_DIR)/c1_l_comment.o: $(ROOT)/toolchain/ack/c1/l_comment.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/l_comment.c -o $(BUILD_DIR)/c1_l_comment.o
+$(BUILD_DIR)/c1_l_ev_ord.o: $(ROOT)/toolchain/ack/c1/l_ev_ord.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/l_ev_ord.c -o $(BUILD_DIR)/c1_l_ev_ord.o
+$(BUILD_DIR)/c1_l_lint.o: $(ROOT)/toolchain/ack/c1/l_lint.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/l_lint.c -o $(BUILD_DIR)/c1_l_lint.o
+$(BUILD_DIR)/c1_l_misc.o: $(ROOT)/toolchain/ack/c1/l_misc.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/l_misc.c -o $(BUILD_DIR)/c1_l_misc.o
+$(BUILD_DIR)/c1_l_outdef.o: $(ROOT)/toolchain/ack/c1/l_outdef.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/l_outdef.c -o $(BUILD_DIR)/c1_l_outdef.o
+$(BUILD_DIR)/c1_l_states.o: $(ROOT)/toolchain/ack/c1/l_states.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/l_states.c -o $(BUILD_DIR)/c1_l_states.o
+$(BUILD_DIR)/c1_label.o: $(ROOT)/toolchain/ack/c1/label.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/label.c -o $(BUILD_DIR)/c1_label.o
+$(BUILD_DIR)/c1_main.o: $(ROOT)/toolchain/ack/c1/main.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/main.c -o $(BUILD_DIR)/c1_main.o
+$(BUILD_DIR)/c1_options.o: $(ROOT)/toolchain/ack/c1/options.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/options.c -o $(BUILD_DIR)/c1_options.o
+$(BUILD_DIR)/c1_pragma.o: $(ROOT)/toolchain/ack/c1/pragma.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/pragma.c -o $(BUILD_DIR)/c1_pragma.o
+$(BUILD_DIR)/c1_proto.o: $(ROOT)/toolchain/ack/c1/proto.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/proto.c -o $(BUILD_DIR)/c1_proto.o
+$(BUILD_DIR)/c1_skip.o: $(ROOT)/toolchain/ack/c1/skip.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/skip.c -o $(BUILD_DIR)/c1_skip.o
+$(BUILD_DIR)/c1_stab.o: $(ROOT)/toolchain/ack/c1/stab.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/stab.c -o $(BUILD_DIR)/c1_stab.o
+$(BUILD_DIR)/c1_stack.o: $(ROOT)/toolchain/ack/c1/stack.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/stack.c -o $(BUILD_DIR)/c1_stack.o
+$(BUILD_DIR)/c1_stb.o: $(ROOT)/toolchain/ack/c1/stb.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/stb.c -o $(BUILD_DIR)/c1_stb.o
+$(BUILD_DIR)/c1_struct.o: $(ROOT)/toolchain/ack/c1/struct.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/struct.c -o $(BUILD_DIR)/c1_struct.o
+$(BUILD_DIR)/c1_switch.o: $(ROOT)/toolchain/ack/c1/switch.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/switch.c -o $(BUILD_DIR)/c1_switch.o
+$(BUILD_DIR)/c1_tokenname.o: $(ROOT)/toolchain/ack/c1/tokenname.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/tokenname.c -o $(BUILD_DIR)/c1_tokenname.o
+$(BUILD_DIR)/c1_type.o: $(ROOT)/toolchain/ack/c1/type.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/type.c -o $(BUILD_DIR)/c1_type.o
+$(BUILD_DIR)/c1_util.o: $(ROOT)/toolchain/ack/c1/util.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/util.c -o $(BUILD_DIR)/c1_util.o
+
+$(BUILD_DIR)/c1_gen_Lpars.o: $(ROOT)/toolchain/ack/c1/generated/Lpars.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/generated/Lpars.c -o $(BUILD_DIR)/c1_gen_Lpars.o
+$(BUILD_DIR)/c1_gen_declar.o: $(ROOT)/toolchain/ack/c1/generated/declar.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/generated/declar.c -o $(BUILD_DIR)/c1_gen_declar.o
+$(BUILD_DIR)/c1_gen_expression.o: $(ROOT)/toolchain/ack/c1/generated/expression.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/generated/expression.c -o $(BUILD_DIR)/c1_gen_expression.o
+$(BUILD_DIR)/c1_gen_ival.o: $(ROOT)/toolchain/ack/c1/generated/ival.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/generated/ival.c -o $(BUILD_DIR)/c1_gen_ival.o
+$(BUILD_DIR)/c1_gen_next.o: $(ROOT)/toolchain/ack/c1/generated/next.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/generated/next.c -o $(BUILD_DIR)/c1_gen_next.o
+$(BUILD_DIR)/c1_gen_program.o: $(ROOT)/toolchain/ack/c1/generated/program.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/generated/program.c -o $(BUILD_DIR)/c1_gen_program.o
+$(BUILD_DIR)/c1_gen_statement.o: $(ROOT)/toolchain/ack/c1/generated/statement.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/generated/statement.c -o $(BUILD_DIR)/c1_gen_statement.o
+$(BUILD_DIR)/c1_gen_symbol2str.o: $(ROOT)/toolchain/ack/c1/generated/symbol2str.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/generated/symbol2str.c -o $(BUILD_DIR)/c1_gen_symbol2str.o
+$(BUILD_DIR)/c1_gen_tabgen.o: $(ROOT)/toolchain/ack/c1/generated/tabgen.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/generated/tabgen.c -o $(BUILD_DIR)/c1_gen_tabgen.o
+$(BUILD_DIR)/c1_gen_tokenfile.o: $(ROOT)/toolchain/ack/c1/generated/tokenfile.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(C1_INCLUDES) -c $(ROOT)/toolchain/ack/c1/generated/tokenfile.c -o $(BUILD_DIR)/c1_gen_tokenfile.o
+
+$(BUILD_DIR)/opt_alloc.o: $(ROOT)/toolchain/ack/opt/alloc.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(OPT_INCLUDES) -c $(ROOT)/toolchain/ack/opt/alloc.c -o $(BUILD_DIR)/opt_alloc.o
+$(BUILD_DIR)/opt_backward.o: $(ROOT)/toolchain/ack/opt/backward.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(OPT_INCLUDES) -c $(ROOT)/toolchain/ack/opt/backward.c -o $(BUILD_DIR)/opt_backward.o
+$(BUILD_DIR)/opt_cleanup.o: $(ROOT)/toolchain/ack/opt/cleanup.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(OPT_INCLUDES) -c $(ROOT)/toolchain/ack/opt/cleanup.c -o $(BUILD_DIR)/opt_cleanup.o
+$(BUILD_DIR)/opt_flow.o: $(ROOT)/toolchain/ack/opt/flow.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(OPT_INCLUDES) -c $(ROOT)/toolchain/ack/opt/flow.c -o $(BUILD_DIR)/opt_flow.o
+$(BUILD_DIR)/opt_getline.o: $(ROOT)/toolchain/ack/opt/getline.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(OPT_INCLUDES) -c $(ROOT)/toolchain/ack/opt/getline.c -o $(BUILD_DIR)/opt_getline.o
+$(BUILD_DIR)/opt_lookup.o: $(ROOT)/toolchain/ack/opt/lookup.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(OPT_INCLUDES) -c $(ROOT)/toolchain/ack/opt/lookup.c -o $(BUILD_DIR)/opt_lookup.o
+$(BUILD_DIR)/opt_main.o: $(ROOT)/toolchain/ack/opt/main.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(OPT_INCLUDES) -c $(ROOT)/toolchain/ack/opt/main.c -o $(BUILD_DIR)/opt_main.o
+$(BUILD_DIR)/opt_peephole.o: $(ROOT)/toolchain/ack/opt/peephole.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(OPT_INCLUDES) -c $(ROOT)/toolchain/ack/opt/peephole.c -o $(BUILD_DIR)/opt_peephole.o
+$(BUILD_DIR)/opt_process.o: $(ROOT)/toolchain/ack/opt/process.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(OPT_INCLUDES) -c $(ROOT)/toolchain/ack/opt/process.c -o $(BUILD_DIR)/opt_process.o
+$(BUILD_DIR)/opt_putline.o: $(ROOT)/toolchain/ack/opt/putline.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(OPT_INCLUDES) -c $(ROOT)/toolchain/ack/opt/putline.c -o $(BUILD_DIR)/opt_putline.o
+$(BUILD_DIR)/opt_reg.o: $(ROOT)/toolchain/ack/opt/reg.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(OPT_INCLUDES) -c $(ROOT)/toolchain/ack/opt/reg.c -o $(BUILD_DIR)/opt_reg.o
+$(BUILD_DIR)/opt2_reg.o: $(ROOT)/toolchain/ack/opt/reg.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) -DGLOBAL_OPT $(OPT_INCLUDES) -c $(ROOT)/toolchain/ack/opt/reg.c -o $(BUILD_DIR)/opt2_reg.o
+$(BUILD_DIR)/opt_special.o: $(ROOT)/toolchain/ack/opt/special.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(OPT_INCLUDES) -c $(ROOT)/toolchain/ack/opt/special.c -o $(BUILD_DIR)/opt_special.o
+$(BUILD_DIR)/opt_tes.o: $(ROOT)/toolchain/ack/opt/tes.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(OPT_INCLUDES) -c $(ROOT)/toolchain/ack/opt/tes.c -o $(BUILD_DIR)/opt_tes.o
+$(BUILD_DIR)/opt_util.o: $(ROOT)/toolchain/ack/opt/util.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(OPT_INCLUDES) -c $(ROOT)/toolchain/ack/opt/util.c -o $(BUILD_DIR)/opt_util.o
+$(BUILD_DIR)/opt_var.o: $(ROOT)/toolchain/ack/opt/var.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(OPT_INCLUDES) -c $(ROOT)/toolchain/ack/opt/var.c -o $(BUILD_DIR)/opt_var.o
+$(BUILD_DIR)/opt_gen_pattern.o: $(ROOT)/toolchain/ack/opt/generated/pattern.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(OPT_INCLUDES) -c $(ROOT)/toolchain/ack/opt/generated/pattern.c -o $(BUILD_DIR)/opt_gen_pattern.o
+$(BUILD_DIR)/opt_gen_pop_push.o: $(ROOT)/toolchain/ack/opt/generated/pop_push.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(OPT_INCLUDES) -c $(ROOT)/toolchain/ack/opt/generated/pop_push.c -o $(BUILD_DIR)/opt_gen_pop_push.o
+
+$(BUILD_DIR)/c2_codegen.o: $(ROOT)/toolchain/ack/c2/codegen.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(C2_CFLAGS) $(C2_INCLUDES) -c $(ROOT)/toolchain/ack/c2/codegen.c -o $(BUILD_DIR)/c2_codegen.o
+$(BUILD_DIR)/c2_compute.o: $(ROOT)/toolchain/ack/c2/compute.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(C2_CFLAGS) $(C2_INCLUDES) -c $(ROOT)/toolchain/ack/c2/compute.c -o $(BUILD_DIR)/c2_compute.o
+$(BUILD_DIR)/c2_equiv.o: $(ROOT)/toolchain/ack/c2/equiv.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(C2_CFLAGS) $(C2_INCLUDES) -c $(ROOT)/toolchain/ack/c2/equiv.c -o $(BUILD_DIR)/c2_equiv.o
+$(BUILD_DIR)/c2_fillem.o: $(ROOT)/toolchain/ack/c2/fillem.c $(ROOT)/toolchain/ack/c2/mach.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(C2_CFLAGS) $(C2_INCLUDES) -c $(ROOT)/toolchain/ack/c2/fillem.c -o $(BUILD_DIR)/c2_fillem.o
+$(BUILD_DIR)/c2_gencode.o: $(ROOT)/toolchain/ack/c2/gencode.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(C2_CFLAGS) $(C2_INCLUDES) -c $(ROOT)/toolchain/ack/c2/gencode.c -o $(BUILD_DIR)/c2_gencode.o
+$(BUILD_DIR)/c2_glosym.o: $(ROOT)/toolchain/ack/c2/glosym.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(C2_CFLAGS) $(C2_INCLUDES) -c $(ROOT)/toolchain/ack/c2/glosym.c -o $(BUILD_DIR)/c2_glosym.o
+$(BUILD_DIR)/c2_label.o: $(ROOT)/toolchain/ack/c2/label.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(C2_CFLAGS) $(C2_INCLUDES) -c $(ROOT)/toolchain/ack/c2/label.c -o $(BUILD_DIR)/c2_label.o
+$(BUILD_DIR)/c2_main.o: $(ROOT)/toolchain/ack/c2/main.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(C2_CFLAGS) $(C2_INCLUDES) -c $(ROOT)/toolchain/ack/c2/main.c -o $(BUILD_DIR)/c2_main.o
+$(BUILD_DIR)/c2_move.o: $(ROOT)/toolchain/ack/c2/move.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(C2_CFLAGS) $(C2_INCLUDES) -c $(ROOT)/toolchain/ack/c2/move.c -o $(BUILD_DIR)/c2_move.o
+$(BUILD_DIR)/c2_nextem.o: $(ROOT)/toolchain/ack/c2/nextem.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(C2_CFLAGS) $(C2_INCLUDES) -c $(ROOT)/toolchain/ack/c2/nextem.c -o $(BUILD_DIR)/c2_nextem.o
+$(BUILD_DIR)/c2_reg.o: $(ROOT)/toolchain/ack/c2/reg.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(C2_CFLAGS) $(C2_INCLUDES) -c $(ROOT)/toolchain/ack/c2/reg.c -o $(BUILD_DIR)/c2_reg.o
+$(BUILD_DIR)/c2_regvar.o: $(ROOT)/toolchain/ack/c2/regvar.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(C2_CFLAGS) $(C2_INCLUDES) -c $(ROOT)/toolchain/ack/c2/regvar.c -o $(BUILD_DIR)/c2_regvar.o
+$(BUILD_DIR)/c2_salloc.o: $(ROOT)/toolchain/ack/c2/salloc.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(C2_CFLAGS) $(C2_INCLUDES) -c $(ROOT)/toolchain/ack/c2/salloc.c -o $(BUILD_DIR)/c2_salloc.o
+$(BUILD_DIR)/c2_state.o: $(ROOT)/toolchain/ack/c2/state.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(C2_CFLAGS) $(C2_INCLUDES) -c $(ROOT)/toolchain/ack/c2/state.c -o $(BUILD_DIR)/c2_state.o
+$(BUILD_DIR)/c2_subr.o: $(ROOT)/toolchain/ack/c2/subr.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(C2_CFLAGS) $(C2_INCLUDES) -c $(ROOT)/toolchain/ack/c2/subr.c -o $(BUILD_DIR)/c2_subr.o
+$(BUILD_DIR)/c2_var.o: $(ROOT)/toolchain/ack/c2/var.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(C2_CFLAGS) $(C2_INCLUDES) -c $(ROOT)/toolchain/ack/c2/var.c -o $(BUILD_DIR)/c2_var.o
+$(BUILD_DIR)/c2_gen_tables.o: $(ROOT)/toolchain/ack/c2/generated/tables.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(C2_CFLAGS) $(C2_INCLUDES) -c $(ROOT)/toolchain/ack/c2/generated/tables.c -o $(BUILD_DIR)/c2_gen_tables.o
+
+$(BUILD_DIR)/object_wr.o: $(ROOT)/toolchain/ack/shared/modules/src/object/wr.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(AS_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/object/wr.c -o $(BUILD_DIR)/object_wr.o
+$(BUILD_DIR)/object_wr_arhdr.o: $(ROOT)/toolchain/ack/shared/modules/src/object/wr_arhdr.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(AS_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/object/wr_arhdr.c -o $(BUILD_DIR)/object_wr_arhdr.o
+$(BUILD_DIR)/object_wr_bytes.o: $(ROOT)/toolchain/ack/shared/modules/src/object/wr_bytes.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(AS_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/object/wr_bytes.c -o $(BUILD_DIR)/object_wr_bytes.o
+$(BUILD_DIR)/object_wr_int2.o: $(ROOT)/toolchain/ack/shared/modules/src/object/wr_int2.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(AS_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/object/wr_int2.c -o $(BUILD_DIR)/object_wr_int2.o
+$(BUILD_DIR)/object_wr_int4.o: $(ROOT)/toolchain/ack/shared/modules/src/object/wr_int4.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(AS_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/object/wr_int4.c -o $(BUILD_DIR)/object_wr_int4.o
+$(BUILD_DIR)/object_wr_putc.o: $(ROOT)/toolchain/ack/shared/modules/src/object/wr_putc.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(AS_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/object/wr_putc.c -o $(BUILD_DIR)/object_wr_putc.o
+$(BUILD_DIR)/object_wr_ranlib.o: $(ROOT)/toolchain/ack/shared/modules/src/object/wr_ranlib.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(AS_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/object/wr_ranlib.c -o $(BUILD_DIR)/object_wr_ranlib.o
+
+$(BUILD_DIR)/as_comm3.o: $(ROOT)/toolchain/ack/as/comm3.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(AS_INCLUDES) -c $(ROOT)/toolchain/ack/as/comm3.c -o $(BUILD_DIR)/as_comm3.o
+$(BUILD_DIR)/as_comm4.o: $(ROOT)/toolchain/ack/as/comm4.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(AS_INCLUDES) -c $(ROOT)/toolchain/ack/as/comm4.c -o $(BUILD_DIR)/as_comm4.o
+$(BUILD_DIR)/as_comm5.o: $(ROOT)/toolchain/ack/as/comm5.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(AS_INCLUDES) -c $(ROOT)/toolchain/ack/as/comm5.c -o $(BUILD_DIR)/as_comm5.o
+$(BUILD_DIR)/as_comm6.o: $(ROOT)/toolchain/ack/as/comm6.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(AS_INCLUDES) -c $(ROOT)/toolchain/ack/as/comm6.c -o $(BUILD_DIR)/as_comm6.o
+$(BUILD_DIR)/as_comm7.o: $(ROOT)/toolchain/ack/as/comm7.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(AS_INCLUDES) -c $(ROOT)/toolchain/ack/as/comm7.c -o $(BUILD_DIR)/as_comm7.o
+$(BUILD_DIR)/as_comm8.o: $(ROOT)/toolchain/ack/as/comm8.c $(ROOT)/toolchain/ack/as/mach5.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(AS_INCLUDES) -c $(ROOT)/toolchain/ack/as/comm8.c -o $(BUILD_DIR)/as_comm8.o
+$(BUILD_DIR)/as_gen_comm2.o: $(ROOT)/toolchain/ack/as/generated/comm2.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(AS_INCLUDES) -c $(ROOT)/toolchain/ack/as/generated/comm2.c -o $(BUILD_DIR)/as_gen_comm2.o
+
+$(BUILD_DIR)/object_rd.o: $(ROOT)/toolchain/ack/shared/modules/src/object/rd.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CV_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/object/rd.c -o $(BUILD_DIR)/object_rd.o
+$(BUILD_DIR)/object_rd_arhdr.o: $(ROOT)/toolchain/ack/shared/modules/src/object/rd_arhdr.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CV_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/object/rd_arhdr.c -o $(BUILD_DIR)/object_rd_arhdr.o
+$(BUILD_DIR)/object_rd_bytes.o: $(ROOT)/toolchain/ack/shared/modules/src/object/rd_bytes.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CV_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/object/rd_bytes.c -o $(BUILD_DIR)/object_rd_bytes.o
+$(BUILD_DIR)/object_rd_int2.o: $(ROOT)/toolchain/ack/shared/modules/src/object/rd_int2.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CV_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/object/rd_int2.c -o $(BUILD_DIR)/object_rd_int2.o
+$(BUILD_DIR)/object_rd_int4.o: $(ROOT)/toolchain/ack/shared/modules/src/object/rd_int4.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CV_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/object/rd_int4.c -o $(BUILD_DIR)/object_rd_int4.o
+$(BUILD_DIR)/object_rd_ranlib.o: $(ROOT)/toolchain/ack/shared/modules/src/object/rd_ranlib.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CV_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/object/rd_ranlib.c -o $(BUILD_DIR)/object_rd_ranlib.o
+$(BUILD_DIR)/object_rd_unsig2.o: $(ROOT)/toolchain/ack/shared/modules/src/object/rd_unsig2.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CV_INCLUDES) -c $(ROOT)/toolchain/ack/shared/modules/src/object/rd_unsig2.c -o $(BUILD_DIR)/object_rd_unsig2.o
+$(BUILD_DIR)/cv_main.o: $(ROOT)/toolchain/ack/cv/cv.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(CV_INCLUDES) -c $(ROOT)/toolchain/ack/cv/cv.c -o $(BUILD_DIR)/cv_main.o
+
+$(BUILD_DIR)/ln_archive.o: $(ROOT)/toolchain/ack/ln/archive.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(LN_INCLUDES) -c $(ROOT)/toolchain/ack/ln/archive.c -o $(BUILD_DIR)/ln_archive.o
+$(BUILD_DIR)/ln_error.o: $(ROOT)/toolchain/ack/ln/error.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(LN_INCLUDES) -c $(ROOT)/toolchain/ack/ln/error.c -o $(BUILD_DIR)/ln_error.o
+$(BUILD_DIR)/ln_extract.o: $(ROOT)/toolchain/ack/ln/extract.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(LN_INCLUDES) -c $(ROOT)/toolchain/ack/ln/extract.c -o $(BUILD_DIR)/ln_extract.o
+$(BUILD_DIR)/ln_finish.o: $(ROOT)/toolchain/ack/ln/finish.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(LN_INCLUDES) -c $(ROOT)/toolchain/ack/ln/finish.c -o $(BUILD_DIR)/ln_finish.o
+$(BUILD_DIR)/ln_main.o: $(ROOT)/toolchain/ack/ln/main.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(LN_INCLUDES) -c $(ROOT)/toolchain/ack/ln/main.c -o $(BUILD_DIR)/ln_main.o
+$(BUILD_DIR)/ln_memory.o: $(ROOT)/toolchain/ack/ln/memory.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(LN_INCLUDES) -c $(ROOT)/toolchain/ack/ln/memory.c -o $(BUILD_DIR)/ln_memory.o
+$(BUILD_DIR)/ln_output.o: $(ROOT)/toolchain/ack/ln/output.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(LN_INCLUDES) -c $(ROOT)/toolchain/ack/ln/output.c -o $(BUILD_DIR)/ln_output.o
+$(BUILD_DIR)/ln_read.o: $(ROOT)/toolchain/ack/ln/read.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(LN_INCLUDES) -c $(ROOT)/toolchain/ack/ln/read.c -o $(BUILD_DIR)/ln_read.o
+$(BUILD_DIR)/ln_relocate.o: $(ROOT)/toolchain/ack/ln/relocate.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(LN_INCLUDES) -c $(ROOT)/toolchain/ack/ln/relocate.c -o $(BUILD_DIR)/ln_relocate.o
+$(BUILD_DIR)/ln_save.o: $(ROOT)/toolchain/ack/ln/save.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(LN_INCLUDES) -c $(ROOT)/toolchain/ack/ln/save.c -o $(BUILD_DIR)/ln_save.o
+$(BUILD_DIR)/ln_scan.o: $(ROOT)/toolchain/ack/ln/scan.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(LN_INCLUDES) -c $(ROOT)/toolchain/ack/ln/scan.c -o $(BUILD_DIR)/ln_scan.o
+$(BUILD_DIR)/ln_sym.o: $(ROOT)/toolchain/ack/ln/sym.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(LN_INCLUDES) -c $(ROOT)/toolchain/ack/ln/sym.c -o $(BUILD_DIR)/ln_sym.o
+$(BUILD_DIR)/ln_write.o: $(ROOT)/toolchain/ack/ln/write.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(LN_INCLUDES) -c $(ROOT)/toolchain/ack/ln/write.c -o $(BUILD_DIR)/ln_write.o
+
+$(BUILD_DIR)/aal_archiver.o: $(ROOT)/toolchain/ack/arch/archiver.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(HOST_CC) $(CPP_CFLAGS) $(AAL_INCLUDES) -DAAL -c $(ROOT)/toolchain/ack/arch/archiver.c -o $(BUILD_DIR)/aal_archiver.o
+
+test-cpp: $(CPP_BIN)
+	printf '#define X 42\nint a = X;\n' > /tmp/cc-cpp-test.c
+	$(CPP_BIN) /tmp/cc-cpp-test.c
+
+test-opt: $(OPT_BIN)
+	$(OPT_BIN) /tmp/ack-c1-test.ZSzj3w/test.k > /tmp/ack-c1-test.ZSzj3w/test.m
+
+test-opt2: $(OPT2_BIN)
+	$(OPT2_BIN) /tmp/ack-c1-test.ZSzj3w/test.k > /tmp/ack-c1-test.ZSzj3w/test.m
+
+test-ncg: $(CPP_BIN) $(C1_BIN) $(OPT_BIN) $(C2_BIN)
+	printf 'int main(void) { return 42; }\n' > /tmp/cc-c2-test.c
+	$(CPP_BIN) /tmp/cc-c2-test.c > /tmp/cc-c2-test.i
+	$(C1_BIN) -Vw2.2i2.2p4.2f4.2s2.2l4.2d8.2x8.2 /tmp/cc-c2-test.i /tmp/cc-c2-test.k
+	$(OPT_BIN) /tmp/cc-c2-test.k > /tmp/cc-c2-test.m
+	$(C2_BIN) /tmp/cc-c2-test.m /tmp/cc-c2-test.s
+
+test-as: $(CPP_BIN) $(C1_BIN) $(OPT_BIN) $(C2_BIN) $(AS_BIN)
+	printf 'int main(void) { return 42; }\n' > /tmp/cc-as-test.c
+	$(CPP_BIN) /tmp/cc-as-test.c > /tmp/cc-as-test.i
+	$(C1_BIN) -Vw2.2i2.2p4.2f4.2s2.2l4.2d8.2x8.2 /tmp/cc-as-test.i /tmp/cc-as-test.k
+	$(OPT_BIN) /tmp/cc-as-test.k > /tmp/cc-as-test.m
+	$(C2_BIN) /tmp/cc-as-test.m /tmp/cc-as-test.s
+	$(AS_BIN) - -o /tmp/cc-as-test.o /tmp/cc-as-test.s
+
+clean:
+	@rm -f $(CPP_BIN) $(C1_BIN) $(OPT_BIN) $(OPT2_BIN) $(C2_BIN) $(AS_BIN) $(CV_BIN) $(LN_BIN) $(AAL_BIN)
+	@rm -rf $(BUILD_DIR)

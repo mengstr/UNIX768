@@ -1,20 +1,20 @@
-# include "stdio.h"
-# include "assert.h"
+# include "refer.h"
+void
 whash(ft, fa, fb, nhash, iflong, ptotct, phused)
 	FILE *fa, *fb, *ft;
 	int nhash, *phused;
 	long *ptotct;
 {
 char line[100];
-int hash 0, hused 0;
-long totct 0L;
-int ct 0;
+int hash = 0, hused = 0;
+long totct = 0L;
+int ct = 0;
 long point;
-long opoint -1;
+long opoint = -1;
 int m;
 int k; long lp;
 long *hpt;
-int *hfreq NULL;
+int *hfreq = NULL;
 
 hpt = calloc (nhash+1, sizeof(*hpt));
 _assert (hpt != NULL);
@@ -29,7 +29,7 @@ while (fgets(line, 100, ft))
 	if (hash < k)
 		{
 		hused++;
-		if (iflong) putl(-1L, fb); else putw(-1, fb);
+		if (iflong) putl(-1L, fb); else ref_putw(-1, fb);
 		hfreq[hash]=ct;
 		while (hash<k)
 			{
@@ -45,37 +45,34 @@ while (fgets(line, 100, ft))
 		if (iflong)
 			putl(opoint=point, fb);
 		else
-			putw( (int)(opoint=point), fb);
+			ref_putw( (int)(opoint=point), fb);
 		lp += iflong? sizeof(long) : sizeof(int);
 		ct++;
 		}
 	}
-if (iflong) putl(-1L, fb); else putw(-1,fb);
+if (iflong) putl(-1L, fb); else ref_putw(-1,fb);
 while (hash<nhash)
 	hpt[++hash]=lp;
-fwrite(&nhash, sizeof(nhash), 1, fa);
-fwrite(&iflong, sizeof(iflong), 1, fa);
-fwrite(hpt, sizeof(*hpt), nhash, fa);
-fwrite (hfreq, sizeof(*hfreq), nhash, fa);
+fwrite((char *)&nhash, sizeof(nhash), 1, fa);
+fwrite((char *)&iflong, sizeof(iflong), 1, fa);
+fwrite((char *)hpt, sizeof(*hpt), nhash, fa);
+fwrite((char *)hfreq, sizeof(*hfreq), nhash, fa);
 *ptotct = totct;
 *phused = hused;
 }
+void
 putl(ll, f)
 	long ll;
 	FILE *f;
 {
-int *x;
-x = &ll;
-putw(x[0], f);
-putw(x[1], f);
+if (fwrite((char *)&ll, sizeof(ll), 1, f) != 1)
+	err("write error");
 }
 long getl(f)
 	FILE *f;
 {
-int x[2];
-int *ll;
-x[0] = getw(f);
-x[1] = getw(f);
-ll = x;
-return (*ll);
+long value;
+if (fread((char *)&value, sizeof(value), 1, f) != 1)
+	return(-1L);
+return(value);
 }

@@ -1,0 +1,3 @@
+set -e
+sh clean
+cc -s -o cawf cawf_port.c

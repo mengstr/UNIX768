@@ -1,14 +1,14 @@
-# include "stdio.h"
+# include "refer.h"
 extern char *comname; /* "/usr/lib/eign" */
 int wholefile = 0;
 int keycount = 100;
 int labels = 1;
 int minlen = 3;
 extern int comcount;
-char *iglist "XYZ#";
+char *iglist = "XYZ#";
 
-main (argc,argv)
-	char *argv[];
+int
+main (int argc, char **argv)
 {
 /* this program expects as its arguments a list of
    files and generates a set of lines of the form
@@ -20,7 +20,7 @@ main (argc,argv)
 
 int i;
 char *name, qn[200];
-char *inlist 0;
+char *inlist = 0;
 
 FILE *f, *ff;
 

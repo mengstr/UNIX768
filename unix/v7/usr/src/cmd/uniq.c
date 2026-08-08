@@ -3,16 +3,22 @@
  */
 #include <stdio.h>
 #include <ctype.h>
+#include <stdlib.h>
+#include <sys/inttypes.h>
+#include <unistd.h>
 int	fields;
 int	letters;
 int	linec;
 char	mode;
 int	uniq;
-char	*skip();
+static i32 gline(char buf[]);
+static void pline(char buf[]);
+static i32 equal(char b1[], char b2[]);
+static char *skip(char *s);
+static void printe(char *p, char *s);
 
-main(argc, argv)
-int argc;
-char *argv[];
+int
+main(int argc, char *argv[])
 {
 	static char b1[1000], b2[1000];
 
@@ -62,6 +68,7 @@ char *argv[];
 	}
 }
 
+static i32
 gline(buf)
 register char buf[];
 {
@@ -76,6 +83,7 @@ register char buf[];
 	return(0);
 }
 
+static void
 pline(buf)
 register char buf[];
 {
@@ -101,6 +109,7 @@ register char buf[];
 	putchar('\n');
 }
 
+static i32
 equal(b1, b2)
 register char b1[], b2[];
 {
@@ -116,7 +125,7 @@ register char b1[], b2[];
 	return(1);
 }
 
-char *
+static char *
 skip(s)
 register char *s;
 {
@@ -134,6 +143,7 @@ register char *s;
 	return(s);
 }
 
+static void
 printe(p,s)
 char *p,*s;
 {

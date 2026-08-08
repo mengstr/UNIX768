@@ -1,7 +1,9 @@
  /* t7.c: control to write table entries */
 # include "t..c"
 # define realsplit ((ct=='a'||ct=='n') && table[ldata][c].rcol)
-runout()
+static void deftail(void);
+void
+runout(void)
 {
 int i;
 if (boxflg || allflg || dboxflg) need();
@@ -23,7 +25,9 @@ fprintf(tabout, ".T# 1\n");
 if (ctrflg)
 	fprintf(tabout, ".in \\n(#Iu\n");
 }
+void
 runtabs(lform, ldata)
+	int lform, ldata;
 {
 int c, ct, vforml, lf;
 fprintf(tabout, ".ta ");
@@ -55,6 +59,7 @@ for(c=0; c<ncol; c++)
 	}
 fprintf(tabout, "\n");
 }
+int
 ifline(s)
 	char *s;
 {
@@ -64,7 +69,8 @@ if (s[0] == '_') return('-');
 if (s[0] == '=') return('=');
 return(0);
 }
-need()
+void
+need(void)
 {
 int texlin, horlin, i;
 for(texlin=horlin=i=0; i<nlin; i++)
@@ -79,7 +85,8 @@ for(texlin=horlin=i=0; i<nlin; i++)
 	}
 fprintf(tabout, ".ne %dv+%dp\n",texlin,2*horlin);
 }
-deftail()
+static void
+deftail(void)
 {
 int i, c, lf, lwid;
 for(i=0; i<MAXHEAD; i++)

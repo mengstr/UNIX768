@@ -1,0 +1,49 @@
+set -e
+
+for file in cico conn cntrl pk0 pk1 gio sdmail pkon cpmv expfile gename
+do
+	echo CC $file.c
+	cc -O2 -c $file.c
+done
+
+for file in getpwinfo index lastpart prefix shio ulockf xqt anlwrk chkpth
+do
+	echo CC $file.c
+	cc -O2 -c $file.c
+done
+
+for file in getargs gnamef gnsys gnxseq gwd imsg logent sysacct systat
+do
+	echo CC $file.c
+	cc -O2 -c $file.c
+done
+
+for file in versys uucp uux getprm uuxqt uulog uuclean
+do
+	echo CC $file.c
+	cc -O2 -c $file.c
+done
+
+COMMON="cpmv.o expfile.o gename.o getpwinfo.o index.o lastpart.o"
+COMMON="$COMMON prefix.o shio.o ulockf.o xqt.o"
+
+echo LD uucp
+cc -s -o uucp uucp.o gwd.o $COMMON chkpth.o getargs.o logent.o versys.o
+
+echo LD uux
+cc -s -o uux uux.o gwd.o $COMMON chkpth.o getargs.o getprm.o versys.o
+
+echo LD uuxqt
+cc -s -o uuxqt uuxqt.o $COMMON getprm.o gnamef.o logent.o
+
+CICO="cico.o conn.o cntrl.o pk0.o pk1.o gio.o sdmail.o pkon.o"
+CICO="$CICO anlwrk.o chkpth.o getargs.o gnamef.o gnsys.o gnxseq.o"
+CICO="$CICO gwd.o imsg.o logent.o sysacct.o systat.o versys.o"
+echo LD uucico
+cc -s -o uucico $CICO $COMMON
+
+echo LD uulog
+cc -s -o uulog uulog.o prefix.o xqt.o ulockf.o gnamef.o
+
+echo LD uuclean
+cc -s -o uuclean uuclean.o gnamef.o prefix.o sdmail.o getpwinfo.o

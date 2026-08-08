@@ -1,4 +1,6 @@
 #include "uucp.h"
+
+/* Pointers are wider than historical V7 int on Epoch68. */
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -10,8 +12,8 @@
  *	return codes:  none
  */
 
-expfile(file)
-char *file;
+int
+expfile (char *file)
 {
 	char *fpart;
 	char user[20], *up;
@@ -50,8 +52,8 @@ char *file;
  *	return codes:  0 - not directory  |  1 - is directory
  */
 
-isdir(name)
-char *name;
+int
+isdir (char *name)
 {
 	int ret;
 	struct stat s;
@@ -72,8 +74,8 @@ char *name;
  *	return 0  |  FAIL
  */
 
-mkdirs(name)
-char *name;
+int
+mkdirs (char *name)
 {
 	int ret;
 	char cmd[100], dir[100], *p;

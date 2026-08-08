@@ -1,4 +1,5 @@
-# include <stdio.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #
 #define NIL (-1)
@@ -12,25 +13,45 @@ int j;
 int l;
 int m;
 int count;
-int red[]     {0,2,0,0,0,0,0,0,0,0,0,0,5,
+int red[] =    {0,2,0,0,0,0,0,0,0,0,0,0,5,
 		 0,0,0,0,3,0,5,0,0,0,0,0,
 		 0,0,0,0,0,0};
-int white[]   {0,2,0,0,0,0,0,0,0,0,0,0,5,
+int white[] =  {0,2,0,0,0,0,0,0,0,0,0,0,5,
 		 0,0,0,0,3,0,5,0,0,0,0,0,
 		 0,0,0,0,0,0};
-int probability[]{0,11,12,13,14,15,16,
+int probability[] = {0,11,12,13,14,15,16,
 		    06,05,04,03,02,01};
 int imoves;
 int goodmoves[MAXGMOV] ;
 int probmoves[MAXGMOV] ;
 struct {int pos[4],mov[4];} moves[MAXIMOVES] ;
 
-main()
+static void srand_local(void);
+static i32 rand_local(void);
+static int getstr(char *s);
+static int play(int *player, int *playee, int pos[]);
+static int nextmove(int *player, int *playee);
+static int prtmov(int k);
+static int update(int *player, int *playee, int k);
+static int piececount(int *player, int startrow, int endrow);
+static int roll(void);
+static int movegen(int *mover, int *movee);
+static int moverecord(int *mover);
+static int strategy(int *player, int *playee);
+static int eval(int *player, int *playee, int k, int *prob);
+static int instructions(void);
+static int getprob(int *player, int *playee, int start, int finish);
+static int prtbrd(void);
+static int numline(int *upcol, int *downcol, int start, int fin);
+static int colorline(int *upcol, char c1, int *downcol, char c2, int start, int fin);
+
+int
+main (void)
 {
 	int t,k,n,go[5];
 	char s[100];
 	go[5]=NIL;
-	srand();
+	srand_local();
 	printf( "Do you want instructions? Type 'y' for yes,\n");
 	printf( "anything else means no.?? ");
 	getstr(s);
@@ -54,7 +75,7 @@ whitesmv:
 	if(piececount(white,0,24)==0){
 	    printf( "White wins\n");
 	    printf( "Aren't you ashamed. You've been beaten by a computer.\n");
-	    exit();
+		    exit(0);
 	}
 nowhmove:
 	prtbrd();
@@ -91,20 +112,20 @@ retry:
 	if(piececount(red,0,24)==0){
 	    printf( "Red wins.\n");
 	    printf( "Congratulations! You have just defeated a dumb machine.\n");
-	    exit();
+		    exit(0);
 	}
 	goto whitesmv;
 }
 
-getstr(s)
-char *s;
+static int
+getstr (char *s)
 {
 	while((*s=getchar())!='\n')s++;
 	*s=0;
 }
 
-play(player,playee,pos)
-int *player,*playee,pos[];
+static int
+play (int *player, int *playee, int pos[])
 {
 	int k,n,die,ipos;
 	for(k=0;k<player[0];k++){  /*blots on player[0] must be moved first*/
@@ -146,8 +167,8 @@ badmove:
 	}
 	return(-1);
 }
-nextmove(player,playee)
-int *player,*playee;
+static int
+nextmove (int *player, int *playee)
 {
 	int k;
 	imoves=0;
@@ -167,8 +188,8 @@ int *player,*playee;
 	update(player,playee,k);
 	return(0);
 }
-prtmov(k)
-int k;
+static int
+prtmov (int k)
 {
 	int n;
 	if(k==NIL)printf( "no move possible\n");
@@ -178,8 +199,8 @@ int k;
 	}
 	printf( "\n");
 }
-update(player,playee,k)
-int *player,*playee,k;
+static int
+update (int *player, int *playee, int k)
 {
 	int n,t;
 	for(n=0;n<4;n++){
@@ -193,8 +214,8 @@ int *player,*playee,k;
 	    }
 	}
 }
-piececount(player,startrow,endrow)
-int *player,startrow,endrow;
+static int
+piececount (int *player, int startrow, int endrow)
 {
 	int sum;
 	sum=0;
@@ -218,15 +239,16 @@ prtmovs()
 }
 */
 
-roll()
+static int
+roll (void)
 {
 	extern int die1,die2;
-	die1=(rand()>>8)%6+1;
-	die2=(rand()>>8)%6+1;
+	die1=(rand_local()>>8)%6+1;
+	die2=(rand_local()>>8)%6+1;
 }
 
-movegen(mover,movee)
-int *mover,*movee;
+static int
+movegen (int *mover, int *movee)
 {
 	extern int i,j,l,m,count;
 	extern int die1,die2;
@@ -312,8 +334,8 @@ int *mover,*movee;
 		if(mover[0]>0)break;
 	}
 }
-moverecord(mover)
-int *mover;
+static int
+moverecord (int *mover)
 {
 	extern int i,j,l,m,imoves,count;
 	int t;
@@ -354,8 +376,8 @@ case 1:
 }
 
 
-strategy(player,playee)
-int *player,*playee;
+static int
+strategy (int *player, int *playee)
 {
 	extern char level;
 	int k,n,nn,bestval,moveval,prob;
@@ -388,11 +410,11 @@ int *player,*playee;
 		probmoves[n++]=probmoves[k];
 	    }
 	}
-	return(goodmoves[(rand()>>4)%n]);
+	return(goodmoves[(rand_local()>>4)%n]);
 }
 
-eval(player,playee,k,prob)
-int *player,*playee,k,*prob;
+static int
+eval (int *player, int *playee, int k, int *prob)
 {
 	extern char level;
 	int newtry[31],newother[31],*r,*q,*p,n,sum,first;
@@ -453,7 +475,8 @@ int *player,*playee,k,*prob;
 	    *prob=+ n*getprob(newtry,newother,6*n-5,6*n);
 	return(sum);
 }
-instructions()
+static int
+instructions (void)
 {
 	printf( "To play backgammon, type the numbers of the points\n");
 	printf( "from which pieces are to be moved. Thus, if the\n");
@@ -482,8 +505,8 @@ instructions()
 	printf( "all by itself.\n\n");
 }
 
-getprob(player,playee,start,finish)
-int *player,*playee,start,finish;
+static int
+getprob (int *player, int *playee, int start, int finish)
 {			/*returns the probability (times 102) that any
 			  pieces belonging to 'player' and lying between
 			  his points 'start' and 'finish' will be hit
@@ -501,7 +524,8 @@ int *player,*playee,start,finish;
 	}
 	return(sum);
 }
-prtbrd()
+static int
+prtbrd (void)
 {
 	int k;
 	printf( "White's Home\n");
@@ -539,8 +563,8 @@ prtbrd()
 	for(k=18;k>=13;k--)printf( "%4d",k);
 	printf( "\nRed's Home\n\n\n\n\n");
 }
-numline(upcol,downcol,start,fin)
-int *upcol,*downcol,start,fin;
+static int
+numline (int *upcol, int *downcol, int start, int fin)
 {
 	int k,n;
 	for(k=start;k<=fin;k++){
@@ -548,9 +572,8 @@ int *upcol,*downcol,start,fin;
 	    else printf( "    ");
 	}
 }
-colorline(upcol,c1,downcol,c2,start,fin)
-int *upcol,*downcol,start,fin;
-char c1,c2;
+static int
+colorline (int *upcol, char c1, int *downcol, char c2, int start, int fin)
 {
 	int k;
 	char c;
@@ -562,23 +585,17 @@ char c1,c2;
 	}
 }
 
-int rrno 0;
+static i32 rrno = 1;
 
-srand(){
-	rrno = _look( 0x40000 );
-	_store( 0x40000, rrno+1 );
-	}
+static void
+srand_local(void)
+{
+	rrno = 1;
+}
 
-rand(){
-	rrno =* 0106273;
-	rrno =+ 020202;
-	return( rrno & 077777 );
-	}
-
-_look(p) int *p; {
-	return( *p );
-	}
-
-_store( p, numb ) int *p; {
-	*p = numb;
-	}
+static i32
+rand_local(void)
+{
+	rrno = (rrno * 0106273 + 020202) & 077777;
+	return(rrno);
+}

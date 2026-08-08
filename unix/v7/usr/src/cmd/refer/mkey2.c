@@ -1,11 +1,16 @@
-# include "stdio.h"
-# include "ctype.h"
+# include "refer.h"
 
-	static int eof 0;
+	extern int minlen, keycount, labels, wholefile;
+	extern char *iglist;
+	static int eof = 0;
 	static long lp, lim;
 	static int alph, used, prevc;
 	static char *p, key[20];
+	static int outkey(char *, int, int);
+	static long grec(char *, FILE *);
+	static void chkey(int, char *);
 
+void
 dofile(f, name)
 	FILE *f;
 	char *name;
@@ -14,11 +19,7 @@ dofile(f, name)
 /* read file f & spit out keys & ptrs */
 # define MAXLINE 500
 char line[MAXLINE], *s;
-extern int minlen, keycount, labels;
-int c;
-long grec();
-extern int wholefile;
-extern char *iglist;
+	int c;
 alph=used=prevc=eof=0;
 
 lp=0;
@@ -46,8 +47,10 @@ else
 fclose(f);
 }
 
+static int
 outkey( ky, lead, trail)
-	char *ky;
+		char *ky;
+		int lead, trail;
 {
 	int n;
 n = strlen(ky);
@@ -63,14 +66,14 @@ if (common(ky))
 	return(0);
 return(1);
 }
-long grec (s, f)
+static long
+grec (s, f)
 	char *s;
 	FILE *f;
 {
 	char tm[200];
-	int curtype 0;
-	long len 0L, tlen 0L;
-	extern int wholefile;
+		int curtype = 0;
+		long len = 0L, tlen = 0L;
 	if (eof) return(0);
 	*s = 0;
 	while (fgets(tm, 200, f))
@@ -92,17 +95,21 @@ long grec (s, f)
 	eof=1;
 	return(s[0] ? len : 0L);
 }
+char *
 trimnl(ln)
 	char *ln;
 {
-register char *p ln;
+register char *p = ln;
 while (*p) p++;
 p--;
 if (*p == '\n') *p=0;
 return(ln);
 }
+static void
 chkey (c, name)
-	{
+		int c;
+		char *name;
+		{
 	if (isalpha(c) || isdigit(c))
 		{
 		if (alph++ < 6)
@@ -131,6 +138,6 @@ chkey (c, name)
 			used++;
 			}
 		prevc=c;
-		alph=0;
+			alph=0;
+			}
 		}
-	}

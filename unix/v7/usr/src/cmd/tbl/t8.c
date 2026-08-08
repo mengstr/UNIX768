@@ -1,12 +1,17 @@
  /* t8.c: write out one line of output table */
 # include "t..c"
 # define realsplit ((ct=='a'||ct=='n') && table[nl][c].rcol)
-int watchout;
-int once;
-int topat[MAXCOL];
+static int watchout;
+static int once;
+static int topat[MAXCOL];
+static void puttext(char *, char *, char *);
+static void funnies(int, int);
+
+void
 putline(i, nl)
 	/* i is line number for deciding format */
 	/* nl is line number for finding data   usually identical */
+	int i, nl;
 {
 int c, lf, ct, form, lwid, vspf, ip, cmidx, exvspen, vforml;
 int vct, chfont;
@@ -24,12 +29,12 @@ for(c=0; c<ncol; c++)
 		{
 		for(ip=nl; ip<nlin; ip=next(ip))
 			if (!vspen(s=table[ip][c].col)) break;
-		if (s>0 && s<128)
-		fprintf(tabout, ".ne \\n(%c|u+\\n(.Vu\n",s);
+		if (PTRVAL(s)>0 && PTRVAL(s)<128)
+		fprintf(tabout, ".ne \\n(%c|u+\\n(.Vu\n",PTRVAL(s));
 		continue;
 		}
 	if (point(s)) continue;
-	fprintf(tabout, ".ne \\n(%c|u+\\n(.Vu\n",s);
+	fprintf(tabout, ".ne \\n(%c|u+\\n(.Vu\n",PTRVAL(s));
 	watchout=1;
 	}
 if (linestop[nl])
@@ -68,13 +73,13 @@ for(c=0; c<ncol; c++)
 	{
 	s = table[nl][c].col;
 	if (s==0) continue;
-	chfont |= (font[stynum[nl]][c]);
+	chfont |= font[stynum[nl]][c][0];
 	if (point(s) ) continue;
 	lf=prev(nl);
 	if (lf>=0 && vspen(table[lf][c].col))
-		fprintf(tabout, ".if (\\n(%c|+\\n(^%c-1v)>\\n(#- .nr #- +(\\n(%c|+\\n(^%c-\\n(#--1v)\n",s,'a'+c,s,'a'+c);
+		fprintf(tabout, ".if (\\n(%c|+\\n(^%c-1v)>\\n(#- .nr #- +(\\n(%c|+\\n(^%c-\\n(#--1v)\n",PTRVAL(s),'a'+c,PTRVAL(s),'a'+c);
 	else
-		fprintf(tabout, ".if (\\n(%c|+\\n(#^-1v)>\\n(#- .nr #- +(\\n(%c|+\\n(#^-\\n(#--1v)\n",s,s);
+		fprintf(tabout, ".if (\\n(%c|+\\n(#^-1v)>\\n(#- .nr #- +(\\n(%c|+\\n(#^-\\n(#--1v)\n",PTRVAL(s),PTRVAL(s));
 	}
 if (allflg && once>0 )
 	fullwide(i,'-');
@@ -235,6 +240,7 @@ if (vspf)
 			}
 	}
 }
+static void
 puttext(s,fn, size)
 	char *s, *size, *fn;
 {
@@ -247,17 +253,19 @@ if (point(s))
 	if (size!=0) putsize("0");
 	}
 }
+static void
 funnies( stl, lin)
+	int stl, lin;
 {
 /* write out funny diverted things */
-int c, s, pl, lwid, dv, lf, ct;
+int c, pl, lwid, dv, lf, ct, s;
 char *fn;
 fprintf(tabout, ".mk ##\n"); /* rmember current vertical position */
 fprintf(tabout, ".nr %d \\n(##\n", S1); /* bottom position */
 for(c=0; c<ncol; c++)
 	{
-	s = table[lin][c].col;
-	if (point(s)) continue;
+	s = PTRVAL(table[lin][c].col);
+	if (point(table[lin][c].col)) continue;
 	if (s==0) continue;
 	fprintf(tabout, ".sp |\\n(##u-1v\n");
 	fprintf(tabout, ".nr %d ", SIND);
@@ -313,12 +321,14 @@ for(c=dv=0; c<ncol; c++)
 if (dv)
 	fprintf(tabout,"\n");
 }
+void
 putfont(fn)
 	char *fn;
 {
 if (fn && *fn)
 	fprintf(tabout,  fn[1] ? "\\f(%.2s" : "\\f%.2s",  fn);
 }
+void
 putsize(s)
 	char *s;
 {

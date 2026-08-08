@@ -17,9 +17,8 @@
  *	return codes:  0  |  FAIL
  */
 
-ulockf(file, atime)
-char *file;
-time_t atime;
+int
+ulockf (char *file, time_t atime)
 {
 	struct stat stbuf;
 	time_t ptime;
@@ -65,11 +64,10 @@ int Nlocks = 0;
  *	return codes:  none
  */
 
-stlock(name)
-char *name;
+int
+stlock (char *name)
 {
 	char *p;
-	extern char *calloc();
 	int i;
 
 	for (i = 0; i < Nlocks; i++) {
@@ -94,8 +92,8 @@ char *name;
  *	return codes: none
  */
 
-rmlock(name)
-char *name;
+int
+rmlock (char *name)
 {
 	int i;
 
@@ -122,19 +120,22 @@ char *name;
 	file system as name. */
 /*	lock(pid,tempfile,names) either locks all the
 	names or none of them */
-isalock(name) char *name;
+int
+isalock (char *name)
 {
 	struct stat xstat;
 	if(stat(name,&xstat)<0) return(0);
 	if(xstat.st_size!=sizeof(int)) return(0);
 	return(1);
 }
-unlock(name) char *name;
+int
+unlock (char *name)
 {
 	if(isalock(name)) return(unlink(name));
 	else return(-1);
 }
-onelock(pid,tempfile,name) char *tempfile,*name;
+int
+onelock (int pid, char *tempfile, char *name)
 {	int fd;
 	fd=creat(tempfile,0444);
 	if(fd<0) return(-1);
@@ -147,7 +148,8 @@ onelock(pid,tempfile,name) char *tempfile,*name;
 	unlink(tempfile);
 	return(0);
 }
-lock(pid,tempfile,names) char *tempfile,**names;
+int
+lock (int pid, char *tempfile, char **names)
 {	int i,j;
 	for(i=0;names[i]!=0;i++)
 	{	if(onelock(pid,tempfile,names[i])==0) continue;
@@ -166,8 +168,8 @@ lock(pid,tempfile,names) char *tempfile,**names;
  *	return codes:  0  |  FAIL
  */
 
-delock(s)
-char *s;
+int
+delock (char *s)
 {
 	char ln[30];
 
@@ -183,12 +185,11 @@ char *s;
  *	return codes:  0  |  FAIL
  */
 
-mlock(sys)
-char *sys;
+int
+mlock (char *sys)
 {
 	char lname[30];
 	sprintf(lname, "%s.%s", LOCKPRE, sys);
 	return(ulockf(lname, (time_t) 24*3600 ) < 0 ? FAIL : 0);
 }
-
 

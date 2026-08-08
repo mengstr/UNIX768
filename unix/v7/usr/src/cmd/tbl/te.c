@@ -1,5 +1,6 @@
  /* te.c: error message control, input line count */
 # include "t..c"
+void
 error(s)
 	char *s;
 {
@@ -13,6 +14,7 @@ fprintf(stderr, "run terminated due to error condition detected by tbl preproces
 exit(0);
 # endif
 }
+int
 gets1(s)
 	char *s;
 {
@@ -35,12 +37,14 @@ for(nbl=0; *s == '\\' && s>p; s--)
 if (linstart && nbl % 2) /* fold escaped nl if in table */
 	gets1(s+1);
 
-return(p);
+return(p != 0);
 }
 # define BACKMAX 500
 char backup[BACKMAX];
 char *backp = backup;
+void
 un1getc(c)
+	int c;
 {
 if (c=='\n')
 	iline--;
@@ -48,7 +52,8 @@ if (c=='\n')
 if (backp >= backup+BACKMAX)
 	error("too much backup");
 }
-get1char()
+int
+get1char(void)
 {
 int c;
 if (backp>backup)

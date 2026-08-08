@@ -1,5 +1,8 @@
-main(argc, argv)
-char **argv;
+#include <stdio.h>
+#include <unistd.h>
+
+int
+main(int argc, char **argv)
 {
 	int c, n;
 	char *s;
@@ -18,4 +21,5 @@ char **argv;
 		n = n*10 + c - '0';
 	}
 	sleep(n);
+	return 0;
 }

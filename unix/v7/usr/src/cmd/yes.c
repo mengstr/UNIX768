@@ -1,5 +1,8 @@
-main(argc, argv)
-char **argv;
+#include <stdio.h>
+#include <unistd.h>
+
+int
+main(int argc, char **argv)
 {
 	for (;;)
 		printf("%s\n", argc>1? argv[1]: "y");

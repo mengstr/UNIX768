@@ -94,4 +94,3 @@ STRING	icp;
 	ELSE	return(r);
 	FI
 }
-

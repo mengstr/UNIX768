@@ -12,8 +12,8 @@
  *	return - the number of subfields.
  */
 
-getargs(s, arps)
-char *s, *arps[];
+int
+getargs (char *s, char *arps[])
 {
 	int i;
 

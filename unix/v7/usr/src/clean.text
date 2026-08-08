@@ -1,0 +1,26 @@
+set -e
+
+cd cawf
+sh clean
+rm -f *.o
+
+cd ../cmd
+rm -f man deroff checkeq *.o
+
+cd eqn
+sh clean
+cd ../neqn
+sh clean
+cd ../tbl
+sh clean
+cd ../spell
+sh clean
+rm -f *.o
+cd ../refer
+sh clean
+cd ../prep
+sh clean
+
+cd ../../ee
+sh clean
+exit 0

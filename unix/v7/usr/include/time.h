@@ -1,11 +1,25 @@
+#include "sys/inttypes.h"
+#include "sys/types.h"
+
+#ifndef _TIME_H_
+#define _TIME_H_
+
 struct tm { /* see ctime(3) */
-	int	tm_sec;
-	int	tm_min;
-	int	tm_hour;
-	int	tm_mday;
-	int	tm_mon;
-	int	tm_year;
-	int	tm_wday;
-	int	tm_yday;
-	int	tm_isdst;
+	i32	tm_sec;
+	i32	tm_min;
+	i32	tm_hour;
+	i32	tm_mday;
+	i32	tm_mon;
+	i32	tm_year;
+	i32	tm_wday;
+	i32	tm_yday;
+	i32	tm_isdst;
 };
+
+char	*asctime(struct tm *);
+char	*ctime(time_t *);
+struct	tm *gmtime(time_t *);
+struct	tm *localtime(time_t *);
+i32	time(time_t *);
+
+#endif

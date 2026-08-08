@@ -1,0 +1,334 @@
+: run under the V7 shell if the kernel falls back to /bin/sh
+
+prog=$0
+bin_dir=/local/bin
+runtime_dir=/local/lib
+
+cpp_bin=$bin_dir/cpp
+c1_bin=$bin_dir/c1
+opt_bin=$bin_dir/opt
+opt2_bin=$bin_dir/opt2
+c2_bin=$bin_dir/ncg
+as_bin=$bin_dir/as
+led_bin=$bin_dir/led
+cv_bin=$bin_dir/cv
+
+crt_object=$runtime_dir/crt0.o
+libc_archive=$runtime_dir/libc.a
+libfp_archive=$runtime_dir/libfp.a
+end_object=$runtime_dir/end.o
+
+compile_only=
+keep_temps=
+strip_output=
+verbose=
+c1_flags=
+opt_level=1
+output_name=
+source_file=
+link_inputs=
+cpp_flags=
+need_arg=
+
+while :
+do
+	case "$1" in
+	"")
+		break
+		;;
+	esac
+
+	case "$need_arg" in
+	1)
+		cpp_flags="$cpp_flags $1"
+		need_arg=
+		shift
+		continue
+		;;
+	esac
+
+	case "$1" in
+	-O0)
+		opt_level=0
+		;;
+	-O1)
+		opt_level=1
+		;;
+	-O2)
+		opt_level=2
+		;;
+	-c)
+		compile_only=1
+		;;
+	-k)
+		keep_temps=1
+		;;
+	-s)
+		strip_output=1
+		;;
+	-v)
+		verbose=1
+		;;
+	-w)
+		c1_flags="$c1_flags -a"
+		;;
+	-o)
+		shift
+		case "$1" in
+		"")
+			echo "$prog: -o needs a filename"
+			exit 1
+			;;
+		esac
+		output_name=$1
+		;;
+	-D*|-I*|-U*)
+		cpp_flags="$cpp_flags $1"
+		;;
+	-D|-I|-U)
+		need_arg=1
+		;;
+	-h|--help)
+		echo "usage: $prog [-O0|-O1|-O2] [-c] [-k] [-s] [-w] [-o output] [cpp flags] file ..."
+		exit 1
+		;;
+	-*)
+		echo "$prog: unsupported option: $1"
+		exit 1
+		;;
+	*.c|*.C)
+		case "$source_file" in
+		"")
+			source_file=$1
+			;;
+		*)
+			echo "$prog: only one C source is supported in the target driver"
+			exit 1
+			;;
+		esac
+		;;
+	*.o)
+		link_inputs="$link_inputs $1"
+		;;
+	*)
+		link_inputs="$link_inputs $1"
+		;;
+	esac
+	shift
+done
+
+case "$need_arg" in
+1)
+	echo "$prog: missing argument for preprocessor flag"
+	exit 1
+	;;
+esac
+
+case "$source_file$link_inputs" in
+"")
+	echo "usage: $prog [-O0|-O1|-O2] [-c] [-k] [-s] [-w] [-o output] [cpp flags] file ..."
+	exit 1
+	;;
+esac
+
+case "$compile_only:$source_file" in
+1:)
+	echo "$prog: -c requires a C source file"
+	exit 1
+	;;
+esac
+
+tmpbase=ackcc$$
+rm -f $tmpbase.i $tmpbase.k $tmpbase.m $tmpbase.s $tmpbase.o $tmpbase.ack
+compiled_object=
+
+case "$source_file" in
+"")
+	;;
+*)
+
+case "$verbose" in
+1)
+	echo "cc: cpp"
+	echo "$cpp_bin -I/usr/include $cpp_flags $source_file >$tmpbase.i"
+	;;
+esac
+
+if $cpp_bin -I/usr/include $cpp_flags $source_file >$tmpbase.i
+then :
+else
+	echo "$prog: cpp failed for $source_file"
+	exit 1
+fi
+
+case "$verbose" in
+1)
+	echo "cc: c1"
+	echo "$c1_bin $c1_flags $tmpbase.i $tmpbase.k"
+	;;
+esac
+
+if $c1_bin $c1_flags $tmpbase.i $tmpbase.k
+then :
+else
+	echo "$prog: c1 failed for $source_file"
+	exit 1
+fi
+
+case "$opt_level" in
+0)
+		case "$verbose" in
+		1)
+			echo "cc: opt -n"
+			echo "$opt_bin -n $tmpbase.k >$tmpbase.m"
+			;;
+		esac
+		if $opt_bin -n $tmpbase.k >$tmpbase.m
+		then :
+	else
+		echo "$prog: opt failed for $source_file"
+		exit 1
+	fi
+	;;
+1)
+		case "$verbose" in
+		1)
+			echo "cc: opt"
+			echo "$opt_bin $tmpbase.k >$tmpbase.m"
+			;;
+		esac
+		if $opt_bin $tmpbase.k >$tmpbase.m
+		then :
+	else
+		echo "$prog: opt failed for $source_file"
+		exit 1
+	fi
+	;;
+2)
+		case "$verbose" in
+		1)
+			echo "cc: opt2"
+			echo "$opt2_bin $tmpbase.k >$tmpbase.m"
+			;;
+		esac
+		if $opt2_bin $tmpbase.k >$tmpbase.m
+		then :
+	else
+		echo "$prog: opt2 failed for $source_file"
+		exit 1
+	fi
+	;;
+*)
+	echo "$prog: bad optimization level"
+	exit 1
+	;;
+esac
+
+case "$verbose" in
+1)
+	echo "cc: ncg"
+	echo "$c2_bin $tmpbase.m $tmpbase.s"
+	;;
+esac
+
+if $c2_bin $tmpbase.m $tmpbase.s
+then :
+else
+	echo "$prog: ncg failed for $source_file"
+	exit 1
+fi
+
+case "$verbose" in
+1)
+	echo "cc: as"
+	echo "$as_bin - -o $tmpbase.o $tmpbase.s"
+	;;
+esac
+
+if $as_bin - -o $tmpbase.o $tmpbase.s
+then :
+else
+	echo "$prog: as failed for $source_file"
+	exit 1
+fi
+
+compiled_object=$tmpbase.o
+;;
+esac
+
+case "$compile_only" in
+1)
+	case "$output_name" in
+	"")
+		output_name=`/bin/basename "$source_file" .c`.o
+		;;
+	esac
+	if mv $tmpbase.o $output_name
+	then :
+	else
+		echo "$prog: cannot write $output_name"
+		exit 1
+	fi
+	case "$keep_temps" in
+	1)
+		echo "$prog: kept intermediates at $tmpbase.*"
+		;;
+	*)
+		rm -f $tmpbase.i $tmpbase.k $tmpbase.m $tmpbase.s
+		;;
+	esac
+	exit 0
+	;;
+esac
+
+case "$output_name" in
+"")
+	output_name=a.out
+	;;
+esac
+
+case "$strip_output" in
+1)
+	led_strip=-s
+	;;
+*)
+	led_strip=
+	;;
+esac
+
+case "$verbose" in
+1)
+	echo "cc: led"
+	echo "$led_bin $led_strip -o $tmpbase.ack $crt_object $link_inputs $compiled_object $libc_archive $libfp_archive $libc_archive $libfp_archive $libc_archive $libfp_archive $end_object"
+	;;
+esac
+
+if $led_bin $led_strip -o $tmpbase.ack $crt_object $link_inputs $compiled_object $libc_archive $libfp_archive $libc_archive $libfp_archive $libc_archive $libfp_archive $end_object
+then :
+else
+	echo "$prog: led failed"
+	exit 1
+fi
+
+case "$verbose" in
+1)
+	echo "cc: cv"
+	echo "$cv_bin $tmpbase.ack $output_name"
+	;;
+esac
+
+if $cv_bin $tmpbase.ack $output_name
+then :
+else
+	echo "$prog: cv failed"
+	exit 1
+fi
+
+case "$keep_temps" in
+1)
+	echo "$prog: kept intermediates at $tmpbase.*"
+	;;
+*)
+	rm -f $tmpbase.i $tmpbase.k $tmpbase.m $tmpbase.s $tmpbase.o $tmpbase.ack
+	;;
+esac

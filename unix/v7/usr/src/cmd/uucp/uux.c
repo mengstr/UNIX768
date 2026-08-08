@@ -20,8 +20,8 @@ fprintf(f, "R %s %s %s - \n", a, b, c);\
  *	
  */
 
-main(argc, argv)
-char *argv[];
+int
+main (int argc, char *argv[])
 {
 	char cfile[NAMESIZE];	/* send commands for files from here */
 	char dfile[NAMESIZE];	/* used for all data files from here */
@@ -42,8 +42,6 @@ char *argv[];
 	char syspart[8], rest[MAXFULLNAME];
 	char xsys[8], local[8];
 	FILE *fprx, *fpc, *fpd, *fp;
-	FILE *xqtstr();
-	extern char *getprm(), *index(), *lastpart();
 	int uid, ret;
 	char redir = '\0';
 
@@ -65,7 +63,7 @@ char *argv[];
 				Debug = 1;
 			break;
 		default:
-			sprintf(stderr, "unknown flag %s\n", argv[1]);
+			fprintf(stderr, "unknown flag %s\n", argv[1]);
 				break;
 		}
 		--argc;  argv++;
@@ -318,8 +316,8 @@ char *argv[];
 }
 
 
-cleanup(code)
-int code;
+int
+cleanup (int code)
 {
 	rmlock(NULL);
 	DEBUG(1, "exit code %d\n", code);

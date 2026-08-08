@@ -1,0 +1,8 @@
+set -e
+
+sh clean
+for f in t0 t1 t2 t3 t4 t5 t6 t7 t8 t9 tb tc te tf tg ti tm ts tt tu tv
+do
+	cc -Dunix -c $f.c
+done
+cc -s -o tbl *.o

@@ -1,9 +1,11 @@
-# include "stdio.h"
+# include "refer.h"
 extern char *soutput, *tagout, usedir[];
 
+void
 result(master, nf, fc)
-	union ptr {unsigned *a; long *b;} *master;
+	union ptr master;
 	FILE *fc;
+	int nf;
 {
 int i, c;
 char *s;
@@ -39,9 +41,8 @@ for(i=0; i<nf; i++)
 	}
 }
 
-# include "sys/types.h"
-# include "sys/stat.h"
-long gdate(f)
+long
+gdate(f)
 	FILE *f;
 {
 struct stat sb;

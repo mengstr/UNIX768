@@ -1,6 +1,7 @@
 # include "e.h"
 
-eqnbox(p1, p2, lu) {
+void
+eqnbox(int p1, int p2, int lu) {
 	int b, h;
 	char *sh;
 
@@ -10,7 +11,7 @@ eqnbox(p1, p2, lu) {
 		eht[p2]-ebase[p2]);
 	ebase[yyval] = b;
 	if(dbg)printf(".\te:eb: S%d <- S%d S%d; b=%d, h=%d\n", 
-		yyval, p1, p2, b, h);
+		YV, p1, p2, b, h);
 	if (rfont[p1] == ITAL && lfont[p2] == ROM)
 		sh = "\\|";
 	else
@@ -19,7 +20,7 @@ eqnbox(p1, p2, lu) {
 		printf(".nr %d \\w'\\s%d\\*(%d%s'\n", p1, ps, p1, sh);
 		printf(".ds %d \\h'|\\n(97u-\\n(%du'\\*(%d\n", p1, p1, p1);
 	}
-	printf(".as %d \"%s\\*(%d\n", yyval, sh, p2);
+	printf(".as %d \"%s\\*(%d\n", YV, sh, p2);
 	rfont[p1] = rfont[p2];
 	ofree(p2);
 }

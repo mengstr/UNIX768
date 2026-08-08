@@ -8,9 +8,21 @@
 #include <utmp.h>
 #include <sys/types.h>
 #include <sys/timeb.h>
+#include <stdlib.h>
 
 #define	TSIZE	33
 #define	USIZE	200
+struct tbuf;
+static void loop(void);
+static void print(void);
+static void upall(int);
+static void update(struct tbuf *, int);
+static int among(int);
+static void newday(void);
+static void puser(char *, long);
+static void phours(long);
+static void pdate(void);
+
 struct  utmp ibuf;
 
 struct ubuf {
@@ -32,11 +44,11 @@ long	day	= 86400L;
 int	pcount;
 char	**pptr;
 
-main(argc, argv) 
-char **argv;
+int
+main(int argc, char **argv)
 {
 	int c, fl;
-	register i;
+	register int i;
 	FILE *wf;
 
 	wtmp = "/usr/adm/wtmp";
@@ -89,9 +101,10 @@ char **argv;
 	exit(0);
 }
 
-loop()
+static void
+loop(void)
 {
-	register i;
+	register int i;
 	register struct tbuf *tp;
 	register struct ubuf *up;
 
@@ -107,7 +120,7 @@ loop()
 		dtime = 0;
 		return;
 	}
-	if (lastime>ibuf.ut_time || lastime+(1.5*day)<ibuf.ut_time)
+	if (lastime>ibuf.ut_time || lastime+day+day/2<ibuf.ut_time)
 		midnight = 0;
 	if (midnight==0)
 		newday();
@@ -134,7 +147,8 @@ loop()
 	update(tp, 0);
 }
 
-print()
+static void
+print(void)
 {
 	int i;
 	long ttime, t;
@@ -146,18 +160,20 @@ print()
 		t = ubuf[i].utime;
 		if (t>0)
 			ttime += t;
-		if (pflag && ubuf[i].utime > 0) {
-			printf("\t%-8.8s%6.2f\n",
-			    ubuf[i].uname, ubuf[i].utime/3600.);
-		}
+		if (pflag && ubuf[i].utime > 0)
+			puser(ubuf[i].uname, ubuf[i].utime);
 	}
 	if (ttime > 0) {
 		pdate();
-		printf("\ttotal%9.2f\n", ttime/3600.);
+		printf("\ttotal");
+		phours(ttime);
+		putchar('\n');
 	}
 }
 
+static void
 upall(f)
+int f;
 {
 	register struct tbuf *tp;
 
@@ -165,8 +181,10 @@ upall(f)
 		update(tp, f);
 }
 
+static void
 update(tp, f)
 struct tbuf *tp;
+int f;
 {
 	int j;
 	struct ubuf *up;
@@ -178,7 +196,7 @@ struct tbuf *tp;
 		t = ibuf.ut_time;
 	if (tp->userp) {
 		t1 = t - tp->ttime;
-		if (t1>0 && t1 < 1.5*day)
+		if (t1>0 && t1 < day+day/2)
 			tp->userp->utime += t1;
 	}
 	tp->ttime = t;
@@ -200,9 +218,11 @@ struct tbuf *tp;
 	tp->userp = up;
 }
 
+static int
 among(i)
+int i;
 {
-	register j, k;
+	register int j, k;
 	register char *p;
 
 	if (pcount==0)
@@ -220,11 +240,11 @@ among(i)
 	return(0);
 }
 
-newday()
+static void
+newday(void)
 {
 	long ttime;
 	struct timeb tb;
-	struct tm *localtime();
 
 	time(&ttime);
 	if (midnight == 0) {
@@ -237,13 +257,43 @@ newday()
 		midnight += day;
 }
 
-pdate()
+static void
+puser(name, secs)
+char *name;
+long secs;
+{
+	register int i;
+
+	putchar('\t');
+	for (i=0; i<8 && name[i]; i++)
+		putchar(name[i]);
+	while (i++ < 8)
+		putchar(' ');
+	phours(secs);
+	putchar('\n');
+}
+
+static void
+phours(secs)
+long secs;
+{
+	long h;
+
+	h = (secs * 100 + 1800) / 3600;
+	printf("%6ld.%02ld", h / 100, h % 100);
+}
+
+static void
+pdate(void)
 {
 	long x;
-	char *ctime();
+	register char *cp;
+	register int i;
 
 	if (byday==0)
 		return;
 	x = midnight-1;
-	printf("%.6s", ctime(&x)+4);
+	cp = ctime(&x)+4;
+	for (i=0; i<6 && cp[i]; i++)
+		putchar(cp[i]);
 }

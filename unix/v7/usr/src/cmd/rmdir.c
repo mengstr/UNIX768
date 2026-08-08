@@ -6,15 +6,14 @@
 #include <sys/dir.h>
 #include <sys/stat.h>
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
 int	Errors = 0;
-char	*rindex();
-char	*strcat();
-char	*strcpy();
+void	rmdir(char *d);
 
-main(argc,argv)
-int argc;
-char **argv;
+int
+main(int argc, char **argv)
 {
 
 	if(argc < 2) {
@@ -26,8 +25,8 @@ char **argv;
 	exit(Errors!=0);
 }
 
-rmdir(d)
-char *d;
+void
+rmdir(char *d)
 {
 	int	fd;
 	char	*np, name[500];

@@ -4,6 +4,7 @@
  */
 
 #include <signal.h>
+#include <unistd.h>
 
 char *fillst[] = {
 	"/bin",
@@ -12,9 +13,15 @@ char *fillst[] = {
 	0,
 };
 
-main()
+static void dosync(void);
+
+int
+main(int argc, char **argv)
 {
 	char **f;
+
+	(void)argc;
+	(void)argv;
 
 	if(fork())
 		exit(0);
@@ -28,9 +35,10 @@ main()
 		pause();
 }
 
+static void
 dosync()
 {
 	sync();
-	signal(SIGALRM, dosync);
+	signal(SIGALRM, (sighandler_t)dosync);
 	alarm(30);
 }

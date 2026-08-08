@@ -1,0 +1,20 @@
+build=$1
+ack=$2
+flags=$3
+includes=$4
+cc=$5
+
+test -d "$build" || mkdir "$build" || exit 1
+test -d "$build/ncg-build" || mkdir "$build/ncg-build" || exit 1
+cd "$build/ncg-build" || exit 1
+
+exec < "$ack/ncg.list"
+while read f
+do
+	o=`basename "$f" .c`.o
+	echo CC "$o"
+	$cc $flags $includes -c -o "$o" "$ack/$f" || exit 1
+done
+
+echo LD ncg
+$cc -o "$build/ncg" *.o

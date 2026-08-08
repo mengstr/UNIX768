@@ -12,6 +12,8 @@
 #include <sys/dir.h>
 #include <sys/filsys.h>
 #include <sys/fblk.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 
 struct	filsys	sblock;
@@ -26,12 +28,13 @@ int	headpr;
 unsigned	nfiles;
 
 int	nerror;
-daddr_t	bmap();
-long	atol();
-char	*malloc();
+i32	atol(char *s);
+void	l3tol(i32 *lp, char *cp, i32 n);
+static void check(char *file); static void pass1(struct dinode *ip);
+static void pass2(struct dinode *ip); static void bread(daddr_t bno, char *buf, int cnt);
+static daddr_t bmap(int i);
 
-main(argc, argv)
-char *argv[];
+main(int argc, char **argv)
 {
 	register i;
 	long n;
@@ -62,6 +65,7 @@ char *argv[];
 	return(nerror);
 }
 
+static void
 check(file)
 char *file;
 {
@@ -117,6 +121,7 @@ char *file;
 	free(ecount);
 }
 
+static void
 pass1(ip)
 register struct dinode *ip;
 {
@@ -164,6 +169,7 @@ register struct dinode *ip;
 	}
 }
 
+static void
 pass2(ip)
 register struct dinode *ip;
 {
@@ -184,6 +190,7 @@ register struct dinode *ip;
 	    ecount[i]&0377, ip->di_nlink);
 }
 
+static void
 bread(bno, buf, cnt)
 daddr_t bno;
 char *buf;
@@ -192,14 +199,14 @@ char *buf;
 
 	lseek(fi, bno*BSIZE, 0);
 	if (read(fi, buf, cnt) != cnt) {
-		printf("read error %D\n", bno);
+		printf("read error %ld\n", bno);
 		for(i=0; i<BSIZE; i++)
 			buf[i] = 0;
 	}
 }
 
 
-daddr_t
+static daddr_t
 bmap(i)
 {
 	daddr_t ibuf[NINDIR];

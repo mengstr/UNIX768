@@ -1,0 +1,4 @@
+set -e
+
+echo CC dc.c
+cc -O2 -s -o dc dc.c

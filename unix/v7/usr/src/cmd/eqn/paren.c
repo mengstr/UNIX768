@@ -1,7 +1,16 @@
 # include "e.h"
 
-paren(leftc, p1, rightc) int p1, leftc, rightc; {
+static void brack(int, char *, char *, char *);
+
+void
+paren(int leftc, int p1, int rightc) {
 	int n, m, h1, j, b1, v;
+	char leftstr[2], rightstr[2];
+
+	leftstr[0] = leftc;
+	leftstr[1] = '\0';
+	rightstr[0] = rightc;
+	rightstr[1] = '\0';
 	h1 = eht[p1]; b1 = ebase[p1];
 	yyval = p1;
 	lfont[yyval] = rfont[yyval] = 0;
@@ -9,14 +18,15 @@ paren(leftc, p1, rightc) int p1, leftc, rightc; {
 	if( n<2 ) n = 1;
 	m = n-2;
 	if (leftc=='{' || rightc == '}') {
-		n = n%2 ? n : ++n;
+		if (n % 2 == 0)
+			n++;
 		if( n<3 ) n=3;
 		m = n-3;
 	}
 	eht[yyval] = VERT(6 * ps * n);
 	ebase[yyval] = b1 + (eht[yyval]-h1)/2;
 	v = b1 - h1/2 + VERT( (ps*6*4)/10 );
-	printf(".ds %d \\|\\v'%du'", yyval, v);
+	printf(".ds %d \\|\\v'%du'", YV, v);
 	switch( leftc ) {
 		case 'n':	/* nothing */
 		case '\0':
@@ -50,7 +60,7 @@ paren(leftc, p1, rightc) int p1, leftc, rightc; {
 			brack(m, "|", "|", "|");
 			break;
 		default:
-			brack(m, (char *) &leftc, (char *) &leftc, (char *) &leftc);
+			brack(m, leftstr, leftstr, leftstr);
 			break;
 		}
 	printf("\\v'%du'\\*(%d", -v, p1);
@@ -86,7 +96,7 @@ paren(leftc, p1, rightc) int p1, leftc, rightc; {
 				brack(m, "|", "|", "|");
 				break;
 			default:
-				brack(m, (char *) &rightc, (char *) &rightc, (char *) &rightc);
+				brack(m, rightstr, rightstr, rightstr);
 				break;
 		}
 		printf("\\v'%du'", -v);
@@ -96,7 +106,8 @@ paren(leftc, p1, rightc) int p1, leftc, rightc; {
 		eht[yyval], ebase[yyval], n, v, leftc, rightc);
 }
 
-brack(m, t, c, b) int m; char *t, *c, *b; {
+static void
+brack(int m, char *t, char *c, char *b) {
 	int j;
 	printf("\\b'%s", t);
 	for( j=0; j<m; j++)

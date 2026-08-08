@@ -1,5 +1,10 @@
 #include <stdio.h>
 #include <ctype.h>
+#include <stdlib.h>
+
+int compare(register char *s, register char *t);
+int getword(char *w);
+int canon(char *old, char *new);
 
 FILE *dfile;
 char *filenam  = "/usr/dict/words";
@@ -11,8 +16,7 @@ char entry[250];
 char word[250];
 char key[50];
 
-main(argc,argv)
-char **argv;
+int main(int argc, char **argv)
 {
 	register c;
 	long top,bot,mid;
@@ -41,7 +45,7 @@ char **argv;
 		argv++;
 	}
 	if(argc<=1)
-		return;
+		return(0);
 	if(argc==2) {
 		fold++;
 		dict++;
@@ -84,14 +88,14 @@ char **argv;
 	fseek(dfile,bot,0);
 	while(ftell(dfile)<top) {
 		if(!getword(entry))
-			return;
+			return(0);
 		canon(entry,word);
 		switch(compare(key,word)) {
 		case -2:
-			return;
+			return(0);
 		case -1:
 		case 0:
-			puts(entry,stdout);
+			puts(entry);
 			break;
 		case 1:
 		case 2:
@@ -104,15 +108,16 @@ char **argv;
 		switch(compare(key,word)) {
 		case -1:
 		case 0:
-			puts(entry,stdout);
+			puts(entry);
 			continue;
 		}
 		break;
 	}
+	return(0);
 }
 
-compare(s,t)
-register char *s,*t;
+int
+compare (register char *s, register char *t)
 {
 	for(;*s==*t;s++,t++)
 		if(*s==0)
@@ -123,8 +128,8 @@ register char *s,*t;
 		2);
 }
 
-getword(w)
-char *w;
+int
+getword (char *w)
 {
 	register c;
 	for(;;) {
@@ -139,8 +144,8 @@ char *w;
 	return(1);
 }
 
-canon(old,new)
-char *old,*new;
+int
+canon (char *old, char *new)
 {
 	register c;
 	for(;;) {

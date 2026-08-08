@@ -1,6 +1,4 @@
-# include "stdio.h"
-# include "ctype.h"
-# include "assert.h"
+# include "refer.h"
 extern FILE *in;
 extern int endpush, labels, sort, bare, keywant;
 extern char *smallcaps;
@@ -28,3 +26,28 @@ extern FILE *fo, *ftemp;
 # define ANSLEN 1000
 # define TAGLEN 400
 # define NSERCH 20
+
+char *input(char *);
+char *lookat(void);
+void addch(char *, int);
+void output(char *);
+void append(char *);
+void flout(void);
+void doref(char *);
+int newline(char *);
+void choices(char *);
+int control(int);
+int common(char *);
+int chkdup(char *);
+void dumpold(void);
+void recopy(char *);
+void putsig(int, char **, int, char *, char *);
+void putkey(int, char **, int, char *);
+void putref(int, char **);
+int tabs(char **, char *);
+char *caps(char *, char *);
+char *revauth(char *, char *);
+int last(char *);
+char *fpar(int, char **, char *, int, int, int);
+int keylet(char *, int);
+char *artskp(char *);

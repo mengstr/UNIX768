@@ -1,0 +1,7 @@
+set -e
+
+rm -f cmd/mail cmd/calendar cmd/*.o
+
+cd cmd/uucp
+sh clean
+exit 0

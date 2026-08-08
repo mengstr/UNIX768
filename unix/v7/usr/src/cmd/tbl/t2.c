@@ -1,6 +1,7 @@
  /* t2.c:  subroutine sequencing for one table */
 # include "t..c"
-tableput()
+void
+tableput(void)
 {
 saveline();
 savefill();

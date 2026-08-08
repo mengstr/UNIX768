@@ -1,7 +1,36 @@
 # include <stdio.h>
+# include <stdlib.h>
 # include "prep.h"
 
-int	(*acts[])() =	{0,
+static void driver(char *);
+static void init(void);
+static int flags(char **);
+static void compile(FILE *);
+
+struct tempent temp[30];
+int	lflag;
+int	puncfl;
+int	hsw;
+int	san;
+int	t1;
+int	only;
+int	cs;
+int	(*flag[8])(void);
+int	fl;
+int	wdflg;
+long	wdnum;
+char	num[WIDTH + 1];
+int	igflg;
+struct htab itab;
+int	ipsp[PTRI];
+char	issp[CHARI];
+char	line[300];
+int	l;
+int	lno;
+int	c;
+FILE	*fi;
+
+static int	(*acts[])(void) =	{0,
 			coll,
 			save,
 			ctout,
@@ -70,8 +99,8 @@ char tab[NUMS][NUMC] = {
 	1, 1, 1, 0, 0, 0, 0, 0
 };
 
-main(argc,argv)
-	char	*argv[];
+int
+main(int argc, char **argv)
 {
 	auto	i,j;
 
@@ -104,17 +133,17 @@ pipe:
 	}
 	flsh();
 
-	exit(0);
+	return(0);
 }
 
+static void
 driver(arg)
 char	*arg;
 {
 	auto	p;
 
 	l = -1;
-	while((c = line[++l] = getc(fi)) != -1) {
-/*	fprintf(stderr, "driver: c = %o l = %d\n",c,l); /*DEBUG*/
+	while((c = line[++l] = getc(fi)) != EOF) {
 		if(l >= 299) {
 			lflag++;
 			l--;
@@ -128,7 +157,7 @@ char	*arg;
 
 		if(l == 0 && (c == '.' || c == '\'')) {
 			while((c = getc(fi)) != '\n' )
-				if(c == -1)	return;
+				if(c == EOF)	return;
 			lno++;
 			l = -1;
 			continue;
@@ -139,24 +168,20 @@ char	*arg;
 				continue;
 		}
 
-/*fprintf(stderr, "cs = %d cc = %c ca = %d\n",cs,c,tab[cs][c]);	/*DEBUG*/
-
-		if(p = tab[cs][c])
+		if((p = tab[cs][c]) != 0)
 			(*acts[p])();
 		continue;
 	}
-	return;
-
 }
 
+static void
 init()
 {
-	FILE	*fio, *fopen();
-	extern	coll(),save(),ctout(),asym(),asw(),csym(),csw();
-	extern	incl(),decl(),sk(),sk2();
+	FILE	*fio;
 
 
-	if(!igflg)return;
+	if(!igflg)
+		return;
 
 	itab.hptr = ipsp;
 	itab.symt = issp;
@@ -170,10 +195,11 @@ init()
 		exit(1);
 	}
 	compile(fio);
-	return;
+	fclose(fio);
 }
 
 
+static int
 flags(argv)
 	char	*argv[];
 {
@@ -219,6 +245,8 @@ flags(argv)
 	}
 	return(j);
 }
+
+static void
 compile(fio)
 FILE	*fio;
 {
@@ -235,7 +263,7 @@ FILE	*fio;
 		} else {
 			if(*b == '\t') {
 				v = 0;
-				while((i = getc(fio)) != -1) {
+				while((i = getc(fio)) != EOF) {
 					if(i == '\n')	break;
 					v = v*10 + (i - '0');
 				}
@@ -249,5 +277,4 @@ FILE	*fio;
 			}
 		}
 	}
-	return;
 }

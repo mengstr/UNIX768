@@ -16,6 +16,7 @@
 #define F_LOGIN 5
 
 jmp_buf Sjbuf;
+void alarmtr(i16);
 #define INVOKE(a, r) ret = a; if (ret<0) return(r);
 /*******
  *	conn(system)
@@ -34,8 +35,8 @@ jmp_buf Sjbuf;
  *
  */
 
-conn(system)
-char *system;
+int
+conn (char *system)
 {
 	int ret, nf;
 	int fn;
@@ -59,8 +60,7 @@ char *system;
  */
 
 char *
-lastc(s)
-char *s;
+lastc (char *s)
 {
 	while (*s != '\0') s++;
 	return(s);
@@ -94,7 +94,8 @@ int Dcfull = 0;
  *	return codes:  0  |  FAIL
  */
 
-gdial()
+int
+gdial (void)
 {
 	char *flds[10], *lt;
 	char *lb = Devbuff;
@@ -152,9 +153,8 @@ gdial()
  *	return codes: >= 0 (ok)  |  FAIL
  */
 
-ckdev(type, speed, ndev)
-char *type, *speed;
-int ndev;
+int
+ckdev (char *type, char *speed, int ndev)
 {
 	int sp, acu;
 	struct Devices *pd;
@@ -184,8 +184,8 @@ int ndev;
  *		FAIL  -  failed
  */
 
-getto(flds)
-char *flds[];
+int
+getto (char *flds[])
 {
 	DEBUG(F_PHONE, "call: no. %s ", flds[4]);
 	DEBUG(4, "for sys %s ", flds[F_NAME]);
@@ -209,8 +209,8 @@ char *flds[];
  *		FAIL  -  failed
  */
 
-call(flds)
-char *flds[];
+int
+call (char *flds[])
 {
 	char *pno, pref[20], phone[20];
 	char *s1, *s2;
@@ -250,15 +250,14 @@ int Dnf = 0;
  *		FAIL  -  failed
  */
 
-dialup(ph, flds)
-char *ph;
-char *flds[];
+int
+dialup (char *ph, char *flds[])
 {
 	char dcname[20], dnname[20], phone[20];
 	struct Devices *pd;
 	int nw, lt, pid, dcf, ndev;
+	i16 status;
 	extern int Error;
-	extern alarmtr();
 
 	for (ndev = 0;;ndev++) {
 		ndev = ckdev(flds[F_LINE], flds[F_SPEED], ndev);
@@ -311,14 +310,14 @@ char *flds[];
 		return(FAIL);
 	}
 	ioctl(dcf, TIOCHPCL, 0);
-	nw = wait(&lt);
+	nw = wait(&status);
 	alarm(0);
 	fflush(stdout);
 	fixline(dcf, pd->D_speed);
 	DEBUG(4, "Forked %d ", pid);
 	DEBUG(4, "Wait got %d ", nw);
-	DEBUG(4, "Status %o\n", lt);
-	if (lt != 0) {
+	DEBUG(4, "Status %o\n", status);
+	if (status != 0) {
 		close(dcf);
 		return(FAIL);
 	}
@@ -332,7 +331,8 @@ char *flds[];
  *	return codes:  none
  */
 
-clsacu()
+int
+clsacu (void)
 {
 	if (Dnf > 0) {
 		close(Dnf);
@@ -351,8 +351,8 @@ clsacu()
  *		FAIL  -  failed
  */
 
-direct(flds)
-char *flds[];
+int
+direct (char *flds[])
 {
 	int dcr, ndev;
 	char dcname[20];
@@ -390,8 +390,8 @@ char *flds[];
  *		CF_TIME  -  wrong time to call
  */
 
-finds(sysnam, flds)
-char *sysnam, *flds[];
+int
+finds (char *sysnam, char *flds[])
 {
 	FILE *fsys;
 	static char info[MAXC];
@@ -436,12 +436,10 @@ char *sysnam, *flds[];
  *	return codes:  0  |  FAIL
  */
 
-login(nf, flds, fn)
-char *flds[];
-int nf, fn;
+int
+login (int nf, char *flds[], int fn)
 {
 	char *want, *altern;
-	extern char *index();
 	int k, ok;
 
 	ASSERT(nf > 4, "TOO FEW LOG FIELDS %d", nf);
@@ -487,8 +485,8 @@ struct sg_spds {int sp_val, sp_name;} spds[] = {
  *	return codes:  none
  */
 
-fixline(tty, spwant)
-int tty, spwant;
+int
+fixline (int tty, int spwant)
 {
 	struct sgttyb ttbuf;
 	struct sg_spds *ps;
@@ -505,7 +503,7 @@ int tty, spwant;
 	ttbuf.sg_ispeed = ttbuf.sg_ospeed = speed;
 	DEBUG(4, "Speed: want %d ", spwant);
 	DEBUG(4, "use %o ", speed);
-	DEBUG(4, "ps %d\n", ps-spds);
+	DEBUG(4, "ps %d\n", (int)(ps-spds));
 	ret = ioctl(tty, TIOCSETP, &ttbuf);
 	ASSERT(ret >= 0, "RETURN FROM STTY %d", ret);
 	ioctl(tty, TIOCHPCL, 0);
@@ -528,14 +526,13 @@ int Error = 0;
  *		some character  -  timed out
  */
 
-expect(str, fn)
-char *str;
-int fn;
+int
+expect (char *str, int fn)
 {
 	static char rdvec[MR];
-	extern alarmtr();
 	char *rp = rdvec;
-	int nextch = 0, kr;
+	char nextch = 0;
+	int kr;
 
 	if (strcmp(str, "\"\"") == SAME)
 		return(0);
@@ -575,7 +572,8 @@ int fn;
  *	alarmtr()  -  catch alarm routine for "expect".
  */
 
-alarmtr()
+void
+alarmtr(i16 sig)
 {
 	longjmp(Sjbuf, 1);
 }
@@ -588,9 +586,8 @@ alarmtr()
  *	return codes:  none
  */
 
-sendthem(str, fn)
-char *str;
-int fn;
+int
+sendthem (char *str, int fn)
 {
 	int nw, ns;
 	int nulls;
@@ -610,9 +607,10 @@ int fn;
 		write(fn, EOTMSG, strlen(EOTMSG));
 		return;
 	}
-	if (strcmp(str, "") != SAME) {
+	/* L.sys represents an empty chat response as two quote characters. */
+	if (strcmp(str, "\"\"") != SAME) {
 		nw = write(fn, str, ns = strlen(str));
-		ASSERT(nw == ns, "BAD WRITE $s", str);
+		ASSERT(nw == ns, "BAD WRITE %s", str);
 	}
 	write(fn, "\n", 1);
 	return;
@@ -625,8 +623,8 @@ int fn;
  *	return codes;  none
  */
 
-genbrk(fn, bspeed, bnulls)
-int fn, bspeed, bnulls;
+int
+genbrk (int fn, int bspeed, int bnulls)
 {
 	struct sgttyb ttbuf;
 	int ret, sospeed;
@@ -657,8 +655,8 @@ int fn, bspeed, bnulls;
  *		1  -  not in the string
  */
 
-notin(sh, lg)
-char *sh, *lg;
+int
+notin (char *sh, char *lg)
 {
 	while (*lg != '\0') {
 		if (prefix(sh, lg))
@@ -688,15 +686,14 @@ char *sh, *lg;
  *		1  -  within limits
  */
 
-ifdate(s)
-char *s;
+int
+ifdate (char *s)
 {
 	static char *days[]={
 		"Su", "Mo", "Tu", "We", "Th", "Fr", "Sa", 0
 	};
 	long clock;
 	int i, tl, th, tn, dayok=0;
-	struct tm *localtime();
 	struct tm *tp;
 
 	time(&clock);

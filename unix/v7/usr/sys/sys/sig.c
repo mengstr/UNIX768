@@ -8,6 +8,12 @@
 #include "../h/text.h"
 #include "../h/seg.h"
 
+void signal(i32 pgrp, i32 sig);
+void psignal(struct proc *p, i32 sig);
+void stop(void);
+void psig(void);
+void ptrace(void);
+
 /*
  * Priority for tracing
  */
@@ -23,10 +29,10 @@
  */
 struct
 {
-	int	ip_lock;
-	int	ip_req;
-	int	*ip_addr;
-	int	ip_data;
+	i32	ip_lock;
+	i32	ip_req;
+	caddr_t	ip_addr;
+	i32	ip_data;
 } ipc;
 
 /*
@@ -36,8 +42,9 @@ struct
  * Called by tty.c for quits and
  * interrupts.
  */
-signal(pgrp, sig)
-register pgrp;
+void signal(pgrp, sig)
+i32 pgrp;
+i32 sig;
 {
 	register struct proc *p;
 
@@ -52,9 +59,9 @@ register pgrp;
  * Send the specified signal to
  * the specified process.
  */
-psignal(p, sig)
+void psignal(p, sig)
 register struct proc *p;
-register sig;
+i32 sig;
 {
 
 	if((unsigned)sig >= NSIG)
@@ -78,9 +85,10 @@ register sig;
  * a flag that asks the process to
  * do something to itself.
  */
+i32
 issig()
 {
-	register n;
+	register i32 n;
 	register struct proc *p;
 
 	p = u.u_procp;
@@ -99,22 +107,24 @@ issig()
  * informed and the process is able to
  * receive commands from the parent.
  */
-stop()
+void stop()
 {
 	register struct proc *pp, *cp;
 
 loop:
 	cp = u.u_procp;
-	if(cp->p_ppid != 1)
-	for (pp = &proc[0]; pp < &proc[NPROC]; pp++)
-		if (pp->p_pid == cp->p_ppid) {
-			wakeup((caddr_t)pp);
-			cp->p_stat = SSTOP;
-			swtch();
-			if ((cp->p_flag&STRC)==0 || procxmt())
-				return;
-			goto loop;
+	if(cp->p_ppid != 1) {
+		for (pp = &proc[0]; pp < &proc[NPROC]; pp++) {
+			if (pp->p_pid == cp->p_ppid) {
+				wakeup((caddr_t)pp);
+				cp->p_stat = SSTOP;
+				swtch();
+				if ((cp->p_flag&STRC)==0 || procxmt())
+					return;
+				goto loop;
+			}
 		}
+	}
 	exit(fsig(u.u_procp));
 }
 
@@ -125,9 +135,10 @@ loop:
  *	if(issig())
  *		psig();
  */
-psig()
+void psig()
 {
-	register n, p;
+	register i32 n;
+	register i32 handler;
 	register struct proc *rp;
 
 	rp = u.u_procp;
@@ -141,11 +152,14 @@ psig()
 	if (n==0)
 		return;
 	rp->p_sig &= ~(1<<(n-1));
-	if((p=u.u_signal[n]) != 0) {
+	/* Signal dispositions are 32-bit user pointers on Epoch68.  Keeping the
+	 * historical V7 "int p" here truncated handlers above 0x7fff and then
+	 * sign-extended them, for example 0x0000955e became 0xffff955e. */
+	if((handler=u.u_signal[n]) != 0) {
 		u.u_error = 0;
 		if(n != SIGINS && n != SIGTRC)
 			u.u_signal[n] = 0;
-		sendsig((caddr_t)p, n);
+		sendsig((caddr_t)handler, n);
 		return;
 	}
 	switch(n) {
@@ -169,10 +183,11 @@ psig()
  * find the signal in bit-position
  * representation in p_sig.
  */
+i32
 fsig(p)
 struct proc *p;
 {
-	register n, i;
+	register i32 n, i;
 
 	n = p->p_sig;
 	for(i=1; i<NSIG; i++) {
@@ -193,11 +208,12 @@ struct proc *p;
  * user.h area followed by the entire
  * data+stack segments.
  */
+i32
 core()
 {
 	register struct inode *ip;
-	register unsigned s;
-	extern schar();
+	register u32 s;
+	extern i32 schar(void);
 
 	u.u_error = 0;
 	u.u_dirp = "core";
@@ -234,12 +250,12 @@ core()
  * true return if successful.
  */
 
-grow(sp)
-unsigned sp;
+i32
+grow(unsigned sp)
 {
-	register si, i;
+	register i32 si, i;
 	register struct proc *p;
-	register a;
+	register i32 a;
 
 	if(sp >= -ctob(u.u_ssize))
 		return(0);
@@ -264,14 +280,14 @@ unsigned sp;
 /*
  * sys-trace system call.
  */
-ptrace()
+void ptrace()
 {
 	register struct proc *p;
 	register struct a {
-		int	data;
-		int	pid;
-		int	*addr;
-		int	req;
+		i32	data;
+		i32	pid;
+		caddr_t	addr;
+		i32	req;
 	} *uap;
 
 	uap = (struct a *)u.u_ap;
@@ -298,7 +314,7 @@ ptrace()
 	setrun(p);
 	while (ipc.ip_req > 0)
 		sleep((caddr_t)&ipc, IPCPRI);
-	u.u_r.r_val1 = ipc.ip_data;
+	u.u_r.r_reg.r_val1 = ipc.ip_data;
 	if (ipc.ip_req < 0)
 		u.u_error = EIO;
 	ipc.ip_lock = 0;
@@ -310,10 +326,11 @@ ptrace()
  * executes to implement the command
  * of the parent process in tracing.
  */
+i32
 procxmt()
 {
-	register int i;
-	register *p;
+	register i32 i;
+	register i32 *p;
 	register struct text *xp;
 
 	if (ipc.ip_lock != u.u_procp->p_pid)
@@ -339,7 +356,7 @@ procxmt()
 
 	/* read u */
 	case 3:
-		i = (int)ipc.ip_addr;
+		i = (u32)ipc.ip_addr;
 		if (i<0 || i >= ctob(USIZE))
 			goto error;
 		ipc.ip_data = ((physadr)&u)->r[i>>1];
@@ -375,9 +392,9 @@ procxmt()
 
 	/* write u */
 	case 6:
-		i = (int)ipc.ip_addr;
-		p = (int *)&((physadr)&u)->r[i>>1];
-		if (p >= (int *)&u.u_fps && p < (int *)&u.u_fps.u_fpregs[6])
+		i = (u32)ipc.ip_addr;
+		p = (i32 *)&((physadr)&u)->r[i>>1];
+		if (p >= (i32 *)&u.u_fps && p < (i32 *)&u.u_fps.u_fpregs[6])
 			goto ok;
 		for (i=0; i<8; i++)
 			if (p == &u.u_ar0[regloc[i]])
@@ -398,8 +415,8 @@ procxmt()
 	case 9:
 		u.u_ar0[RPS] |= TBIT;
 	case 7:
-		if ((int)ipc.ip_addr != 1)
-			u.u_ar0[PC] = (int)ipc.ip_addr;
+		if ((u32)ipc.ip_addr != 1)
+			u.u_ar0[PC] = (i32)ipc.ip_addr;
 		u.u_procp->p_sig = 0;
 		if (ipc.ip_data)
 			psignal(u.u_procp, ipc.ip_data);

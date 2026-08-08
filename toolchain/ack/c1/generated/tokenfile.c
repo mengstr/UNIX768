@@ -1,0 +1,55 @@
+/* LLgen generated code from source ../../cc/c1/generated/tokenfile.g */
+#include "Lpars.h"
+#define LL_LEXI LLlex
+#define LLNOFIRSTS
+#define LL_LEXI LLlex
+/* $Id$ */
+#ifdef LL_DEBUG
+#include <assert.h>
+#define LL_assert(x)	assert(x)
+#else
+#define LL_assert(x)	/* nothing */
+#endif
+
+extern int LLsymb;
+
+#define LL_SAFE(x)	/* Nothing */
+#define LL_SSCANDONE(x)	if (LLsymb != x) LLsafeerror(x)
+#define LL_SCANDONE(x)	if (LLsymb != x) LLerror(x)
+#define LL_NOSCANDONE(x) LLscan(x)
+#ifdef LL_FASTER
+#define LLscan(x)	if ((LLsymb = LL_LEXI()) != x) LLerror(x)
+#endif
+
+extern unsigned int LLscnt[];
+extern unsigned int LLtcnt[];
+extern int LLcsymb;
+
+#if LL_NON_CORR
+extern int LLstartsymb;
+#endif
+
+#define LLsdecr(d)	{LL_assert(LLscnt[d] > 0); LLscnt[d]--;}
+#define LLtdecr(d)	{LL_assert(LLtcnt[d] > 0); LLtcnt[d]--;}
+#define LLsincr(d)	LLscnt[d]++
+#define LLtincr(d)	LLtcnt[d]++
+
+extern int LL_LEXI(void);
+extern void LLread(void);
+extern int LLskip(void);
+extern int LLnext(int);
+extern void LLerror(int);
+extern void LLsafeerror(int);
+extern void LLnewlevel(unsigned int *);
+extern void LLoldlevel(unsigned int *);
+#ifndef LL_FASTER
+extern void LLscan(int);
+#endif
+#ifndef LLNOFIRSTS
+extern int LLfirst(int, int);
+#endif
+#if LL_NON_CORR
+extern void LLnc_recover(void);
+#endif
+
+

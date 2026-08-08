@@ -1,18 +1,20 @@
-#include "stdio.h"
 #include "awk.def"
 #include "awk.h"
+#include "errno.h"
 
 int	dbg	= 0;
 int	svargc;
 char	**svargv, **xargv;
+
 extern FILE	*yyin;	/* lex input file */
 char	*lexprog;	/* points to program argument if it exists */
-extern	errorflag;	/* non-zero if any syntax errors; set by yyerror */
+extern int	errorflag;	/* non-zero if any syntax errors; set by yyerror */
 
 int filefd, iflag, symnum, ansfd;
 char *filelist;
-extern int maxsym, errno;
-main(argc, argv) int argc; char *argv[]; {
+static void logit(int, char *[]);
+static void msgfiles(void);
+int main(int argc, char *argv[]) {
 	if (argc == 1)
 		error(FATAL, "Usage: awk [-f source | 'cmds'] [files]");
 	if (strcmp(argv[0], "a.out"))
@@ -74,8 +76,10 @@ iloop:
 	goto iloop;
 }
 
-logit(n, s) char *s[];
-{	int i, tvec[2];
+static void logit(n, s) char *s[];
+{
+	int i;
+	time_t tvec[2];
 	FILE *f, *g;
 	char buf[512];
 	if ((f=fopen("/usr/pjw/awk/awkhist", "a"))==NULL)
@@ -99,12 +103,12 @@ logit(n, s) char *s[];
 	fclose(g);
 }
 
-yywrap()
+yywrap(void)
 {
 	return(1);
 }
 
-msgfiles()
+static void msgfiles(void)
 {	char buf[512], *p, *q, **s;
 	int n;
 	n=read(filefd, buf, 512);

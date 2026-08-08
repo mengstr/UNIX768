@@ -1,0 +1,47 @@
+set -e
+
+sh clean
+
+for f in glue1 glue2 glue3 glue4 glue5 refer0 refer1 refer2 refer4
+do
+	cc -Dunix -I. -c $f.c
+done
+for f in refer5 refer6 refer7 refer8 hunt2 hunt3 hunt5 hunt6 hunt7
+do
+	cc -Dunix -I. -c $f.c
+done
+for f in hunt8 hunt9 mkey3 shell deliv2
+do
+	cc -Dunix -I. -c $f.c
+done
+cc -s -o refer glue1.o glue2.o glue3.o glue4.o glue5.o refer0.o \
+ refer1.o refer2.o refer4.o refer5.o refer6.o refer7.o refer8.o \
+ hunt2.o hunt3.o hunt5.o hunt6.o hunt7.o hunt8.o hunt9.o \
+ mkey3.o shell.o deliv2.o
+
+rm -f *.o
+for f in mkey1 mkey2 mkey3 deliv2
+do
+	cc -Dunix -I. -c $f.c
+done
+cc -s -o mkey mkey1.o mkey2.o mkey3.o deliv2.o
+
+rm -f *.o
+for f in inv1 inv2 inv3 inv5 inv6 deliv2
+do
+	cc -Dunix -I. -c $f.c
+done
+cc -s -o inv inv1.o inv2.o inv3.o inv5.o inv6.o deliv2.o
+
+rm -f *.o
+for f in hunt1 hunt2 hunt3 hunt5 hunt6 hunt7 hunt8 hunt9
+do
+	cc -Dunix -I. -c $f.c
+done
+for f in glue5 refer3 glue4 shell deliv2
+do
+	cc -Dunix -I. -c $f.c
+done
+cc -s -o hunt hunt1.o hunt2.o hunt3.o hunt5.o hunt6.o hunt7.o \
+ hunt8.o hunt9.o glue5.o refer3.o glue4.o shell.o deliv2.o
+rm -f *.o

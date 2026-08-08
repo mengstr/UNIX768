@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <sys/param.h>
+#include <unistd.h>
 
 #define	CBRA	1
 #define	CCHR	2
@@ -56,8 +57,15 @@ char	bittab[] = {
 	128
 };
 
-main(argc, argv)
-char **argv;
+int compile(char *astr);
+int execute(char *file);
+int advance(register char *lp, register char *ep);
+int succeed(char *f);
+int ecmp(char *a, char *b, int count);
+int errexit(char *s, char *f);
+
+int
+main (int argc, char **argv)
 {
 	while (--argc > 0 && (++argv)[0][0]=='-')
 		switch (argv[0][1]) {
@@ -142,8 +150,8 @@ out:
 	exit(nsucc == 0);
 }
 
-compile(astr)
-char *astr;
+int
+compile (char *astr)
 {
 	register c;
 	register char *ep, *sp;
@@ -259,8 +267,8 @@ char *astr;
 	errexit("grep: RE error\n", (char *)NULL);
 }
 
-execute(file)
-char *file;
+int
+execute (char *file)
 {
 	register char *p1, *p2;
 	register c;
@@ -321,8 +329,8 @@ char *file;
 	}
 }
 
-advance(lp, ep)
-register char *lp, *ep;
+int
+advance (register char *lp, register char *ep)
 {
 	register char *curlp;
 	char c;
@@ -436,10 +444,9 @@ register char *lp, *ep;
 	}
 }
 
-succeed(f)
-char *f;
+int
+succeed (char *f)
 {
-	long ftell();
 	nsucc = 1;
 	if (sflag)
 		return;
@@ -461,8 +468,8 @@ char *f;
 	printf("%s\n", linebuf);
 }
 
-ecmp(a, b, count)
-char	*a, *b;
+int
+ecmp (char *a, char *b, int count)
 {
 	register cc = count;
 	while(cc--)
@@ -470,8 +477,8 @@ char	*a, *b;
 	return(1);
 }
 
-errexit(s, f)
-char *s, *f;
+int
+errexit (char *s, char *f)
 {
 	fprintf(stderr, s, f);
 	exit(2);

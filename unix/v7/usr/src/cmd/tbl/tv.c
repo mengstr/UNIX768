@@ -1,6 +1,11 @@
  /* tv.c: draw vertical lines */
 # include "t..c"
+static int midbcol(int, int);
+static int midbar(int, int);
+
+void
 drawvert(start,end, c, lwid)
+	int start, end, c, lwid;
 {
 char *exb=0, *ext=0;
 int tp=0, sl, ln, pos, epb, ept, vm;
@@ -109,7 +114,9 @@ for(ln=0; ln<lwid; ln++)
 }
 
 
+static int
 midbar(i,c)
+	int i, c;
 {
 int k;
 k = midbcol(i,c);
@@ -117,7 +124,9 @@ if (k==0 && c>0)
 	k = midbcol(i, c-1);
 return(k);
 }
+static int
 midbcol(i,c)
+	int i, c;
 {
 int ct;
 while ( (ct=ctype(i,c)) == 's')
@@ -129,6 +138,7 @@ if (ct=barent(table[i][c].col))
 return(0);
 }
 
+int
 barent(s)
 	char *s;
 {

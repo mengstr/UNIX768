@@ -1,0 +1,685 @@
+ROOT := .
+ifneq ($(filter ack ACK,$(notdir $(CURDIR))),)
+ROOT := ../..
+endif
+
+BUILD_DIR = $(ROOT)/build/toolchain/ack/68kunix
+BIN_DIR = $(ROOT)/build/bin
+LIBM_SRC_DIR = $(ROOT)/toolchain/ack/libm
+LIBM_SRCS = $(sort $(wildcard $(LIBM_SRC_DIR)/*.c))
+LIBM_OBJS = $(patsubst $(LIBM_SRC_DIR)/%.c,$(BUILD_DIR)/libm_%.o,$(LIBM_SRCS))
+
+CC = $(ROOT)/toolchain/ack/cc/cc
+CPP = $(BIN_DIR)/cpp
+C1 = $(BIN_DIR)/c1
+OPT2 = $(BIN_DIR)/opt2
+C2 = $(BIN_DIR)/ncg
+AS = $(BIN_DIR)/as
+CV = $(BIN_DIR)/cv
+LN = $(BIN_DIR)/led
+AAL = $(BIN_DIR)/aal
+
+CFLAGS = -L -Vw2.2i2.2p4.2f4.2s2.2l4.2d8.2x8.2
+
+.PHONY: all ack-runtime clean
+.NOTPARALLEL: ack-runtime
+
+all: ack-runtime
+
+ack-runtime: $(BUILD_DIR) \
+	$(BUILD_DIR)/libc_crt0.o \
+	$(BUILD_DIR)/libc.a \
+	$(BUILD_DIR)/libm.a \
+	$(BUILD_DIR)/libc_end.o
+
+clean:
+	@rm -f \
+		$(BUILD_DIR)/libc.a \
+		$(BUILD_DIR)/libm.a \
+		$(LIBM_OBJS)
+
+$(BIN_DIR):
+	@mkdir -p $(BIN_DIR)
+
+$(BUILD_DIR):
+	@mkdir -p $(BUILD_DIR)
+
+$(BUILD_DIR)/libc_crt0.o: $(ROOT)/toolchain/ack/libc/68kunix/crt0.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_crt0.o $(ROOT)/toolchain/ack/libc/68kunix/crt0.s
+
+$(BUILD_DIR)/libc_end.o: $(ROOT)/toolchain/ack/libc/68kunix/end.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_end.o $(ROOT)/toolchain/ack/libc/68kunix/end.s
+
+$(BUILD_DIR)/libc_read.o: $(ROOT)/toolchain/ack/libc/68kunix/read.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_read.o $(ROOT)/toolchain/ack/libc/68kunix/read.s
+
+$(BUILD_DIR)/libc_write.o: $(ROOT)/toolchain/ack/libc/68kunix/write.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_write.o $(ROOT)/toolchain/ack/libc/68kunix/write.s
+
+$(BUILD_DIR)/libc_open.o: $(ROOT)/toolchain/ack/libc/68kunix/open.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_open.o $(ROOT)/toolchain/ack/libc/68kunix/open.s
+
+$(BUILD_DIR)/libc_close.o: $(ROOT)/toolchain/ack/libc/68kunix/close.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_close.o $(ROOT)/toolchain/ack/libc/68kunix/close.s
+
+$(BUILD_DIR)/libc_creat.o: $(ROOT)/toolchain/ack/libc/68kunix/creat.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_creat.o $(ROOT)/toolchain/ack/libc/68kunix/creat.s
+
+$(BUILD_DIR)/libc_unlink.o: $(ROOT)/toolchain/ack/libc/68kunix/unlink.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_unlink.o $(ROOT)/toolchain/ack/libc/68kunix/unlink.s
+
+$(BUILD_DIR)/libc_lseek.o: $(ROOT)/toolchain/ack/libc/68kunix/lseek.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_lseek.o $(ROOT)/toolchain/ack/libc/68kunix/lseek.s
+
+$(BUILD_DIR)/libc_exit.o: $(ROOT)/toolchain/ack/libc/exit.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $(BUILD_DIR)/libc_exit.o $(ROOT)/toolchain/ack/libc/exit.c
+
+$(BUILD_DIR)/libc_exit_raw.o: $(ROOT)/toolchain/ack/libc/68kunix/exit.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_exit_raw.o $(ROOT)/toolchain/ack/libc/68kunix/exit.s
+
+$(BUILD_DIR)/libc_sbrk.o: $(ROOT)/toolchain/ack/libc/68kunix/sbrk.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_sbrk.o $(ROOT)/toolchain/ack/libc/68kunix/sbrk.s
+
+$(BUILD_DIR)/libc_string.o: $(ROOT)/toolchain/ack/libc/string.c $(ROOT)/toolchain/ack/libc/types.h
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -O2 -c -o $(BUILD_DIR)/libc_string.o $(ROOT)/toolchain/ack/libc/string.c
+
+$(BUILD_DIR)/libc_memory.o: $(ROOT)/toolchain/ack/libc/memory.c $(ROOT)/toolchain/ack/libc/types.h
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -O2 -c -o $(BUILD_DIR)/libc_memory.o $(ROOT)/toolchain/ack/libc/memory.c
+
+$(BUILD_DIR)/libc_stdlib.o: $(ROOT)/toolchain/ack/libc/stdlib.c $(ROOT)/toolchain/ack/libc/types.h
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -O2 -c -o $(BUILD_DIR)/libc_stdlib.o $(ROOT)/toolchain/ack/libc/stdlib.c
+
+$(BUILD_DIR)/libc_stdlib_atoi.o: $(ROOT)/toolchain/ack/libc/stdlib_atoi.c $(ROOT)/toolchain/ack/libc/types.h
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $(BUILD_DIR)/libc_stdlib_atoi.o $(ROOT)/toolchain/ack/libc/stdlib_atoi.c
+
+$(BUILD_DIR)/libc_stdlib_abort.o: $(ROOT)/toolchain/ack/libc/stdlib_abort.c $(ROOT)/toolchain/ack/libc/types.h
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $(BUILD_DIR)/libc_stdlib_abort.o $(ROOT)/toolchain/ack/libc/stdlib_abort.c
+
+$(BUILD_DIR)/libc_stdlib_malloc.o: $(ROOT)/toolchain/ack/libc/stdlib_malloc.c $(ROOT)/toolchain/ack/libc/types.h
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $(BUILD_DIR)/libc_stdlib_malloc.o $(ROOT)/toolchain/ack/libc/stdlib_malloc.c
+
+
+$(BUILD_DIR)/libc_stdio.o: $(ROOT)/toolchain/ack/libc/stdio.c $(ROOT)/toolchain/ack/libc/types.h
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $(BUILD_DIR)/libc_stdio.o $(ROOT)/toolchain/ack/libc/stdio.c
+
+$(BUILD_DIR)/libc_stdio_data.o: $(ROOT)/toolchain/ack/libc/stdio_data.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $(BUILD_DIR)/libc_stdio_data.o $(ROOT)/toolchain/ack/libc/stdio_data.c
+
+$(BUILD_DIR)/libc_stdio_%.o: $(ROOT)/toolchain/ack/libc/stdio_%.c $(ROOT)/toolchain/ack/libc/stdio_private.h $(ROOT)/toolchain/ack/libc/types.h
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $@ $<
+
+$(BUILD_DIR)/libc_environ.o: $(ROOT)/toolchain/ack/libc/environ.c $(ROOT)/toolchain/ack/libc/types.h
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $(BUILD_DIR)/libc_environ.o $(ROOT)/toolchain/ack/libc/environ.c
+
+$(BUILD_DIR)/libc_ctype.o: $(ROOT)/toolchain/ack/libc/ctype.c $(ROOT)/toolchain/ack/libc/types.h
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $(BUILD_DIR)/libc_ctype.o $(ROOT)/toolchain/ack/libc/ctype.c
+
+$(BUILD_DIR)/libc_isatty.o: $(ROOT)/toolchain/ack/targets/68kunix/libsys/isatty.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $(BUILD_DIR)/libc_isatty.o $(ROOT)/toolchain/ack/targets/68kunix/libsys/isatty.c
+
+$(BUILD_DIR)/libc_local.o: $(ROOT)/toolchain/ack/libc/68kunix/local.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $(BUILD_DIR)/libc_local.o $(ROOT)/toolchain/ack/libc/68kunix/local.c
+
+$(BUILD_DIR)/libc_v7_stty.o: $(ROOT)/toolchain/ack/libc/68kunix/v7_stty.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_v7_stty.o $(ROOT)/toolchain/ack/libc/68kunix/v7_stty.s
+
+$(BUILD_DIR)/libc_v7_ttyslot.o: $(ROOT)/toolchain/ack/libc/68kunix/v7_ttyslot.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $(BUILD_DIR)/libc_v7_ttyslot.o $(ROOT)/toolchain/ack/libc/68kunix/v7_ttyslot.c
+
+$(BUILD_DIR)/libc_v7_execvp.o: $(ROOT)/toolchain/ack/libc/v7_execvp.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $(BUILD_DIR)/libc_v7_execvp.o $(ROOT)/toolchain/ack/libc/v7_execvp.c
+
+$(BUILD_DIR)/libc_v7_getenv.o: $(ROOT)/toolchain/ack/libc/v7_getenv.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $(BUILD_DIR)/libc_v7_getenv.o $(ROOT)/toolchain/ack/libc/v7_getenv.c
+
+$(BUILD_DIR)/libc_v7_getpass.o: $(ROOT)/toolchain/ack/libc/68kunix/v7_getpass.c $(ROOT)/unix/v7/usr/include/stdio.h $(ROOT)/unix/v7/usr/include/sgtty.h
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $(BUILD_DIR)/libc_v7_getpass.o $(ROOT)/toolchain/ack/libc/68kunix/v7_getpass.c
+
+$(BUILD_DIR)/libc_v7_crypt.o: $(ROOT)/toolchain/ack/libc/v7_crypt.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $(BUILD_DIR)/libc_v7_crypt.o $(ROOT)/toolchain/ack/libc/v7_crypt.c
+
+$(BUILD_DIR)/libc_gen_search.o: $(ROOT)/toolchain/ack/libc/gen_search.c $(ROOT)/toolchain/ack/libc/types.h
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $(BUILD_DIR)/libc_gen_search.o $(ROOT)/toolchain/ack/libc/gen_search.c
+
+$(BUILD_DIR)/libc_gen_sort.o: $(ROOT)/toolchain/ack/libc/gen_sort.c $(ROOT)/toolchain/ack/libc/types.h
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $(BUILD_DIR)/libc_gen_sort.o $(ROOT)/toolchain/ack/libc/gen_sort.c
+
+$(BUILD_DIR)/libc_gen_misc.o: $(ROOT)/toolchain/ack/libc/gen_misc.c $(ROOT)/toolchain/ack/libc/types.h
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $(BUILD_DIR)/libc_gen_misc.o $(ROOT)/toolchain/ack/libc/gen_misc.c
+
+$(BUILD_DIR)/libc_gen_pw.o: $(ROOT)/toolchain/ack/libc/gen_pw.c $(ROOT)/toolchain/ack/libc/types.h
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $(BUILD_DIR)/libc_gen_pw.o $(ROOT)/toolchain/ack/libc/gen_pw.c
+
+$(BUILD_DIR)/libc_gen_sleep.o: $(ROOT)/toolchain/ack/libc/gen_sleep.c $(ROOT)/toolchain/ack/libc/types.h
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $(BUILD_DIR)/libc_gen_sleep.o $(ROOT)/toolchain/ack/libc/gen_sleep.c
+
+$(BUILD_DIR)/libc_gen_system.o: $(ROOT)/toolchain/ack/libc/gen_system.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $(BUILD_DIR)/libc_gen_system.o $(ROOT)/toolchain/ack/libc/gen_system.c
+
+$(BUILD_DIR)/libc_gen_pack.o: $(ROOT)/toolchain/ack/libc/gen_pack.c $(ROOT)/toolchain/ack/libc/types.h
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $(BUILD_DIR)/libc_gen_pack.o $(ROOT)/toolchain/ack/libc/gen_pack.c
+
+$(BUILD_DIR)/libc_gen_time.o: $(ROOT)/toolchain/ack/libc/gen_time.c $(ROOT)/toolchain/ack/libc/types.h
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $(BUILD_DIR)/libc_gen_time.o $(ROOT)/toolchain/ack/libc/gen_time.c
+
+$(BUILD_DIR)/libc_gen_getopt.o: $(ROOT)/toolchain/ack/libc/gen_getopt.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $@ $<
+
+$(BUILD_DIR)/libc_float_ext.o: $(ROOT)/toolchain/ack/libc/float_ext.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $@ $<
+
+$(BUILD_DIR)/libc_float_ecvt.o: $(ROOT)/toolchain/ack/libc/float_ecvt.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $@ $<
+
+$(BUILD_DIR)/libc_float_gcvt.o: $(ROOT)/toolchain/ack/libc/float_gcvt.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $@ $<
+
+$(BUILD_DIR)/libc_stdio_float.o: $(ROOT)/toolchain/ack/libc/stdio_float.c
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -c -o $@ $<
+
+$(BUILD_DIR)/libc_fat.o: $(ROOT)/toolchain/ack/libc/68kunix/fat.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_fat.o $(ROOT)/toolchain/ack/libc/68kunix/fat.s
+
+$(BUILD_DIR)/libc_csa2.o: $(ROOT)/toolchain/ack/libc/68kunix/csa2.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_csa2.o $(ROOT)/toolchain/ack/libc/68kunix/csa2.s
+
+$(BUILD_DIR)/libc_csb2.o: $(ROOT)/toolchain/ack/libc/68kunix/csb2.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_csb2.o $(ROOT)/toolchain/ack/libc/68kunix/csb2.s
+
+$(BUILD_DIR)/libc_csa4.o: $(ROOT)/toolchain/ack/libc/68kunix/csa4.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_csa4.o $(ROOT)/toolchain/ack/libc/68kunix/csa4.s
+
+$(BUILD_DIR)/libc_csb4.o: $(ROOT)/toolchain/ack/libc/68kunix/csb4.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_csb4.o $(ROOT)/toolchain/ack/libc/68kunix/csb4.s
+
+$(BUILD_DIR)/libc_cuu.o: $(ROOT)/toolchain/ack/libc/68kunix/cuu.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_cuu.o $(ROOT)/toolchain/ack/libc/68kunix/cuu.s
+
+$(BUILD_DIR)/libc_setjmp.o: $(ROOT)/toolchain/ack/libc/68kunix/setjmp.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_setjmp.o $(ROOT)/toolchain/ack/libc/68kunix/setjmp.s
+
+$(BUILD_DIR)/libc_dvi.o: $(ROOT)/toolchain/ack/libc/68kunix/dvi.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_dvi.o $(ROOT)/toolchain/ack/libc/68kunix/dvi.s
+
+$(BUILD_DIR)/libc_dvu.o: $(ROOT)/toolchain/ack/libc/68kunix/dvu.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_dvu.o $(ROOT)/toolchain/ack/libc/68kunix/dvu.s
+
+$(BUILD_DIR)/libc_mli.o: $(ROOT)/toolchain/ack/libc/68kunix/mli.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_mli.o $(ROOT)/toolchain/ack/libc/68kunix/mli.s
+
+$(BUILD_DIR)/libc_mlu.o: $(ROOT)/toolchain/ack/libc/68kunix/mlu.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_mlu.o $(ROOT)/toolchain/ack/libc/68kunix/mlu.s
+
+$(BUILD_DIR)/libc_chdir.o: $(ROOT)/toolchain/ack/libc/68kunix/chdir.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_chdir.o $(ROOT)/toolchain/ack/libc/68kunix/chdir.s
+
+$(BUILD_DIR)/libc_chmod.o: $(ROOT)/toolchain/ack/libc/68kunix/chmod.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_chmod.o $(ROOT)/toolchain/ack/libc/68kunix/chmod.s
+
+$(BUILD_DIR)/libc_fstat.o: $(ROOT)/toolchain/ack/libc/68kunix/fstat.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_fstat.o $(ROOT)/toolchain/ack/libc/68kunix/fstat.s
+
+$(BUILD_DIR)/libc_stat.o: $(ROOT)/toolchain/ack/libc/68kunix/stat.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_stat.o $(ROOT)/toolchain/ack/libc/68kunix/stat.s
+
+$(BUILD_DIR)/libc_umask.o: $(ROOT)/toolchain/ack/libc/68kunix/umask.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_umask.o $(ROOT)/toolchain/ack/libc/68kunix/umask.s
+
+$(BUILD_DIR)/libc_access.o: $(ROOT)/toolchain/ack/libc/68kunix/access.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_access.o $(ROOT)/toolchain/ack/libc/68kunix/access.s
+
+$(BUILD_DIR)/libc_acct.o: $(ROOT)/toolchain/ack/libc/68kunix/acct.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_acct.o $(ROOT)/toolchain/ack/libc/68kunix/acct.s
+
+$(BUILD_DIR)/libc_alarm.o: $(ROOT)/toolchain/ack/libc/68kunix/alarm.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_alarm.o $(ROOT)/toolchain/ack/libc/68kunix/alarm.s
+
+$(BUILD_DIR)/libc_chown.o: $(ROOT)/toolchain/ack/libc/68kunix/chown.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_chown.o $(ROOT)/toolchain/ack/libc/68kunix/chown.s
+
+$(BUILD_DIR)/libc_dup.o: $(ROOT)/toolchain/ack/libc/68kunix/dup.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_dup.o $(ROOT)/toolchain/ack/libc/68kunix/dup.s
+
+$(BUILD_DIR)/libc_execv.o: $(ROOT)/toolchain/ack/libc/68kunix/execv.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_execv.o $(ROOT)/toolchain/ack/libc/68kunix/execv.s
+
+$(BUILD_DIR)/libc_execl.o: $(ROOT)/toolchain/ack/libc/68kunix/execl.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_execl.o $(ROOT)/toolchain/ack/libc/68kunix/execl.s
+
+$(BUILD_DIR)/libc_execve.o: $(ROOT)/toolchain/ack/libc/68kunix/execve.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_execve.o $(ROOT)/toolchain/ack/libc/68kunix/execve.s
+
+$(BUILD_DIR)/libc_fork.o: $(ROOT)/toolchain/ack/libc/68kunix/fork.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_fork.o $(ROOT)/toolchain/ack/libc/68kunix/fork.s
+
+$(BUILD_DIR)/libc_getgid.o: $(ROOT)/toolchain/ack/libc/68kunix/getgid.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_getgid.o $(ROOT)/toolchain/ack/libc/68kunix/getgid.s
+
+$(BUILD_DIR)/libc_getegid.o: $(ROOT)/toolchain/ack/libc/68kunix/getegid.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_getegid.o $(ROOT)/toolchain/ack/libc/68kunix/getegid.s
+
+$(BUILD_DIR)/libc_getpid.o: $(ROOT)/toolchain/ack/libc/68kunix/getpid.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_getpid.o $(ROOT)/toolchain/ack/libc/68kunix/getpid.s
+
+$(BUILD_DIR)/libc_getuid.o: $(ROOT)/toolchain/ack/libc/68kunix/getuid.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_getuid.o $(ROOT)/toolchain/ack/libc/68kunix/getuid.s
+
+$(BUILD_DIR)/libc_geteuid.o: $(ROOT)/toolchain/ack/libc/68kunix/geteuid.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_geteuid.o $(ROOT)/toolchain/ack/libc/68kunix/geteuid.s
+
+$(BUILD_DIR)/libc_ioctl.o: $(ROOT)/toolchain/ack/libc/68kunix/ioctl.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_ioctl.o $(ROOT)/toolchain/ack/libc/68kunix/ioctl.s
+
+$(BUILD_DIR)/libc_kill.o: $(ROOT)/toolchain/ack/libc/68kunix/kill.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_kill.o $(ROOT)/toolchain/ack/libc/68kunix/kill.s
+
+$(BUILD_DIR)/libc_link.o: $(ROOT)/toolchain/ack/libc/68kunix/link.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_link.o $(ROOT)/toolchain/ack/libc/68kunix/link.s
+
+$(BUILD_DIR)/libc_mknod.o: $(ROOT)/toolchain/ack/libc/68kunix/mknod.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_mknod.o $(ROOT)/toolchain/ack/libc/68kunix/mknod.s
+
+$(BUILD_DIR)/libc_mount.o: $(ROOT)/toolchain/ack/libc/68kunix/mount.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_mount.o $(ROOT)/toolchain/ack/libc/68kunix/mount.s
+
+$(BUILD_DIR)/libc_pause.o: $(ROOT)/toolchain/ack/libc/68kunix/pause.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_pause.o $(ROOT)/toolchain/ack/libc/68kunix/pause.s
+
+$(BUILD_DIR)/libc_pipe.o: $(ROOT)/toolchain/ack/libc/68kunix/pipe.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_pipe.o $(ROOT)/toolchain/ack/libc/68kunix/pipe.s
+
+$(BUILD_DIR)/libc_setgid.o: $(ROOT)/toolchain/ack/libc/68kunix/setgid.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_setgid.o $(ROOT)/toolchain/ack/libc/68kunix/setgid.s
+
+$(BUILD_DIR)/libc_setuid.o: $(ROOT)/toolchain/ack/libc/68kunix/setuid.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_setuid.o $(ROOT)/toolchain/ack/libc/68kunix/setuid.s
+
+$(BUILD_DIR)/libc_signal.o: $(ROOT)/toolchain/ack/libc/68kunix/signal.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_signal.o $(ROOT)/toolchain/ack/libc/68kunix/signal.s
+
+$(BUILD_DIR)/libc_stime.o: $(ROOT)/toolchain/ack/libc/68kunix/stime.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_stime.o $(ROOT)/toolchain/ack/libc/68kunix/stime.s
+
+$(BUILD_DIR)/libc_sync.o: $(ROOT)/toolchain/ack/libc/68kunix/sync.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_sync.o $(ROOT)/toolchain/ack/libc/68kunix/sync.s
+
+$(BUILD_DIR)/libc_time.o: $(ROOT)/toolchain/ack/libc/68kunix/time.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_time.o $(ROOT)/toolchain/ack/libc/68kunix/time.s
+
+$(BUILD_DIR)/libc_times.o: $(ROOT)/toolchain/ack/libc/68kunix/times.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_times.o $(ROOT)/toolchain/ack/libc/68kunix/times.s
+
+$(BUILD_DIR)/libc_umount.o: $(ROOT)/toolchain/ack/libc/68kunix/umount.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_umount.o $(ROOT)/toolchain/ack/libc/68kunix/umount.s
+
+$(BUILD_DIR)/libc_utime.o: $(ROOT)/toolchain/ack/libc/68kunix/utime.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_utime.o $(ROOT)/toolchain/ack/libc/68kunix/utime.s
+
+$(BUILD_DIR)/libc_wait.o: $(ROOT)/toolchain/ack/libc/68kunix/wait.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_wait.o $(ROOT)/toolchain/ack/libc/68kunix/wait.s
+
+$(BUILD_DIR)/libc_nice.o: $(ROOT)/toolchain/ack/libc/68kunix/nice.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_nice.o $(ROOT)/toolchain/ack/libc/68kunix/nice.s
+
+$(BUILD_DIR)/libc_errno.o: $(ROOT)/toolchain/ack/libc/68kunix/errno.s
+	@printf '%-6s %s\n' 'AS' '$(notdir $<)'
+	@$(AS) - -o $(BUILD_DIR)/libc_errno.o $(ROOT)/toolchain/ack/libc/68kunix/errno.s
+
+$(BUILD_DIR)/libm_%.o: $(LIBM_SRC_DIR)/%.c $(LIBM_SRC_DIR)/localmath.h
+	@printf '%-6s %s\n' 'CC' '$(notdir $<)'
+	@$(CC) -O2 -I$(LIBM_SRC_DIR) -c -o $@ $<
+
+$(BUILD_DIR)/libm.a: $(LIBM_OBJS)
+	@printf '%-6s %s\n' 'AR' '$(notdir $@)'
+	@rm -f $@
+	@$(AAL) qc $@ $(LIBM_OBJS)
+
+$(BUILD_DIR)/libc.a: \
+	$(BUILD_DIR)/libc_stdio_data.o \
+	$(BUILD_DIR)/libc_string.o \
+	$(BUILD_DIR)/libc_memory.o \
+	$(BUILD_DIR)/libc_stdlib_atoi.o \
+	$(BUILD_DIR)/libc_stdlib_abort.o \
+	$(BUILD_DIR)/libc_stdlib_malloc.o \
+	$(BUILD_DIR)/libc_environ.o \
+	$(BUILD_DIR)/libc_ctype.o \
+		$(BUILD_DIR)/libc_gen_search.o \
+		$(BUILD_DIR)/libc_gen_sort.o \
+		$(BUILD_DIR)/libc_gen_misc.o \
+		$(BUILD_DIR)/libc_gen_pw.o \
+		$(BUILD_DIR)/libc_gen_sleep.o \
+		$(BUILD_DIR)/libc_gen_system.o \
+		$(BUILD_DIR)/libc_gen_pack.o \
+		$(BUILD_DIR)/libc_gen_time.o \
+		$(BUILD_DIR)/libc_gen_getopt.o \
+	$(BUILD_DIR)/libc_stdio_cleanup.o \
+	$(BUILD_DIR)/libc_stdio_fclose.o \
+	$(BUILD_DIR)/libc_stdio_fflush.o \
+	$(BUILD_DIR)/libc_stdio_findiop.o \
+	$(BUILD_DIR)/libc_stdio_filbuf.o \
+	$(BUILD_DIR)/libc_stdio_flsbuf.o \
+	$(BUILD_DIR)/libc_stdio_endopen.o \
+	$(BUILD_DIR)/libc_stdio_fopen.o \
+	$(BUILD_DIR)/libc_stdio_freopen.o \
+	$(BUILD_DIR)/libc_stdio_fdopen.o \
+	$(BUILD_DIR)/libc_stdio_popen.o \
+	$(BUILD_DIR)/libc_stdio_pclose.o \
+	$(BUILD_DIR)/libc_stdio_tmpfile.o \
+	$(BUILD_DIR)/libc_stdio_fgetc.o \
+	$(BUILD_DIR)/libc_stdio_fputc.o \
+	$(BUILD_DIR)/libc_stdio_fputs.o \
+	$(BUILD_DIR)/libc_stdio_fgets.o \
+	$(BUILD_DIR)/libc_stdio_gets.o \
+	$(BUILD_DIR)/libc_stdio_getchar.o \
+	$(BUILD_DIR)/libc_stdio_putchar.o \
+	$(BUILD_DIR)/libc_stdio_puts.o \
+	$(BUILD_DIR)/libc_stdio_setbuf.o \
+	$(BUILD_DIR)/libc_stdio_ungetc.o \
+	$(BUILD_DIR)/libc_stdio_fread.o \
+	$(BUILD_DIR)/libc_stdio_fwrite.o \
+	$(BUILD_DIR)/libc_stdio_ftell.o \
+	$(BUILD_DIR)/libc_stdio_fseek.o \
+	$(BUILD_DIR)/libc_stdio_rewind.o \
+	$(BUILD_DIR)/libc_stdio_remove.o \
+	$(BUILD_DIR)/libc_stdio_doprnt.o \
+	$(BUILD_DIR)/libc_stdio_float.o \
+	$(BUILD_DIR)/libc_float_gcvt.o \
+	$(BUILD_DIR)/libc_float_ecvt.o \
+	$(BUILD_DIR)/libc_float_ext.o \
+	$(BUILD_DIR)/libc_stdio_doscan.o \
+	$(BUILD_DIR)/libc_stdio_printf_fn.o \
+	$(BUILD_DIR)/libc_stdio_fprintf.o \
+	$(BUILD_DIR)/libc_stdio_sprintf.o \
+	$(BUILD_DIR)/libc_stdio_vprintf.o \
+	$(BUILD_DIR)/libc_stdio_vfprintf.o \
+	$(BUILD_DIR)/libc_stdio_scanf.o \
+	$(BUILD_DIR)/libc_stdio_fscanf.o \
+	$(BUILD_DIR)/libc_stdio_sscanf.o \
+	$(BUILD_DIR)/libc_isatty.o \
+	$(BUILD_DIR)/libc_local.o \
+	$(BUILD_DIR)/libc_v7_stty.o \
+	$(BUILD_DIR)/libc_v7_ttyslot.o \
+	$(BUILD_DIR)/libc_v7_execvp.o \
+	$(BUILD_DIR)/libc_v7_getenv.o \
+	$(BUILD_DIR)/libc_v7_getpass.o \
+	$(BUILD_DIR)/libc_v7_crypt.o \
+	$(BUILD_DIR)/libc_csa2.o \
+	$(BUILD_DIR)/libc_csb2.o \
+	$(BUILD_DIR)/libc_csa4.o \
+	$(BUILD_DIR)/libc_csb4.o \
+	$(BUILD_DIR)/libc_cuu.o \
+	$(BUILD_DIR)/libc_dvi.o \
+	$(BUILD_DIR)/libc_dvu.o \
+	$(BUILD_DIR)/libc_mli.o \
+	$(BUILD_DIR)/libc_mlu.o \
+	$(BUILD_DIR)/libc_fat.o \
+	$(BUILD_DIR)/libc_setjmp.o \
+	$(BUILD_DIR)/libc_read.o \
+	$(BUILD_DIR)/libc_write.o \
+	$(BUILD_DIR)/libc_open.o \
+	$(BUILD_DIR)/libc_close.o \
+	$(BUILD_DIR)/libc_creat.o \
+	$(BUILD_DIR)/libc_unlink.o \
+	$(BUILD_DIR)/libc_lseek.o \
+	$(BUILD_DIR)/libc_chdir.o \
+	$(BUILD_DIR)/libc_chmod.o \
+	$(BUILD_DIR)/libc_fstat.o \
+	$(BUILD_DIR)/libc_stat.o \
+	$(BUILD_DIR)/libc_umask.o \
+	$(BUILD_DIR)/libc_access.o \
+	$(BUILD_DIR)/libc_acct.o \
+	$(BUILD_DIR)/libc_alarm.o \
+	$(BUILD_DIR)/libc_chown.o \
+	$(BUILD_DIR)/libc_dup.o \
+	$(BUILD_DIR)/libc_execv.o \
+	$(BUILD_DIR)/libc_execl.o \
+	$(BUILD_DIR)/libc_execve.o \
+	$(BUILD_DIR)/libc_fork.o \
+	$(BUILD_DIR)/libc_getegid.o \
+	$(BUILD_DIR)/libc_getgid.o \
+	$(BUILD_DIR)/libc_getpid.o \
+	$(BUILD_DIR)/libc_geteuid.o \
+	$(BUILD_DIR)/libc_getuid.o \
+	$(BUILD_DIR)/libc_ioctl.o \
+	$(BUILD_DIR)/libc_kill.o \
+	$(BUILD_DIR)/libc_link.o \
+	$(BUILD_DIR)/libc_mknod.o \
+	$(BUILD_DIR)/libc_mount.o \
+	$(BUILD_DIR)/libc_pause.o \
+	$(BUILD_DIR)/libc_pipe.o \
+	$(BUILD_DIR)/libc_setgid.o \
+	$(BUILD_DIR)/libc_setuid.o \
+	$(BUILD_DIR)/libc_signal.o \
+	$(BUILD_DIR)/libc_stime.o \
+	$(BUILD_DIR)/libc_sync.o \
+	$(BUILD_DIR)/libc_time.o \
+	$(BUILD_DIR)/libc_times.o \
+	$(BUILD_DIR)/libc_umount.o \
+	$(BUILD_DIR)/libc_utime.o \
+	$(BUILD_DIR)/libc_wait.o \
+	$(BUILD_DIR)/libc_nice.o \
+	$(BUILD_DIR)/libc_errno.o \
+	$(BUILD_DIR)/libc_exit.o \
+	$(BUILD_DIR)/libc_exit_raw.o \
+	$(BUILD_DIR)/libc_sbrk.o
+	@rm -f $(BUILD_DIR)/libc.a
+	@$(AAL) qc $(BUILD_DIR)/libc.a \
+		$(BUILD_DIR)/libc_stdio_data.o \
+		$(BUILD_DIR)/libc_string.o \
+		$(BUILD_DIR)/libc_memory.o \
+		$(BUILD_DIR)/libc_stdlib_atoi.o \
+		$(BUILD_DIR)/libc_stdlib_abort.o \
+		$(BUILD_DIR)/libc_stdlib_malloc.o \
+		$(BUILD_DIR)/libc_environ.o \
+		$(BUILD_DIR)/libc_ctype.o \
+		$(BUILD_DIR)/libc_gen_search.o \
+		$(BUILD_DIR)/libc_gen_sort.o \
+		$(BUILD_DIR)/libc_gen_misc.o \
+		$(BUILD_DIR)/libc_gen_pw.o \
+		$(BUILD_DIR)/libc_gen_sleep.o \
+		$(BUILD_DIR)/libc_gen_system.o \
+		$(BUILD_DIR)/libc_gen_pack.o \
+		$(BUILD_DIR)/libc_gen_time.o \
+		$(BUILD_DIR)/libc_gen_getopt.o \
+		$(BUILD_DIR)/libc_stdio_cleanup.o \
+		$(BUILD_DIR)/libc_stdio_fclose.o \
+		$(BUILD_DIR)/libc_stdio_fflush.o \
+		$(BUILD_DIR)/libc_stdio_findiop.o \
+		$(BUILD_DIR)/libc_stdio_filbuf.o \
+		$(BUILD_DIR)/libc_stdio_flsbuf.o \
+		$(BUILD_DIR)/libc_stdio_endopen.o \
+		$(BUILD_DIR)/libc_stdio_fopen.o \
+		$(BUILD_DIR)/libc_stdio_freopen.o \
+		$(BUILD_DIR)/libc_stdio_fdopen.o \
+		$(BUILD_DIR)/libc_stdio_popen.o \
+		$(BUILD_DIR)/libc_stdio_pclose.o \
+		$(BUILD_DIR)/libc_stdio_tmpfile.o \
+		$(BUILD_DIR)/libc_stdio_fgetc.o \
+		$(BUILD_DIR)/libc_stdio_fputc.o \
+		$(BUILD_DIR)/libc_stdio_fputs.o \
+		$(BUILD_DIR)/libc_stdio_fgets.o \
+		$(BUILD_DIR)/libc_stdio_gets.o \
+		$(BUILD_DIR)/libc_stdio_getchar.o \
+		$(BUILD_DIR)/libc_stdio_putchar.o \
+		$(BUILD_DIR)/libc_stdio_puts.o \
+		$(BUILD_DIR)/libc_stdio_setbuf.o \
+		$(BUILD_DIR)/libc_stdio_ungetc.o \
+		$(BUILD_DIR)/libc_stdio_fread.o \
+		$(BUILD_DIR)/libc_stdio_fwrite.o \
+		$(BUILD_DIR)/libc_stdio_ftell.o \
+		$(BUILD_DIR)/libc_stdio_fseek.o \
+		$(BUILD_DIR)/libc_stdio_rewind.o \
+		$(BUILD_DIR)/libc_stdio_remove.o \
+		$(BUILD_DIR)/libc_stdio_doprnt.o \
+		$(BUILD_DIR)/libc_stdio_float.o \
+		$(BUILD_DIR)/libc_float_gcvt.o \
+		$(BUILD_DIR)/libc_float_ecvt.o \
+		$(BUILD_DIR)/libc_float_ext.o \
+		$(BUILD_DIR)/libc_stdio_doscan.o \
+		$(BUILD_DIR)/libc_stdio_printf_fn.o \
+		$(BUILD_DIR)/libc_stdio_fprintf.o \
+		$(BUILD_DIR)/libc_stdio_sprintf.o \
+		$(BUILD_DIR)/libc_stdio_vprintf.o \
+		$(BUILD_DIR)/libc_stdio_vfprintf.o \
+		$(BUILD_DIR)/libc_stdio_scanf.o \
+		$(BUILD_DIR)/libc_stdio_fscanf.o \
+		$(BUILD_DIR)/libc_stdio_sscanf.o \
+		$(BUILD_DIR)/libc_isatty.o \
+		$(BUILD_DIR)/libc_local.o \
+		$(BUILD_DIR)/libc_v7_stty.o \
+		$(BUILD_DIR)/libc_v7_ttyslot.o \
+		$(BUILD_DIR)/libc_v7_execvp.o \
+		$(BUILD_DIR)/libc_v7_getenv.o \
+		$(BUILD_DIR)/libc_v7_getpass.o \
+		$(BUILD_DIR)/libc_v7_crypt.o \
+		$(BUILD_DIR)/libc_csa2.o \
+		$(BUILD_DIR)/libc_csb2.o \
+		$(BUILD_DIR)/libc_csa4.o \
+		$(BUILD_DIR)/libc_csb4.o \
+		$(BUILD_DIR)/libc_cuu.o \
+		$(BUILD_DIR)/libc_dvi.o \
+		$(BUILD_DIR)/libc_dvu.o \
+		$(BUILD_DIR)/libc_mli.o \
+		$(BUILD_DIR)/libc_mlu.o \
+		$(BUILD_DIR)/libc_fat.o \
+		$(BUILD_DIR)/libc_setjmp.o \
+		$(BUILD_DIR)/libc_read.o \
+		$(BUILD_DIR)/libc_write.o \
+		$(BUILD_DIR)/libc_open.o \
+		$(BUILD_DIR)/libc_close.o \
+		$(BUILD_DIR)/libc_creat.o \
+		$(BUILD_DIR)/libc_unlink.o \
+		$(BUILD_DIR)/libc_lseek.o \
+		$(BUILD_DIR)/libc_chdir.o \
+		$(BUILD_DIR)/libc_chmod.o \
+		$(BUILD_DIR)/libc_fstat.o \
+		$(BUILD_DIR)/libc_stat.o \
+		$(BUILD_DIR)/libc_umask.o \
+		$(BUILD_DIR)/libc_access.o \
+		$(BUILD_DIR)/libc_acct.o \
+		$(BUILD_DIR)/libc_alarm.o \
+		$(BUILD_DIR)/libc_chown.o \
+		$(BUILD_DIR)/libc_dup.o \
+		$(BUILD_DIR)/libc_execv.o \
+		$(BUILD_DIR)/libc_execl.o \
+		$(BUILD_DIR)/libc_execve.o \
+		$(BUILD_DIR)/libc_fork.o \
+		$(BUILD_DIR)/libc_getegid.o \
+		$(BUILD_DIR)/libc_getgid.o \
+		$(BUILD_DIR)/libc_getpid.o \
+		$(BUILD_DIR)/libc_geteuid.o \
+		$(BUILD_DIR)/libc_getuid.o \
+		$(BUILD_DIR)/libc_ioctl.o \
+		$(BUILD_DIR)/libc_kill.o \
+		$(BUILD_DIR)/libc_link.o \
+		$(BUILD_DIR)/libc_mknod.o \
+		$(BUILD_DIR)/libc_mount.o \
+		$(BUILD_DIR)/libc_pause.o \
+		$(BUILD_DIR)/libc_pipe.o \
+		$(BUILD_DIR)/libc_setgid.o \
+		$(BUILD_DIR)/libc_setuid.o \
+		$(BUILD_DIR)/libc_signal.o \
+		$(BUILD_DIR)/libc_stime.o \
+		$(BUILD_DIR)/libc_sync.o \
+		$(BUILD_DIR)/libc_time.o \
+		$(BUILD_DIR)/libc_times.o \
+		$(BUILD_DIR)/libc_umount.o \
+		$(BUILD_DIR)/libc_utime.o \
+		$(BUILD_DIR)/libc_wait.o \
+		$(BUILD_DIR)/libc_nice.o \
+		$(BUILD_DIR)/libc_errno.o \
+		$(BUILD_DIR)/libc_exit.o \
+		$(BUILD_DIR)/libc_exit_raw.o \
+		$(BUILD_DIR)/libc_sbrk.o

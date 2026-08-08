@@ -7,6 +7,21 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <time.h>
+
+int done(void);
+void onintr(i16 signo);
+int fixtty(void);
+int print(char *fp, char **argp);
+int mopen(char **ap);
+int putpage(void);
+int nexbuf(void);
+int tpgetc(int ai);
+int pgetc(int i);
+int put(int ac);
+int putcp(int c);
 
 int	ncol	= 1;
 char	*header;
@@ -38,14 +53,12 @@ int	mflg;
 int	tabc;
 char	*tty;
 int	mode;
-char	*ttyname();
-char	*ctime();
+void onintr(i16 signo);
 
-main(argc, argv)
-char **argv;
+int
+main (int argc, char **argv)
 {
 	int nfdone;
-	int onintr();
 
 	setbuf(stdout, obuf);
 	if (signal(SIGINT, SIG_IGN) != SIG_IGN)
@@ -104,7 +117,8 @@ char **argv;
 	done();
 }
 
-done()
+int
+done (void)
 {
 
 	if (tty)
@@ -112,7 +126,8 @@ done()
 	exit(0);
 }
 
-onintr()
+void
+onintr (i16 signo)
 {
 
 	if (tty)
@@ -120,7 +135,8 @@ onintr()
 	_exit(1);
 }
 
-fixtty()
+int
+fixtty (void)
 {
 	struct stat sbuf;
 
@@ -132,11 +148,9 @@ fixtty()
 	chmod(tty, 0600);
 }
 
-print(fp, argp)
-char *fp;
-char **argp;
+int
+print (char *fp, char **argp)
 {
-	extern char *sprintf();
 	struct stat sbuf;
 	register sncol;
 	register char *sheader;
@@ -215,8 +229,8 @@ char **argp;
 	header = sheader;
 }
 
-mopen(ap)
-char **ap;
+int
+mopen (char **ap)
 {
 	register char **p, *p1;
 
@@ -235,7 +249,8 @@ char **ap;
 	}
 }
 
-putpage()
+int
+putpage (void)
 {
 	register int lastcol, i, c;
 	int j;
@@ -279,7 +294,8 @@ putpage()
 	}
 }
 
-nexbuf()
+int
+nexbuf (void)
 {
 	register int n;
 	register char *rbufp;
@@ -302,7 +318,8 @@ nexbuf()
 	bufp = rbufp;
 }
 
-tpgetc(ai)
+int
+tpgetc (int ai)
 {
 	register char **p;
 	register int c, i;
@@ -337,7 +354,8 @@ loop:
 	return(c);
 }
 
-pgetc(i)
+int
+pgetc (int i)
 {
 	register int c;
 
@@ -369,7 +387,8 @@ pgetc(i)
 		icol++;
 	return(c);
 }
-put(ac)
+int
+put (int ac)
 {
 	register int ns, c;
 
@@ -415,7 +434,8 @@ put(ac)
 	putcp(c);
 }
 
-putcp(c)
+int
+putcp (int c)
 {
 	if (page >= fpage)
 		putchar(c);

@@ -1,0 +1,6 @@
+set -e
+
+sh clean
+cc -Dunix -s -o spell.bin spell.c
+cc -Dunix -s -o spellin spellin.c
+cc -Dunix -s -o spellout spellout.c

@@ -10,15 +10,14 @@
  *	return codes:  0  |  FAIL
  */
 
-versys(name)
-char *name;
+int
+versys (char *name)
 {
 	FILE *fp;
 	char **fnp;
 	char line[300];
 	char s1[SNAMESIZE + 1];
 	char myname[SNAMESIZE + 1];
-	char *index();
 
 	sprintf(myname, "%.7s", Myname);
 	sprintf(s1, "%.7s", name);

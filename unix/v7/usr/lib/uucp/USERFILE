@@ -1,1 +1,3 @@
-, /
+uucp,uucpgw /usr/spool/uucp
+uucp,uucpgw /usr/spool/uucp/.XQTDIR
+root, /usr/spool/uucp /usr/spool/uucp/.XQTDIR

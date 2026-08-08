@@ -1,7 +1,10 @@
+#ifndef V7_USER_PACK_H
+#define V7_USER_PACK_H
+
 struct header {
 	char	sync;
 	char	ksize;
-	short	sum;
+	unsigned short	sum;
 	char	cntl;
 	char	ccntl;
 };
@@ -47,10 +50,10 @@ struct pack {
 #define	ISCNTL(a)	((a & 0300)==0)
 #define	MIN(a,b)	((a<b)? a:b)
 
-char	next[8];
-char	mask[8];
-int	npbits;
-int	pkactive;
+extern char	next[8];
+extern char	mask[8];
+extern i32	npbits;
+extern i32	pkactive;
 
 /*
  * driver state
@@ -117,5 +120,8 @@ struct	piocb {
 	char	window;
 };
 
-int pkdebug;
-int pksizes[];
+extern i32 pkdebug;
+extern i32 pksizes[];
+extern struct pack *pklines[NPLINES];
+
+#endif

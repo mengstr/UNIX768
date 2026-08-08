@@ -1,10 +1,11 @@
+#include "awk.def"
 #include "awk.h"
 #define NULL 0
 struct xx
 {	int token;
 	char *name;
 	char *pname;
-} proc[] {
+} proc[] = {
 	{ PROGRAM, "program", NULL},
 	{ BOR, "boolop", " || "},
 	{ AND, "boolop", " && "},
@@ -58,22 +59,22 @@ struct xx
 #define SIZE	LASTTOKEN - FIRSTTOKEN
 char *table[SIZE];
 char *names[SIZE];
-main()
+main(void)
 {	struct xx *p;
 	int i;
 	printf("#include \"awk.def\"\n");
-	printf("obj nullproc();\n");
+	printf("obj nullproc(node **, int);\n");
 	for(p=proc;p->token!=0;p++)
 		if(p==proc || strcmp(p->name, (p-1)->name))
-			printf("extern obj %s();\n",p->name);
+			printf("extern obj %s(node **, int);\n",p->name);
 	for(p=proc;p->token!=0;p++)
 		table[p->token-FIRSTTOKEN]=p->name;
-	printf("obj (*proctab[%d])() {\n", SIZE);
+	printf("obj (*proctab[%d])(node **, int) = {\n", SIZE);
 	for(i=0;i<SIZE;i++)
 		if(table[i]==0) printf("/*%s*/\tnullproc,\n",tokname(i+FIRSTTOKEN));
 		else printf("/*%s*/\t%s,\n",tokname(i+FIRSTTOKEN),table[i]);
 	printf("};\n");
-	printf("char *printname[%d] {\n", SIZE);
+	printf("char *printname[%d] = {\n", SIZE);
 	for(p=proc; p->token!=0; p++)
 		names[p->token-FIRSTTOKEN] = p->pname;
 	for(i=0; i<SIZE; i++)

@@ -1,4 +1,5 @@
 #include "defs"
+#include <stdlib.h>
 
 FSTATIC struct nameblock *hashtab[HASHSIZE];
 FSTATIC int nhashed	= 0;
@@ -7,8 +8,8 @@ FSTATIC int nhashed	= 0;
 /* simple linear hash.  hash function is sum of
    characters mod hash table size.
 */
-hashloc(s)
-char *s;
+int
+hashloc (char *s)
 {
 register int i;
 register int hashval;
@@ -29,20 +30,20 @@ return(i);
 }
 
 
-struct nameblock *srchname(s)
-char *s;
+struct nameblock *
+srchname (char *s)
 {
 return( hashtab[hashloc(s)] );
 }
 
 
 
-struct nameblock *makename(s)
-char *s;
+struct nameblock *
+makename (char *s)
 {
 /* make a fresh copy of the string s */
 
-char *copys();
+char *copys(register char *s);
 register struct nameblock *p;
 
 if(nhashed++ > HASHSIZE-3)
@@ -68,8 +69,8 @@ return(p);
 
 
 
-hasslash(s)
-char *s;
+int
+hasslash (char *s)
 {
 for( ; *s ; ++s)
 	if(*s == '/')
@@ -79,10 +80,9 @@ return(NO);
 
 
 
-char *copys(s)
-register char *s;
+char *
+copys (register char *s)
 {
-char *calloc();
 register char *t, *t0;
 
 if( (t = t0 = calloc( strlen(s)+1 , sizeof(char)) ) == NULL)
@@ -94,9 +94,12 @@ return(t0);
 
 
 
-char *concat(a,b,c)   /* c = concatenation of a and b */
-register char *a,*b;
-char *c;
+char *
+concat (   /* c = concatenation of a and b */
+    register char *a,
+    register char *b,
+    char *c
+)
 {
 register char *t;
 t = c;
@@ -108,8 +111,12 @@ return(c);
 
 
 
-suffix(a,b,p)  /* is b the suffix of a?  if so, set p = prefix */
-register char *a,*b,*p;
+int
+suffix (  /* is b the suffix of a?  if so, set p = prefix */
+    register char *a,
+    register char *b,
+    register char *p
+)
 {
 char *a0,*b0;
 a0 = a;
@@ -134,8 +141,8 @@ return(1);
 
 
 
-int *ckalloc(n)
-register int n;
+int *
+ckalloc (register int n)
 {
 register int *p;
 
@@ -147,13 +154,13 @@ fatal("out of memory");
 }
 
 /* copy string a into b, substituting for arguments */
-char *subst(a,b)
-register char *a,*b;
+char *
+subst (register char *a, register char *b)
 {
 static depth	= 0;
 register char *s;
 char vname[100];
-struct varblock *varptr(), *vbp;
+struct varblock *vbp;
 char closer;
 
 if(++depth > 100)
@@ -191,10 +198,10 @@ return(b);
 }
 
 
-setvar(v,s)
-char *v, *s;
+int
+setvar (char *v, char *s)
 {
-struct varblock *varptr(), *p;
+struct varblock *p;
 
 p = varptr(v);
 if(p->noreset == 0)
@@ -208,8 +215,10 @@ if(p->noreset == 0)
 }
 
 
-eqsign(a)   /*look for arguments with equal signs but not colons */
-char *a;
+int
+eqsign (   /*look for arguments with equal signs but not colons */
+    char *a
+)
 {
 register char *s, *t;
 
@@ -229,8 +238,8 @@ return(NO);
 }
 
 
-struct varblock *varptr(v)
-char *v;
+struct varblock *
+varptr (char *v)
 {
 register struct varblock *vp;
 
@@ -247,8 +256,8 @@ return(vp);
 }
 
 
-fatal1(s, t)
-char *s, *t;
+int
+fatal1 (char *s, char *t)
 {
 char buf[100];
 fatal( sprintf(buf, s, t) );
@@ -256,8 +265,8 @@ fatal( sprintf(buf, s, t) );
 
 
 
-fatal(s)
-char *s;
+int
+fatal (char *s)
 {
 if(s) fprintf(stderr, "Make: %s.  Stop.\n", s);
 else fprintf(stderr, "\nStop.\n");
@@ -271,8 +280,8 @@ exit(0);
 
 
 
-yyerror(s)
-char *s;
+int
+yyerror (char *s)
 {
 char buf[50];
 extern int yylineno;
@@ -282,9 +291,8 @@ fatal( sprintf(buf, "line %d: %s", yylineno, s) );
 
 
 
-struct chain *appendq(head, tail)
-struct chain *head;
-char *tail;
+struct chain *
+appendq (struct chain *head, char *tail)
 {
 register struct chain *p, *q;
 
@@ -306,8 +314,8 @@ else
 
 
 
-char *mkqlist(p)
-struct chain *p;
+char *
+mkqlist (struct chain *p)
 {
 register char *qbufp, *s;
 static char qbuf[QBUFMAX];

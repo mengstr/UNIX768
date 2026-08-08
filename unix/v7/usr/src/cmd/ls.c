@@ -6,10 +6,14 @@
 #include <sys/stat.h>
 #include <sys/dir.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #define	NFILES	1024
 FILE	*pwdf, *dirf;
 char	stdbuf[BUFSIZ];
+char	*default_argv[] = { "ls", ".", 0 };
 
 struct lbuf {
 	union {
@@ -39,15 +43,21 @@ struct	lbuf	**lastp = flist;
 struct	lbuf	**firstp = flist;
 char	*dotp	= ".";
 
-char	*makename();
-struct	lbuf *gstat();
-char	*ctime();
-long	nblock();
+static char	*makename(char *dir, char *file);
+static struct	lbuf *gstat(char *file, i32 argfl);
+char	*ctime(long *clock);
+static long	nblock(long size);
+static i32	compar(const void *vp1, const void *vp2);
+static i32	getname(i32 uid, char buf[]);
+static void	pentry(struct lbuf *ap);
+static void	pmode(i32 aflag);
+static void	select(i32 *pairp);
+static void	readdir(char *dir);
 
 #define	ISARG	0100000
 
-main(argc, argv)
-char *argv[];
+int
+main(int argc, char *argv[])
 {
 	int i;
 	register struct lbuf *ep, **ep1;
@@ -55,7 +65,6 @@ char *argv[];
 	struct lbuf **epp;
 	struct lbuf lb;
 	char *t;
-	int compar();
 
 	setbuf(stdout, stdbuf);
 	time(&lb.lmtime);
@@ -130,8 +139,8 @@ char *argv[];
 		pwdf = fopen(t, "r");
 	}
 	if (argc==0) {
-		argc++;
-		argv = &dotp - 1;
+		argc = 1;
+		argv = default_argv;
 	}
 	for (i=0; i < argc; i++) {
 		if ((ep = gstat(*++argv, 1))==NULL)
@@ -139,19 +148,21 @@ char *argv[];
 		ep->ln.namep = *argv;
 		ep->lflags |= ISARG;
 	}
-	qsort(firstp, lastp - firstp, sizeof *lastp, compar);
+	qsort((char *)firstp, (unsigned)(lastp - firstp), sizeof *lastp,
+	    compar);
 	slastp = lastp;
 	for (epp=firstp; epp<slastp; epp++) {
 		ep = *epp;
-		if (ep->ltype=='d' && dflg==0 || fflg) {
+		if ((ep->ltype=='d' && dflg==0) || fflg) {
 			if (argc>1)
 				printf("\n%s:\n", ep->ln.namep);
 			lastp = slastp;
 			readdir(ep->ln.namep);
 			if (fflg==0)
-				qsort(slastp,lastp - slastp,sizeof *lastp,compar);
+				qsort((char *)slastp, (unsigned)(lastp - slastp),
+				    sizeof *lastp, compar);
 			if (lflg || sflg)
-				printf("total %D\n", tblocks);
+				printf("total %ld\n", tblocks);
 			for (ep1=slastp; ep1<lastp; ep1++)
 				pentry(*ep1);
 		} else 
@@ -160,10 +171,10 @@ char *argv[];
 	exit(0);
 }
 
+static void
 pentry(ap)
 struct lbuf *ap;
 {
-	struct { char dminor, dmajor;};
 	register t;
 	register struct lbuf *p;
 	register char *cp;
@@ -172,9 +183,9 @@ struct lbuf *ap;
 	if (p->lnum == -1)
 		return;
 	if (iflg)
-		printf("%5u ", p->lnum);
+		printf("%5u ", (unsigned)p->lnum);
 	if (sflg)
-	printf("%4D ", nblock(p->lsize));
+	printf("%4ld ", nblock(p->lsize));
 	if (lflg) {
 		putchar(p->ltype);
 		pmode(p->lflags);
@@ -201,8 +212,9 @@ struct lbuf *ap;
 		printf("%.14s\n", p->ln.lname);
 }
 
+static i32
 getname(uid, buf)
-int uid;
+i32 uid;
 char buf[];
 {
 	int j, c, n, i;
@@ -235,36 +247,38 @@ char buf[];
 	return(0);
 }
 
-long
+static long
 nblock(size)
 long size;
 {
 	return((size+511)>>9);
 }
 
-int	m1[] = { 1, S_IREAD>>0, 'r', '-' };
-int	m2[] = { 1, S_IWRITE>>0, 'w', '-' };
-int	m3[] = { 2, S_ISUID, 's', S_IEXEC>>0, 'x', '-' };
-int	m4[] = { 1, S_IREAD>>3, 'r', '-' };
-int	m5[] = { 1, S_IWRITE>>3, 'w', '-' };
-int	m6[] = { 2, S_ISGID, 's', S_IEXEC>>3, 'x', '-' };
-int	m7[] = { 1, S_IREAD>>6, 'r', '-' };
-int	m8[] = { 1, S_IWRITE>>6, 'w', '-' };
-int	m9[] = { 2, S_ISVTX, 't', S_IEXEC>>6, 'x', '-' };
+i32	m1[] = { 1, S_IREAD>>0, 'r', '-' };
+i32	m2[] = { 1, S_IWRITE>>0, 'w', '-' };
+i32	m3[] = { 2, S_ISUID, 's', S_IEXEC>>0, 'x', '-' };
+i32	m4[] = { 1, S_IREAD>>3, 'r', '-' };
+i32	m5[] = { 1, S_IWRITE>>3, 'w', '-' };
+i32	m6[] = { 2, S_ISGID, 's', S_IEXEC>>3, 'x', '-' };
+i32	m7[] = { 1, S_IREAD>>6, 'r', '-' };
+i32	m8[] = { 1, S_IWRITE>>6, 'w', '-' };
+i32	m9[] = { 2, S_ISVTX, 't', S_IEXEC>>6, 'x', '-' };
 
-int	*m[] = { m1, m2, m3, m4, m5, m6, m7, m8, m9};
+i32	*m[] = { m1, m2, m3, m4, m5, m6, m7, m8, m9};
 
+static void
 pmode(aflag)
+i32 aflag;
 {
-	register int **mp;
-
+	register i32 **mp;
 	flags = aflag;
 	for (mp = &m[0]; mp < &m[sizeof(m)/sizeof(m[0])];)
 		select(*mp++);
 }
 
+static void
 select(pairp)
-register int *pairp;
+i32 *pairp;
 {
 	register int n;
 
@@ -274,7 +288,7 @@ register int *pairp;
 	putchar(*pairp);
 }
 
-char *
+static char *
 makename(dir, file)
 char *dir, *file;
 {
@@ -294,6 +308,7 @@ char *dir, *file;
 	return(dfile);
 }
 
+static void
 readdir(dir)
 char *dir;
 {
@@ -324,11 +339,11 @@ char *dir;
 	fclose(dirf);
 }
 
-struct lbuf *
+static struct lbuf *
 gstat(file, argfl)
 char *file;
+i32 argfl;
 {
-	extern char *malloc();
 	struct stat statb;
 	register struct lbuf *rep;
 	static int nomocore;
@@ -397,13 +412,13 @@ char *file;
 	return(rep);
 }
 
-compar(pp1, pp2)
-struct lbuf **pp1, **pp2;
+static i32
+compar(const void *vp1, const void *vp2)
 {
 	register struct lbuf *p1, *p2;
 
-	p1 = *pp1;
-	p2 = *pp2;
+	p1 = *(struct lbuf **)vp1;
+	p2 = *(struct lbuf **)vp2;
 	if (dflg==0) {
 		if (p1->lflags&ISARG && p1->ltype=='d') {
 			if (!(p2->lflags&ISARG && p2->ltype=='d'))

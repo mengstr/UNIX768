@@ -1,0 +1,6 @@
+make -f ack/Makefile.v7 SRC=$1 BUILD=$1/tmp/ack DEST=$1 CC=$1/bin/cc TOOLS=$1/usr/lib/ack RUNTIME=$1 install
+cp 68kasm/68kasm $1/usr/bin/68kasm
+cp 68kasm/srec2aout $1/usr/bin/srec2aout
+cp mksdroot $1/etc/mksdroot
+chmod 0755 $1/usr/bin/68kasm $1/usr/bin/srec2aout $1/etc/mksdroot
+echo install.dev: complete

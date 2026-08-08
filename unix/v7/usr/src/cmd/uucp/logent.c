@@ -13,8 +13,8 @@ FILE *Lp = NULL;
  *	return code - none
  */
 
-logent(text, status)
-char *text, *status;
+int
+logent (char *text, char *status)
 {
 	int n;
 	FILE *fp;
@@ -59,7 +59,6 @@ char *text, *status;
 FILE *fp;
 {
 	struct tm *tp;
-	extern struct tm *localtime();
 	time_t clock;
 	time(&clock);
 	tp = localtime(&clock);
@@ -76,7 +75,8 @@ FILE *fp;
  *	return codes:  none
  */
 
-logcls()
+int
+logcls (void)
 {
 	if (Lp != NULL) {
 		fclose(Lp);
@@ -93,11 +93,10 @@ logcls()
  *	return codes - none
  */
 
-syslog(text)
-char *text;
+int
+syslog (char *text)
 {
 	struct tm *tp;
-	extern struct tm *localtime();
 	time_t clock;
 	FILE *fp;
 

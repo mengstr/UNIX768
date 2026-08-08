@@ -3,11 +3,59 @@
 #include "../h/mount.h"
 #include "../h/dir.h"
 #include "../h/user.h"
+#include "../h/proc.h"
 #include "../h/inode.h"
 #include "../h/ino.h"
 #include "../h/filsys.h"
 #include "../h/conf.h"
 #include "../h/buf.h"
+
+#pragma dontwarn 213
+
+void iexpand(struct inode *ip, struct dinode *dp);
+void iput(struct inode *ip);
+void iupdat(struct inode *ip, time_t *ta, time_t *tm);
+void itrunc(struct inode *ip);
+void tloop(i32 dev, daddr_t bn, i32 f1, i32 f2);
+void wdir(struct inode *ip);
+
+static void iaddr_from_disk(daddr_t *lp, char *cp);
+static void iaddr_to_disk(char *cp, daddr_t *lp);
+
+static void
+iaddr_from_disk(lp, cp)
+register daddr_t *lp;
+register char *cp;
+{
+	register i32 i;
+	register unsigned char *p;
+
+	for(i=0; i<NADDR; i++) {
+		p = (unsigned char *)&lp[i];
+		p[0] = 0;
+		p[1] = *cp++;
+		p[2] = *cp++;
+		p[3] = *cp++;
+	}
+}
+
+static void
+iaddr_to_disk(cp, lp)
+register char *cp;
+register daddr_t *lp;
+{
+	register i32 i;
+	register unsigned char *p;
+
+	for(i=0; i<NADDR; i++) {
+		p = (unsigned char *)&lp[i];
+		if(p[0] != 0)
+			printf("iaddress > 2^24\n");
+		*cp++ = p[1];
+		*cp++ = p[2];
+		*cp++ = p[3];
+	}
+}
 
 /*
  * Look up an inode by device,inumber.
@@ -28,8 +76,8 @@
  */
 struct inode *
 iget(dev, ino)
-dev_t dev;
-ino_t ino;
+i32 dev;
+i32 ino;
 {
 	register struct inode *ip;
 	register struct mount *mp;
@@ -47,11 +95,12 @@ loop:
 				goto loop;
 			}
 			if((ip->i_flag&IMOUNT) != 0) {
-				for(mp = &mount[0]; mp < &mount[NMOUNT]; mp++)
-				if(mp->m_inodp == ip) {
-					dev = mp->m_dev;
-					ino = ROOTINO;
-					goto loop;
+				for(mp = &mount[0]; mp < &mount[NMOUNT]; mp++) {
+					if(mp->m_inodp == ip) {
+						dev = mp->m_dev;
+						ino = ROOTINO;
+						goto loop;
+					}
 				}
 				panic("no imt");
 			}
@@ -64,7 +113,7 @@ loop:
 	}
 	ip = oip;
 	if(ip == NULL) {
-		printf("Inode table overflow\n");
+		printf("Inode table overflow\n"); 
 		u.u_error = ENFILE;
 		return(NULL);
 	}
@@ -72,7 +121,7 @@ loop:
 	ip->i_number = ino;
 	ip->i_flag = ILOCK;
 	ip->i_count++;
-	ip->i_un.i_lastr = 0;
+	ip->i_un.i_file.i_lastr = 0;
 	bp = bread(dev, itod(ino));
 	/*
 	 * Check I/O errors
@@ -84,32 +133,26 @@ loop:
 	}
 	dp = bp->b_un.b_dino;
 	dp += itoo(ino);
+	if(ino == 11) {
+	}
 	iexpand(ip, dp);
+	if(ino == 11) {
+	}
 	brelse(bp);
 	return(ip);
 }
 
-iexpand(ip, dp)
+void iexpand(ip, dp)
 register struct inode *ip;
 register struct dinode *dp;
 {
-	register char *p1;
-	char *p2;
-	int i;
 
 	ip->i_mode = dp->di_mode;
 	ip->i_nlink = dp->di_nlink;
 	ip->i_uid = dp->di_uid;
 	ip->i_gid = dp->di_gid;
 	ip->i_size = dp->di_size;
-	p1 = (char *)ip->i_un.i_addr;
-	p2 = (char *)dp->di_addr;
-	for(i=0; i<NADDR; i++) {
-		*p1++ = *p2++;
-		*p1++ = 0;
-		*p1++ = *p2++;
-		*p1++ = *p2++;
-	}
+	iaddr_from_disk(ip->i_un.i_file.i_addr, dp->di_addr);
 }
 
 /*
@@ -119,7 +162,7 @@ register struct dinode *dp;
  * write the inode out and if necessary,
  * truncate and deallocate the file.
  */
-iput(ip)
+void iput(ip)
 register struct inode *ip;
 {
 
@@ -146,15 +189,12 @@ register struct inode *ip;
  * If any are on, update the inode
  * with the current time.
  */
-iupdat(ip, ta, tm)
-register struct inode *ip;
-time_t *ta, *tm;
+void iupdat(ip, ta, tm)
+	register struct inode *ip;
+	time_t *ta, *tm;
 {
 	register struct buf *bp;
-	struct dinode *dp;
-	register char *p1;
-	char *p2;
-	int i;
+	register struct dinode *dp;
 
 	if((ip->i_flag&(IUPD|IACC|ICHG)) != 0) {
 		if(getfs(ip->i_dev)->s_ronly)
@@ -171,16 +211,7 @@ time_t *ta, *tm;
 		dp->di_uid = ip->i_uid;
 		dp->di_gid = ip->i_gid;
 		dp->di_size = ip->i_size;
-		p1 = (char *)dp->di_addr;
-		p2 = (char *)ip->i_un.i_addr;
-		for(i=0; i<NADDR; i++) {
-			*p1++ = *p2++;
-			if(*p2++ != 0 && (ip->i_mode&IFMT)!=IFMPC
-			   && (ip->i_mode&IFMT)!=IFMPB)
-				printf("iaddress > 2^24\n");
-			*p1++ = *p2++;
-			*p1++ = *p2++;
-		}
+		iaddr_to_disk(dp->di_addr, ip->i_un.i_file.i_addr);
 		if(ip->i_flag&IACC)
 			dp->di_atime = *ta;
 		if(ip->i_flag&IUPD)
@@ -201,7 +232,7 @@ time_t *ta, *tm;
  * a contiguous free list much longer
  * than FIFO.
  */
-itrunc(ip)
+void itrunc(ip)
 register struct inode *ip;
 {
 	register i;
@@ -213,10 +244,10 @@ register struct inode *ip;
 		return;
 	dev = ip->i_dev;
 	for(i=NADDR-1; i>=0; i--) {
-		bn = ip->i_un.i_addr[i];
+		bn = ip->i_un.i_file.i_addr[i];
 		if(bn == (daddr_t)0)
 			continue;
-		ip->i_un.i_addr[i] = (daddr_t)0;
+		ip->i_un.i_file.i_addr[i] = (daddr_t)0;
 		switch(i) {
 
 		default:
@@ -239,9 +270,11 @@ register struct inode *ip;
 	ip->i_flag |= ICHG|IUPD;
 }
 
-tloop(dev, bn, f1, f2)
-dev_t dev;
+void tloop(dev, bn, f1, f2)
+i32 dev;
 daddr_t bn;
+i32 f1;
+i32 f2;
 {
 	register i;
 	register struct buf *bp;
@@ -278,6 +311,7 @@ daddr_t bn;
  */
 struct inode *
 maknode(mode)
+i32 mode;
 {
 	register struct inode *ip;
 
@@ -302,7 +336,7 @@ maknode(mode)
  * parameters left as side effects
  * to a call to namei.
  */
-wdir(ip)
+void wdir(ip)
 struct inode *ip;
 {
 

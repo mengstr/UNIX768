@@ -2,14 +2,22 @@
 #include "e.def"
 
 #define	SSIZE	400
-char	token[SSIZE];
-int	sp;
+static char	token[SSIZE];
+static int	sp;
 #define	putbak(c)	*ip++ = c;
 #define	PUSHBACK	300	/* maximum pushback characters */
-char	ibuf[PUSHBACK+SSIZE];	/* pushback buffer for definitions, etc. */
-char	*ip	= ibuf;
+static char	ibuf[PUSHBACK+SSIZE];	/* pushback buffer for definitions, etc. */
+static char	*ip	= ibuf;
 
-gtc() {
+static void pbstr(char *);
+static int cstr(char *, int, int);
+static void define(int);
+static char *strsave(char *);
+static void include(void);
+static void delim(void);
+
+int
+gtc(void) {
   loop:
 	if (ip > ibuf)
 		return(*--ip);	/* already present */
@@ -29,13 +37,14 @@ gtc() {
 	return(EOF);
 }
 
-pbstr(str)
-register char *str;
+static void
+pbstr(char *str)
 {
 	register char *p;
 
 	p = str;
-	while (*p++);
+	while (*p++ != '\0')
+		;
 	--p;
 	if (ip >= &ibuf[PUSHBACK])
 		error( FATAL, "pushback overflow");
@@ -43,10 +52,10 @@ register char *str;
 		putbak(*--p);
 }
 
-yylex() {
+int
+yylex(void) {
 	register int c;
-	tbl *tp, *lookup();
-	extern tbl **keytbl, **deftbl;
+	tbl *tp;
 
   beg:
 	while ((c=gtc())==' ' || c=='\n')
@@ -76,7 +85,7 @@ yylex() {
 				error(FATAL, "quoted string %.20s... too long", token);
 		}
 		token[sp]='\0';
-		yylval = (int) &token[0];
+		yylval = (eqn_value)(long)&token[0];
 		if (c == '\n')
 			error(!FATAL, "missing \" in %.20s", token);
 		return(QTEXT);
@@ -87,34 +96,37 @@ yylex() {
 	putbak(c);
 	getstr(token, SSIZE);
 	if (dbg)printf(".\tlex token = |%s|\n", token);
-	if ((tp = lookup(&deftbl, token, NULL)) != NULL) {
+	if ((tp = lookup(deftbl, token, NULL)) != NULL) {
 		putbak(' ');
 		pbstr(tp->defn);
 		putbak(' ');
 		if (dbg)
 			printf(".\tfound %s|=%s|\n", token, tp->defn);
 	}
-	else if ((tp = lookup(&keytbl, token, NULL)) == NULL) {
+	else if ((tp = lookup(keytbl, token, NULL)) == NULL) {
 		if(dbg)printf(".\t%s is not a keyword\n", token);
 		return(CONTIG);
 	}
-	else if (tp->defn == (char *) DEFINE || tp->defn == (char *) NDEFINE || tp->defn == (char *) TDEFINE)
-		define(tp->defn);
-	else if (tp->defn == (char *) DELIM)
+	else if (tp->defn == (char *)(long)DEFINE ||
+	    tp->defn == (char *)(long)NDEFINE ||
+	    tp->defn == (char *)(long)TDEFINE)
+		define((int)(long)tp->defn);
+	else if (tp->defn == (char *)(long)DELIM)
 		delim();
-	else if (tp->defn == (char *) GSIZE)
+	else if (tp->defn == (char *)(long)GSIZE)
 		globsize();
-	else if (tp->defn == (char *) GFONT)
+	else if (tp->defn == (char *)(long)GFONT)
 		globfont();
-	else if (tp->defn == (char *) INCLUDE)
+	else if (tp->defn == (char *)(long)INCLUDE)
 		include();
 	else {
-		return((int) tp->defn);
+		return((int)(long)tp->defn);
 	}
 	goto beg;
 }
 
-getstr(s, n) char *s; register int n; {
+void
+getstr(char *s, int n) {
 	register int c;
 	register char *p;
 
@@ -138,10 +150,11 @@ getstr(s, n) char *s; register int n; {
 	if (c=='{' || c=='}' || c=='"' || c=='~' || c=='^' || c=='\t' || c==righteq)
 		putbak(c);
 	*p = '\0';
-	yylval = (int) s;
+	yylval = (eqn_value)(long)s;
 }
 
-cstr(s, quote, maxs) char *s; int quote; {
+static int
+cstr(char *s, int quote, int maxs) {
 	int del, c, i;
 
 	while((del=gtc()) == ' ' || del == '\t' || del == '\n');
@@ -165,10 +178,9 @@ cstr(s, quote, maxs) char *s; int quote; {
 	return(0);
 }
 
-define(type) int type; {
-	char *strsave(), *p1, *p2;
-	tbl *lookup();
-	extern tbl **deftbl;
+static void
+define(int type) {
+	char *p1, *p2;
 
 	getstr(token, SSIZE);	/* get name */
 	if (type != DEFINE) {
@@ -179,14 +191,13 @@ define(type) int type; {
 	if (cstr(token, 1, SSIZE))
 		error(FATAL, "Unterminated definition at %.20s", token);
 	p2 = strsave(token);
-	lookup(&deftbl, p1, p2);
+	lookup(deftbl, p1, p2);
 	if (dbg)printf(".\tname %s defined as %s\n", p1, p2);
 }
 
-char *strsave(s)
-char *s;
+static char *
+strsave(char *s)
 {
-	char *malloc();
 	register char *q;
 
 	q = malloc(strlen(s)+1);
@@ -196,11 +207,13 @@ char *s;
 	return(q);
 }
 
-include() {
+static void
+include(void) {
 	error(!FATAL, "Include not yet implemented");
 }
 
-delim() {
+static void
+delim(void) {
 	yyval = eqnreg = 0;
 	if (cstr(token, 0, SSIZE))
 		error(FATAL, "Bizarre delimiters at %.20s", token);

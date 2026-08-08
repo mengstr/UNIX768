@@ -1,0 +1,3 @@
+set -e
+
+rm -f *.o uucp uux uulog uucico uuxqt uuclean

@@ -1,7 +1,8 @@
 # License Files
 
 This directory holds repository-level copies of licenses and notices for
-third-party source in UNIX768.
+third-party source in UNIX768. The BSD-2-Clause license for project-authored
+material is the repository-root `LICENSE` file.
 
 - `ACK.txt` is an exact copy of `toolchain/ack/Copyright` from ACK revision
   `cd8805a0ad462c120ef394225c73ce725d271740`.

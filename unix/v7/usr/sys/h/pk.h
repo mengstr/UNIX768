@@ -59,10 +59,10 @@ struct pack {
 
 char	next[8];
 char	mask[8];
-int	npbits;
-int	pkactive;
-int	pkzot;
-int	pkdisc;
+i32	npbits;
+i32	pkactive;
+i32	pkzot;
+i32	pkdisc;
 
 /*
  * driver state
@@ -133,8 +133,8 @@ struct	piocb {
 	char	window;
 };
 
-int pkdebug;
-int pksizes[];
+i32 pkdebug;
+i32 pksizes[];
 
 #define	Pwrite	1
 #define	Poutput	1
@@ -146,5 +146,4 @@ int pksizes[];
 #define	Pacc	01
 #define	Pread	01
 
-int	*PTRACE;
-
+i32	*PTRACE;

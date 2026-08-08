@@ -1,7 +1,7 @@
 #include "awk.def"
 #include "awk.h"
 #include "stdio.h"
-node *ALLOC(n)
+static node *ALLOC(int n)
 {	node *x;
 	x = (node *)malloc(sizeof(node)+n*sizeof(node *));
 	if (x == NULL)
@@ -14,7 +14,7 @@ node *exptostat(a) node *a;
 	return(a);
 }
 node	*nullstat;
-node *node0(a)
+node *node0(a) long a;
 {	node *x;
 	x=ALLOC(0);
 	x->nnext = NULL;
@@ -103,7 +103,7 @@ node *stat4(a,b,c,d,e) node *b, *c, *d, *e;
 }
 node *valtonode(a, b) cell *a;
 {	node *x;
-	x = node0(a);
+	x = node0((long) a);
 	x->ntype = NVALUE;
 	x->subtype = b;
 	return(x);
@@ -128,7 +128,7 @@ node *linkum(a,b) node *a, *b;
 	c->nnext = b;
 	return(a);
 }
-node *genprint()
+node *genprint(void)
 {	node *x;
 	x = stat2(PRINT,valtonode(lookup("$record", symtab), CFLD), nullstat);
 	return(x);

@@ -4,10 +4,10 @@ getq(v)
 {
 # define BSIZ 250
 static char buff[BSIZ];
-static int eof 0;
+static int eof = 0;
 extern char *sinput;
 char *p;
-int c, n 0, las 0;
+int c, n = 0, las = 0;
 if (eof) return(-1);
 p = buff;
 while ( (c = (sinput ? *sinput++ : getchar()) ) > 0)

@@ -1,6 +1,6 @@
  /* t3.c: interpret commands affecting whole table */
 # include "t..c"
-struct optstr {char *optnam; int *optadd;} options [] {
+static struct optstr {char *optnam; int *optadd;} options [] = {
 	"expand", &expflg,
 	"EXPAND", &expflg,
 	"center", &ctrflg,
@@ -22,7 +22,10 @@ struct optstr {char *optnam; int *optadd;} options [] {
 	"delim", &delim1,
 	"DELIM", &delim1,
 	0,0};
-getcomm()
+static void backrest(char *);
+
+void
+getcomm(void)
 {
 char line[200], *cp, nb[25], *t;
 struct optstr *lp;
@@ -81,6 +84,7 @@ cp++;
 backrest(cp);
 return;
 }
+static void
 backrest(cp)
 	char *cp;
 {

@@ -1,3 +1,6 @@
+#ifndef V7_SYS_MX_H
+#define V7_SYS_MX_H
+
 #define	NGROUPS		10	/* number of mpx files permitted at one time */
 #define	NCHANS		20	/* number of channel structures */
 #define	NPORTS		30	/* number of channels to i/o ports */
@@ -26,8 +29,8 @@ struct	wh {
 
 struct	mx_args {
 	char	*m_name;
-	int	m_cmd;
-	int	m_arg[3];
+	i32	m_cmd;
+	i32	m_arg[3];
 };
 
 
@@ -44,7 +47,7 @@ struct chan {
 	struct	file	*c_fy;
 	struct	tty	*c_ttyp;
 	struct	clist	c_ctlx;
-	int	c_pgrp;
+	i32	c_pgrp;
 	struct	tty	*c_ottyp;
 	char	c_oline;
 	union {
@@ -65,7 +68,7 @@ struct schan {
 	struct	file	*c_fy;
 	struct	tty	*c_ttyp;
 	struct	clist	c_ctlx;
-	int	c_pgrp;
+	i32	c_pgrp;
 };
 
 
@@ -143,3 +146,5 @@ struct schan {
 #define	MCREAD	23
 #define MCWRITE	22
 
+
+#endif /* V7_SYS_MX_H */

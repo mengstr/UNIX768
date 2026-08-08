@@ -5,21 +5,23 @@
 #include <sys/buf.h>
 #include <setjmp.h>
 #include "uucp.h"
+#include "pkuser.h"
 
 
 jmp_buf Failbuf;
 
 struct pack *Pk;
 
-pkfail()
+int
+pkfail (void)
 {
 	longjmp(Failbuf, 1);
 }
 
-gturnon()
+int
+gturnon (void)
 {
 	int ret;
-	struct pack *pkopen();
 	if (setjmp(Failbuf))
 		return(FAIL);
 	if (Pkdrvon) {
@@ -33,14 +35,15 @@ gturnon()
 		if (Debug > 4)
 			pkdebug = 1;
 		Pk = pkopen(Ifn, Ofn);
-		if ((int) Pk == NULL)
+		if (Pk == NULL)
 			return(FAIL);
 	}
 	return(0);
 }
 
 
-gturnoff()
+int
+gturnoff (void)
 {
 	if(setjmp(Failbuf))
 		return(FAIL);
@@ -52,9 +55,8 @@ gturnoff()
 }
 
 
-gwrmsg(type, str, fn)
-char type, *str;
-int fn;
+int
+gwrmsg (int type, char *str, int fn)
 {
 	char bufr[BUFSIZ], *s;
 	int len, i, ret;
@@ -78,9 +80,8 @@ int fn;
 }
 
 
-grdmsg(str, fn)
-char *str;
-int fn;
+int
+grdmsg (char *str, int fn)
 {
 	unsigned len;
 
@@ -99,9 +100,8 @@ int fn;
 }
 
 
-gwrdata(fp1, fn)
-FILE *fp1;
-int fn;
+int
+gwrdata(FILE *fp1, int fn)
 {
 	char bufr[BUFSIZ];
 	int len;
@@ -133,9 +133,8 @@ int fn;
 }
 
 
-grddata(fn, fp2)
-FILE *fp2;
-int fn;
+int
+grddata(int fn, FILE *fp2)
 {
 	int len;
 	char bufr[BUFSIZ];
@@ -166,9 +165,8 @@ int fn;
 }
 
 
-grdblk(blk, len,  fn)
-int fn, len;
-char *blk;
+int
+grdblk (char *blk, int len, int fn)
 {
 	int i, ret;
 
@@ -187,10 +185,8 @@ char *blk;
 }
 
 
-gwrblk(blk, len, fn)
-char *blk;
-unsigned len;
-int fn;
+int
+gwrblk (char *blk, unsigned len, int fn)
 {
 	int ret;
 

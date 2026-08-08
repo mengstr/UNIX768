@@ -1,0 +1,17 @@
+set -e
+
+for dir in yacc make m4 lex awk dc
+do
+	cd cmd/$dir
+	sh clean
+	cd ../..
+done
+
+cd ar
+sh clean
+cd ..
+
+rm -f cmd/size cmd/nm cmd/strip cmd/cb
+rm -f cmd/expr cmd/expr.c cmd/bc cmd/bc.c
+rm -f cmd/*.o
+exit 0

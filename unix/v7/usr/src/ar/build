@@ -1,0 +1,22 @@
+set -e
+
+FLAGS="-DAAL -Dunix -DACK_TARGET_NO_LONG_LONG"
+FLAGS="$FLAGS -DNORETURN= -DUNREACHABLE_CODE= -I."
+
+for file in rd rd_arhdr rd_bytes rd_int2 rd_int4 rd_unsig2
+do
+	echo CC $file.c
+	cc -O2 $FLAGS -c $file.c
+done
+for file in wr_arhdr wr_bytes wr_int2 wr_int4 wr_ranlib
+do
+	echo CC $file.c
+	cc -O2 $FLAGS -c $file.c
+done
+for file in basename ar_support archiver
+do
+	echo CC $file.c
+	cc -O2 $FLAGS -c $file.c
+done
+echo LD ar
+cc -s -o ar rd.o rd_arhdr.o rd_bytes.o rd_int2.o rd_int4.o rd_unsig2.o wr_arhdr.o wr_bytes.o wr_int2.o wr_int4.o wr_ranlib.o basename.o ar_support.o archiver.o

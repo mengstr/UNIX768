@@ -1,196 +1,138 @@
 #include "../h/param.h"
 #include "../h/systm.h"
-#include "../h/acct.h"
 #include "../h/dir.h"
 #include "../h/user.h"
-#include "../h/inode.h"
 #include "../h/proc.h"
-#include "../h/seg.h"
 #include "../h/map.h"
 #include "../h/reg.h"
-#include "../h/buf.h"
+
+#define EPOCH68_FIRST_USER_PAGE 1
+#define EPOCH68_LAST_USER_PAGE 62
+#define EPOCH68_USER_PAGE_SIZE (256L * 1024L)
+
+static char epoch68_userpage_owned[64];
+
+void
+userpage_init()
+{
+	register i32 i;
+
+	for (i = 0; i < CMAPSIZ; i++) {
+		userpagemap[i].m_addr = 0;
+		userpagemap[i].m_size = 0;
+	}
+	for (i = 0; i < 64; i++)
+		epoch68_userpage_owned[i] = 0;
+	mfree(userpagemap, EPOCH68_LAST_USER_PAGE,
+	    EPOCH68_FIRST_USER_PAGE);
+}
+
+i32
+userpage_alloc()
+{
+	register i32 page;
+
+	page = malloc(userpagemap, 1);
+	if (page == 0)
+		return(0);
+	if (page < EPOCH68_FIRST_USER_PAGE ||
+	    page > EPOCH68_LAST_USER_PAGE || epoch68_userpage_owned[page])
+		panic("userpage alloc");
+	epoch68_userpage_owned[page] = 1;
+	return(page);
+}
+
+void
+userpage_free(page)
+i32 page;
+{
+	if (page < EPOCH68_FIRST_USER_PAGE ||
+	    page > EPOCH68_LAST_USER_PAGE || !epoch68_userpage_owned[page])
+		panic("userpage free");
+	epoch68_userpage_owned[page] = 0;
+	mfree(userpagemap, 1, page);
+}
 
 /*
  * Icode is the octal bootstrap
  * program executed in user mode
  * to bring up the system.
  */
-int	icode[] =
+unsigned short icode[] =
 {
-	0104413,	/* sys exec; init; initp */
-	0000014,
-	0000010,
-	0000777,	/* br . */
-	0000014,	/* initp: init; 0 */
-	0000000,
-	0062457,	/* init: </etc/init\0> */
-	0061564,
-	0064457,
-	0064556,
-	0000164,
+    0x41fa,0x0014,0x43fa,0x0008,0x700b,0x4e40,0x60fe,0x0000,
+    0x0016,0x0000,0x0000,0x2f65,0x7463,0x2f69,0x6e69,0x7400,
 };
-int	szicode = sizeof(icode);
+i32	szicode = sizeof(icode);
+
+unsigned short icode_multi[] =
+{
+    0x41fa,0x0018,0x43fa,0x0008,0x700b,0x4e40,0x60fe,0x0000,
+    0x001a,0x0000,0x0024,0x0000,0x0000,0x2f65,0x7463,0x2f69,
+    0x6e69,0x7400,0x2d6d,0x0000,
+};
+i32	szicode_multi = sizeof(icode_multi);
 
 /*
  * Machine-dependent startup code
  */
-startup()
+void startup()
 {
-	register i;
-
-	/*
-	 * zero and free all of core
-	 */
-
-	i = ka6->r[0] + USIZE;
-	UISD->r[0] = 077406;
-	for(;;) {
-		UISA->r[0] = i;
-		if(fuibyte((caddr_t)0) < 0)
-			break;
-		clearseg(i);
-		maxmem++;
-		mfree(coremap, 1, i);
-		i++;
-	}
-	if(cputype == 70)
-	for(i=0; i<62; i+=2) {
-		UBMAP->r[i] = i<<12;
-		UBMAP->r[i+1] = 0;
-	}
-	printf("mem = %D\n", ctob((long)maxmem));
-	if(MAXMEM < maxmem)
-		maxmem = MAXMEM;
-	mfree(swapmap, nswap, 1);
-	swplo--;
-
-	/*
-	 * determine clock
-	 */
-
-	UISA->r[7] = ka6->r[1]; /* io segment */
-	UISD->r[7] = 077406;
+	printf("mem = %D\n", (long)(EPOCH68_LAST_USER_PAGE -
+	    EPOCH68_FIRST_USER_PAGE + 1) * EPOCH68_USER_PAGE_SIZE);
 }
 
-/*
- * set up a physical address
- * into users virtual address space.
- */
-sysphys()
+i32
+idle()
 {
-	register i, s, d;
-	register struct a {
-		int	segno;
-		int	size;
-		int	phys;
-	} *uap;
-
-	if(!suser())
-		return;
-	uap = (struct a *)u.u_ap;
-	i = uap->segno;
-	if(i < 0 || i >= 8)
-		goto bad;
-	s = uap->size;
-	if(s < 0 || s > 128)
-		goto bad;
-	d = u.u_uisd[i+8];
-	if(d != 0 && (d&ABS) == 0)
-		goto bad;
-	u.u_uisd[i+8] = 0;
-	u.u_uisa[i+8] = 0;
-	if(!u.u_sep) {
-		u.u_uisd[i] = 0;
-		u.u_uisa[i] = 0;
-	}
-	if(s) {
-		u.u_uisd[i+8] = ((s-1)<<8) | RW|ABS;
-		u.u_uisa[i+8] = uap->phys;
-		if(!u.u_sep) {
-			u.u_uisa[i] = u.u_uisa[i+8];
-			u.u_uisd[i] = u.u_uisd[i+8];
-		}
-	}
-	sureg();
-	return;
-
-bad:
-	u.u_error = EINVAL;
+	return(0);
 }
 
-/*
- * Determine which clock is attached, and start it.
- * panic: no clock found
- */
-#define	CLOCK1	((physadr)0177546)
-#define	CLOCK2	((physadr)0172540)
-clkstart()
+#define EPOCH68_MMIO_BASE ((volatile unsigned char *)0x00a00000)
+#define EPOCH68_TIMER_CONTROL_REG 0x20
+#define EPOCH68_TIMER_ENABLE 0x01
+
+void clkstart()
 {
-	lks = CLOCK1;
-	if(fuiword((caddr_t)lks) == -1) {
-		lks = CLOCK2;
-		if(fuiword((caddr_t)lks) == -1)
-			panic("no clock");
-	}
-	lks->r[0] = 0115;
+	EPOCH68_MMIO_BASE[EPOCH68_TIMER_CONTROL_REG] = EPOCH68_TIMER_ENABLE;
 }
 
 /*
  * Let a process handle a signal by simulating an interrupt
  */
-sendsig(p, signo)
+void sendsig(p, signo)
 caddr_t p;
+i32 signo;
 {
-	register unsigned n;
+	register u32 n;
+	register u32 oldpc;
+	register u32 oldsp;
+	register u32 tramp;
+	u8 frame[10];
 
-	n = u.u_ar0[R6] - 4;
-	grow(n);
-	suword((caddr_t)n+2, u.u_ar0[RPS]);
-	suword((caddr_t)n, u.u_ar0[R7]);
-	u.u_ar0[R6] = n;
-	u.u_ar0[RPS] &= ~TBIT;
-	u.u_ar0[R7] = (int)p;
-}
-
-/*
- * 11/70 routine to allocate the
- * UNIBUS map and initialize for
- * a unibus device.
- * The code here and in
- * rhstart assumes that an rh on an 11/70
- * is an rh70 and contains 22 bit addressing.
- */
-int	maplock;
-
-mapalloc(bp)
-register struct buf *bp;
-{
-	register i, a;
-
-	if(cputype != 70)
+	oldsp = (u32)u.u_ar0[R6];
+	tramp = (u32)u.u_sigtramp;
+	n = oldsp - sizeof(frame);
+	oldpc = (u32)u.u_ar0[PC];
+	if (n >= (256UL * 1024UL) || n > oldsp) {
+		u.u_error = EFAULT;
 		return;
-	spl6();
-	while(maplock&B_BUSY) {
-		maplock |= B_WANTED;
-		sleep((caddr_t)&maplock, PSWP+1);
 	}
-	maplock |= B_BUSY;
-	spl0();
-	bp->b_flags |= B_MAP;
-	a = bp->b_xmem;
-	for(i=16; i<32; i+=2)
-		UBMAP->r[i+1] = a;
-	for(a++; i<48; i+=2)
-		UBMAP->r[i+1] = a;
-	bp->b_xmem = 1;
-}
-
-mapfree(bp)
-struct buf *bp;
-{
-
-	bp->b_flags &= ~B_MAP;
-	if(maplock&B_WANTED)
-		wakeup((caddr_t)&maplock);
-	maplock = 0;
+	frame[0] = ((u32)p >> 24) & 0xff;
+	frame[1] = ((u32)p >> 16) & 0xff;
+	frame[2] = ((u32)p >> 8) & 0xff;
+	frame[3] = (u32)p & 0xff;
+	frame[4] = (signo >> 8) & 0xff;
+	frame[5] = signo & 0xff;
+	frame[6] = (oldpc >> 24) & 0xff;
+	frame[7] = (oldpc >> 16) & 0xff;
+	frame[8] = (oldpc >> 8) & 0xff;
+	frame[9] = oldpc & 0xff;
+	if (copyout((caddr_t)frame, (caddr_t)n, sizeof(frame)) < 0) {
+		u.u_error = EFAULT;
+		return;
+	}
+	u.u_ar0[R6] = (i32)n;
+	u.u_ar0[RPS] &= ~(TBIT|0x2000);
+	u.u_ar0[PC] = (i32)tramp;
 }

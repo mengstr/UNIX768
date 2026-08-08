@@ -1,0 +1,13 @@
+set -e
+
+for file in y1 y2 y3 y4
+do
+	echo CC $file.c
+	cc -O2 -c $file.c
+done
+echo LD yacc
+cc -s -o yacc y1.o y2.o y3.o y4.o
+echo CC y1.c local parser
+cc -O2 -DPARSER='"/usr/src/lib/yaccpar"' -c -o y1local.o y1.c
+echo LD yacc.local
+cc -s -o yacc.local y1local.o y2.o y3.o y4.o

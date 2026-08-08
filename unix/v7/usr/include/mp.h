@@ -1,6 +1,8 @@
+#include "sys/inttypes.h"
+
 #define MINT struct mint
 MINT
-{	int len;
+{	i32 len;
 	short *val;
 };
 #define FREE(x) {if(x.len!=0) {free((char *)x.val); x.len=0;}}
@@ -9,7 +11,7 @@ MINT
 #else
 #include "stdio.h"
 #define shfree(u) { if(dbg) fprintf(stderr, "free %o\n", u); free((char *)u);}
-extern int dbg;
+extern i32 dbg;
 #endif
 struct half
 {	short high;

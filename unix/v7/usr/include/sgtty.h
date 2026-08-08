@@ -1,3 +1,5 @@
+#include "sys/inttypes.h"
+
 /*
  * Structure for stty and gtty system calls.
  */
@@ -7,7 +9,7 @@ struct sgttyb {
 	char	sg_ospeed;		/* output speed */
 	char	sg_erase;		/* erase character */
 	char	sg_kill;		/* kill character */
-	int	sg_flags;		/* mode flags */
+	i32	sg_flags;		/* mode flags */
 };
 
 /*
@@ -21,6 +23,9 @@ struct tchars {
 	char	t_eofc;		/* end-of-file */
 	char	t_brkc;		/* input delimiter (like nl) */
 };
+
+i32	gtty(i32, struct sgttyb *);
+i32	stty(i32, struct sgttyb *);
 
 /*
  * Modes

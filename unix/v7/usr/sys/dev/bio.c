@@ -7,11 +7,24 @@
 #include "../h/proc.h"
 #include "../h/seg.h"
 
+void bwrite(struct buf *bp);
+void bawrite(struct buf *bp);
+void bdwrite(struct buf *bp);
+void brelse(struct buf *bp);
+void iowait(struct buf *bp);
+void notavail(struct buf *bp);
+void iodone(struct buf *bp);
+void clrbuf(struct buf *bp);
+void swap(daddr_t blkno, i32 coreaddr, i32 count, i32 rdflg);
+void bflush(i32 dev);
+void physio(i32 (*strat)(struct buf *), struct buf *bp, i32 dev, i32 rw);
+void geterror(struct buf *bp);
+
 #define	DISKMON	1
 
 #ifdef	DISKMON
 struct {
-	int	nbuf;
+	i32	nbuf;
 	long	nread;
 	long	nreada;
 	long	ncache;
@@ -54,7 +67,7 @@ struct	buf	swbuf2;
  */
 struct buf *
 bread(dev, blkno)
-dev_t dev;
+i32 dev;
 daddr_t blkno;
 {
 	register struct buf *bp;
@@ -82,8 +95,9 @@ daddr_t blkno;
  */
 struct buf *
 breada(dev, blkno, rablkno)
-dev_t dev;
-daddr_t blkno, rablkno;
+i32 dev;
+daddr_t blkno;
+daddr_t rablkno;
 {
 	register struct buf *bp, *rabp;
 
@@ -122,7 +136,7 @@ daddr_t blkno, rablkno;
  * Write the buffer, waiting for completion.
  * Then release the buffer.
  */
-bwrite(bp)
+void bwrite(bp)
 register struct buf *bp;
 {
 	register flag;
@@ -151,7 +165,7 @@ register struct buf *bp;
  * This can't be done for magtape, since writes must be done
  * in the same order as requested.
  */
-bdwrite(bp)
+void bdwrite(bp)
 register struct buf *bp;
 {
 	register struct buf *dp;
@@ -168,7 +182,7 @@ register struct buf *bp;
 /*
  * Release the buffer, start I/O on it, but don't wait for completion.
  */
-bawrite(bp)
+void bawrite(bp)
 register struct buf *bp;
 {
 
@@ -179,7 +193,7 @@ register struct buf *bp;
 /*
  * release the buffer, with no I/O implied.
  */
-brelse(bp)
+void brelse(bp)
 register struct buf *bp;
 {
 	register struct buf **backp;
@@ -215,8 +229,9 @@ register struct buf *bp;
  * See if the block is associated with some buffer
  * (mainly to avoid getting hung up on a wait in breada)
  */
+i32
 incore(dev, blkno)
-dev_t dev;
+i32 dev;
 daddr_t blkno;
 {
 	register struct buf *bp;
@@ -236,7 +251,7 @@ daddr_t blkno;
  */
 struct buf *
 getblk(dev, blkno)
-dev_t dev;
+i32 dev;
 daddr_t blkno;
 {
 	register struct buf *bp;
@@ -306,7 +321,7 @@ daddr_t blkno;
  * not assigned to any particular device
  */
 struct buf *
-geteblk()
+geteblk(void)
 {
 	register struct buf *bp;
 	register struct buf *dp;
@@ -340,7 +355,7 @@ loop:
  * Wait for I/O completion on the buffer; return errors
  * to the user.
  */
-iowait(bp)
+void iowait(bp)
 register struct buf *bp;
 {
 
@@ -355,7 +370,7 @@ register struct buf *bp;
  * Unlink a buffer from the available list and mark it busy.
  * (internal interface)
  */
-notavail(bp)
+void notavail(bp)
 register struct buf *bp;
 {
 	register s;
@@ -371,12 +386,10 @@ register struct buf *bp;
  * Mark I/O complete on a buffer, release it if I/O is asynchronous,
  * and wake up anyone waiting for it.
  */
-iodone(bp)
+void iodone(bp)
 register struct buf *bp;
 {
 
-	if(bp->b_flags&B_MAP)
-		mapfree(bp);
 	bp->b_flags |= B_DONE;
 	if (bp->b_flags&B_ASYNC)
 		brelse(bp);
@@ -389,14 +402,14 @@ register struct buf *bp;
 /*
  * Zero the core associated with a buffer.
  */
-clrbuf(bp)
+void clrbuf(bp)
 struct buf *bp;
 {
-	register *p;
+	register i32 *p;
 	register c;
 
 	p = bp->b_un.b_words;
-	c = BSIZE/sizeof(int);
+	c = BSIZE/sizeof(i32);
 	do
 		*p++ = 0;
 	while (--c);
@@ -406,8 +419,7 @@ struct buf *bp;
 /*
  * swap I/O
  */
-swap(blkno, coreaddr, count, rdflg)
-register count;
+void swap(daddr_t blkno, i32 coreaddr, i32 count, i32 rdflg)
 {
 	register struct buf *bp;
 	register tcount;
@@ -429,7 +441,7 @@ register count;
 			tcount = 01700;
 		bp->b_bcount = ctob(tcount);
 		bp->b_blkno = swplo+blkno;
-		bp->b_un.b_addr = (caddr_t)(coreaddr<<6);
+		bp->b_un.b_addr = (caddr_t)(long)(coreaddr<<6);
 		bp->b_xmem = (coreaddr>>10) & 077;
 		(*bdevsw[major(swapdev)].d_strategy)(bp);
 		spl6();
@@ -453,8 +465,8 @@ register count;
  * are flushed out.
  * (from umount and update)
  */
-bflush(dev)
-dev_t dev;
+void bflush(dev)
+i32 dev;
 {
 	register struct buf *bp;
 
@@ -481,15 +493,17 @@ loop:
  * Essentially all the work is computing physical addresses and
  * validating them.
  */
-physio(strat, bp, dev, rw)
+void physio(strat, bp, dev, rw)
 register struct buf *bp;
-int (*strat)();
+i32 (*strat)(struct buf *);
+i32 dev;
+i32 rw;
 {
-	register unsigned base;
-	register int nb;
-	int ts;
+	register u32 base;
+	register i32 nb;
+	i32 ts;
 
-	base = (unsigned)u.u_base;
+	base = (unsigned long)u.u_base;
 	/*
 	 * Check odd base, odd count, and address wraparound
 	 */
@@ -526,7 +540,7 @@ int (*strat)();
 	 * the segmentation hardware.
 	 */
 	ts = (u.u_sep? UDSA: UISA)->r[nb>>7] + (nb&0177);
-	bp->b_un.b_addr = (caddr_t)((ts<<6) + (base&077));
+	bp->b_un.b_addr = (caddr_t)(long)((ts<<6) + (base&077));
 	bp->b_xmem = (ts>>10) & 077;
 	bp->b_blkno = u.u_offset >> BSHIFT;
 	bp->b_bcount = u.u_count;
@@ -554,7 +568,7 @@ int (*strat)();
  * code.  Actually the latter is always true because devices
  * don't yet return specific errors.
  */
-geterror(bp)
+void geterror(bp)
 register struct buf *bp;
 {
 

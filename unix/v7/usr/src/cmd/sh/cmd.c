@@ -10,17 +10,17 @@
 #include	"defs.h"
 #include	"sym.h"
 
-PROC IOPTR	inout();
-PROC VOID	chkword();
-PROC VOID	chksym();
-PROC TREPTR	term();
-PROC TREPTR	makelist();
-PROC TREPTR	list();
-PROC REGPTR	syncase();
-PROC TREPTR	item();
-PROC VOID	skipnl();
-PROC VOID	prsym();
-PROC VOID	synbad();
+LOCAL IOPTR	inout(IOPTR);
+LOCAL VOID	chkword(void);
+LOCAL VOID	chksym(int);
+LOCAL TREPTR	term(int);
+LOCAL TREPTR	makelist(int, TREPTR, TREPTR);
+LOCAL TREPTR	list(int);
+LOCAL REGPTR	syncase(int);
+LOCAL TREPTR	item(int);
+LOCAL VOID	skipnl(void);
+LOCAL VOID	prsym(int);
+LOCAL VOID	synbad(void);
 
 
 /* ========	command line decoding	========*/
@@ -32,26 +32,26 @@ TREPTR	makefork(flgs, i)
 	INT		flgs;
 	TREPTR		i;
 {
-	REG TREPTR	t;
+	REG FORKPTR	t;
 
-	t=getstak(FORKTYPE);
+	t=(FORKPTR)getstak(FORKTYPE);
 	t->forktyp=flgs|TFORK; t->forktre=i; t->forkio=0;
-	return(t);
+	return((TREPTR)t);
 }
 
 LOCAL TREPTR	makelist(type,i,r)
 	INT		type;
 	TREPTR		i, r;
 {
-	REG TREPTR	t;
+	REG LSTPTR	t;
 
 	IF i==0 ORF r==0
 	THEN	synbad();
-	ELSE	t = getstak(LSTTYPE);
+	ELSE	t = (LSTPTR)getstak(LSTTYPE);
 		t->lsttyp = type;
 		t->lstlef = i; t->lstrit = r;
 	FI
-	return(t);
+	return((TREPTR)t);
 }
 
 /*
@@ -153,7 +153,7 @@ LOCAL REGPTR	syncase(esym)
 	skipnl();
 	IF wdval==esym
 	THEN	return(0);
-	ELSE	REG REGPTR	r=getstak(REGTYPE);
+	ELSE	REG REGPTR	r=(REGPTR)getstak(REGTYPE);
 		r->regptr=0;
 		LOOP wdarg->argnxt=r->regptr;
 		     r->regptr=wdarg;
@@ -201,54 +201,59 @@ LOCAL TREPTR	item(flag)
 
 	    case CASYM:
 		BEGIN
-		   t=getstak(SWTYPE);
+		   REG SWPTR	sw=(SWPTR)getstak(SWTYPE);
 		   chkword();
-		   t->swarg=wdarg->argval;
+		   sw->swarg=wdarg->argval;
 		   skipnl(); chksym(INSYM|BRSYM);
-		   t->swlst=syncase(wdval==INSYM?ESSYM:KTSYM);
-		   t->swtyp=TSW;
+		   sw->swlst=syncase(wdval==INSYM?ESSYM:KTSYM);
+		   sw->swtyp=TSW;
+		   t=(TREPTR)sw;
 		   break;
 		END
 
 	    case IFSYM:
 		BEGIN
+		   REG IFPTR	ifp;
 		   REG INT	w;
-		   t=getstak(IFTYPE);
-		   t->iftyp=TIF;
-		   t->iftre=cmd(THSYM,NLFLG);
-		   t->thtre=cmd(ELSYM|FISYM|EFSYM,NLFLG);
-		   t->eltre=((w=wdval)==ELSYM ? cmd(FISYM,NLFLG) : (w==EFSYM ? (wdval=IFSYM, item(0)) : 0));
+		   ifp=(IFPTR)getstak(IFTYPE);
+		   ifp->iftyp=TIF;
+		   ifp->iftre=cmd(THSYM,NLFLG);
+		   ifp->thtre=cmd(ELSYM|FISYM|EFSYM,NLFLG);
+		   ifp->eltre=((w=wdval)==ELSYM ? cmd(FISYM,NLFLG) : (w==EFSYM ? (wdval=IFSYM, item(0)) : 0));
+		   t=(TREPTR)ifp;
 		   IF w==EFSYM THEN return(t) FI
 		   break;
 		END
 
 	    case FORSYM:
 		BEGIN
-		   t=getstak(FORTYPE);
-		   t->fortyp=TFOR;
-		   t->forlst=0;
+		   REG FORPTR	forp=(FORPTR)getstak(FORTYPE);
+		   forp->fortyp=TFOR;
+		   forp->forlst=0;
 		   chkword();
-		   t->fornam=wdarg->argval;
+		   forp->fornam=wdarg->argval;
 		   IF skipnl()==INSYM
 		   THEN	chkword();
-			t->forlst=item(0);
+			forp->forlst=(COMPTR)item(0);
 			IF wdval!=NL ANDF wdval!=';'
 			THEN	synbad();
 			FI
 			chkpr(wdval); skipnl();
 		   FI
 		   chksym(DOSYM|BRSYM);
-		   t->fortre=cmd(wdval==DOSYM?ODSYM:KTSYM,NLFLG);
+		   forp->fortre=cmd(wdval==DOSYM?ODSYM:KTSYM,NLFLG);
+		   t=(TREPTR)forp;
 		   break;
 		END
 
 	    case WHSYM:
 	    case UNSYM:
 		BEGIN
-		   t=getstak(WHTYPE);
-		   t->whtyp=(wdval==WHSYM ? TWH : TUN);
-		   t->whtre = cmd(DOSYM,NLFLG);
-		   t->dotre = cmd(ODSYM,NLFLG);
+		   REG WHPTR	whp=(WHPTR)getstak(WHTYPE);
+		   whp->whtyp=(wdval==WHSYM ? TWH : TUN);
+		   whp->whtre = cmd(DOSYM,NLFLG);
+		   whp->dotre = cmd(ODSYM,NLFLG);
+		   t=(TREPTR)whp;
 		   break;
 		END
 
@@ -259,10 +264,10 @@ LOCAL TREPTR	item(flag)
 	    case '(':
 		BEGIN
 		   REG PARPTR	 p;
-		   p=getstak(PARTYPE);
+		   p=(PARPTR)getstak(PARTYPE);
 		   p->partre=cmd(')',NLFLG);
 		   p->partyp=TPAR;
-		   t=makefork(0,p);
+		   t=makefork(0,(TREPTR)p);
 		   break;
 		END
 
@@ -275,11 +280,11 @@ LOCAL TREPTR	item(flag)
 		BEGIN
 		   REG ARGPTR	argp;
 		   REG ARGPTR	*argtail;
-		   REG ARGPTR	*argset=0;
+		   REG ARGPTR	argset=0;
 		   INT		keywd=1;
-		   t=getstak(COMTYPE);
-		   t->comio=io; /*initial io chain*/
-		   argtail = &(t->comarg);
+		   REG COMPTR	comp=(COMPTR)getstak(COMTYPE);
+		   comp->comio=io; /*initial io chain*/
+		   argtail = &(comp->comarg);
 		   WHILE wdval==0
 		   DO	argp = wdarg;
 			IF wdset ANDF keywd
@@ -288,12 +293,12 @@ LOCAL TREPTR	item(flag)
 			FI
 			word();
 			IF flag
-			THEN t->comio=inout(t->comio);
+			THEN comp->comio=inout(comp->comio);
 			FI
 		   OD
 
-		   t->comtyp=TCOM; t->comset=argset; *argtail=0;
-		   return(t);
+		   comp->comtyp=TCOM; comp->comset=argset; *argtail=0;
+		   return((TREPTR)comp);
 		END
 
 	ENDSW
@@ -347,7 +352,7 @@ LOCAL IOPTR	inout(lastio)
 	ENDSW
 
 	chkword();
-	iop=getstak(IOTYPE); iop->ioname=wdarg->argval; iop->iofile=iof;
+	iop=(IOPTR)getstak(IOTYPE); iop->ioname=wdarg->argval; iop->iofile=iof;
 	IF iof&IODOC
 	THEN iop->iolst=iopend; iopend=iop;
 	FI

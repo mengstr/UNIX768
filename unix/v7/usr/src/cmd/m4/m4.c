@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <signal.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #define ERROR NULL
 #define	READ	"r"
@@ -98,12 +101,6 @@ char	*dumploc;
 char	*errploc;
 
 char	*tempname;
-struct nlist	*lookup();
-char	*install();
-char	*malloc();
-char	*mktemp();
-char	*copy();
-long	ctol();
 int	hshval;
 FILE	*olist[11] = { stdout };
 int	okret;
@@ -112,13 +109,50 @@ FILE	*curfile = { stdout };
 FILE	*infile[10] = { stdin };
 int	infptr	= 0;
 
-main(argc, argv)
-char **argv;
+static void catchsig(i16 signo);
+static int delexit(void);
+static int puttok(void);
+static int pbstr(register char *str);
+static int expand(register char **a1, int c);
+static struct nlist *lookup(char *str);
+static char *install(char *nam, char *val);
+static int doundef(char **ap, int c);
+static char *copy(register char *s);
+static int dodef(char **ap, int c);
+static int doifdef(char **ap, int c);
+static int dolen(char **ap, int c);
+static int docq(char **ap, int c);
+static int doshift(char **ap, int c);
+static int dodump(char **ap, int c);
+static int doerrp(char **ap, int c);
+static int doeval(char **ap, int c);
+static int doincl(char **ap, int c, int noisy);
+static int dosyscmd(char **ap, int c);
+static int domake(char **ap, int c);
+static int doincr(char **ap, int c);
+static int putnum(long num);
+static int dosubstr(char **ap, int c);
+static int doindex(char **ap, int c);
+static int strindex(char *p1, char *p2);
+static int dotransl(char **ap, int c);
+static int doif(register char **ap, int c);
+static int dodiv(register char **ap, int c);
+static int doundiv(char **ap, int c);
+static int dodivnum(char **ap, int c);
+static int dodnl(char **ap, int c);
+static long ctol(register char *str);
+static int ctoi(char *s);
+static int min(int a, int b);
+static int max(int a, int b);
+char *mktemp(char *template);
+int yyparse(void);
+
+int
+main (int argc, char **argv)
 {
 	char *argstk[STACKS+10];
 	struct call callst[STACKS];
 	register char *tp, **ap;
-	int delexit(), catchsig();
 	register t;
 	int i;
 
@@ -297,7 +331,7 @@ char **argv;
 			cp->plev--;
 			if (cp->plev==0) {
 				*op++ = '\0';
-				expand(cp->argp, ap-cp->argp-1);
+				expand(cp->argp, (int)(ap-cp->argp-1));
 				op = *cp->argp;
 				ap = cp->argp-1;
 				cp--;
@@ -322,13 +356,15 @@ char **argv;
 	delexit();
 }
 
-catchsig()
+static void
+catchsig (i16 signo)
 {
 	okret = 0;
 	delexit();
 }
 
-delexit()
+static int
+delexit (void)
 {
 	register FILE *fp;
 	register i, c;
@@ -355,7 +391,8 @@ delexit()
 	exit(1-okret);
 }
 
-puttok()
+static int
+puttok (void)
 {
 	register char *tp;
 
@@ -372,8 +409,8 @@ puttok()
 			putc(*tp++, curfile);
 }
 
-pbstr(str)
-register char *str;
+static int
+pbstr (register char *str)
 {
 	register char *p;
 
@@ -388,8 +425,8 @@ register char *str;
 		putbak(*--p);
 }
 
-expand(a1, c)
-register char **a1;
+static int
+expand (register char **a1, int c)
 {
 	register char *dp;
 	register n;
@@ -456,8 +493,8 @@ register char **a1;
 	}
 }
 
-struct nlist *lookup(str)
-char *str;
+static struct nlist *
+lookup (char *str)
 {
 	register char *s1, *s2;
 	register struct nlist *np;
@@ -477,8 +514,8 @@ char *str;
 	return(&nodef);
 }
 
-char *install(nam, val)
-char *nam, *val;
+static char *
+install (char *nam, char *val)
 {
 	register struct nlist *np;
 
@@ -499,8 +536,8 @@ char *nam, *val;
 	return(np->def);
 }
 
-doundef(ap, c)
-char **ap;
+static int
+doundef (char **ap, int c)
 {
 	register struct nlist *np, *tnp;
 
@@ -519,8 +556,8 @@ char **ap;
 	free((char *)np);
 }
 
-char *copy(s)
-register char *s;
+static char *
+copy (register char *s)
 {
 	register char *p, *s1;
 
@@ -533,8 +570,8 @@ register char *s;
 	return(p);
 }
 
-dodef(ap, c)
-char **ap;
+static int
+dodef (char **ap, int c)
 {
 	if (c >= 2) {
 		if (strcmp(ap[1], ap[2]) == 0) {
@@ -547,8 +584,8 @@ char **ap;
 		install(ap[1], "");
 }
 
-doifdef(ap, c)
-char **ap;
+static int
+doifdef (char **ap, int c)
 {
 	register struct nlist *np;
 
@@ -560,14 +597,14 @@ char **ap;
 		pbstr(ap[3]);
 }
 
-dolen(ap, c)
-char **ap;
+static int
+dolen (char **ap, int c)
 {
 	putnum((long) strlen(ap[1]));
 }
 
-docq(ap, c)
-char **ap;
+static int
+docq (char **ap, int c)
 {
 	if (c > 1) {
 		lquote = *ap[1];
@@ -586,14 +623,14 @@ char **ap;
 	}
 }
 
-doshift(ap, c)
-char **ap;
+static int
+doshift (char **ap, int c)
 {
 	fprintf(stderr, "m4: shift not yet implemented\n");
 }
 
-dodump(ap, c)
-char **ap;
+static int
+dodump (char **ap, int c)
 {
 	int i;
 	register struct nlist *np;
@@ -609,8 +646,8 @@ char **ap;
 				fprintf(stderr, "`%s'	`%s'\n", np->name, np->def);
 }
 
-doerrp(ap, c)
-char **ap;
+static int
+doerrp (char **ap, int c)
 {
 	if (c > 0) {
 		fprintf(stderr, ap[1], ap[2], ap[3], ap[4], ap[5], ap[6]);
@@ -622,8 +659,8 @@ char **ap;
 long	evalval;	/* return value from yacc stuff */
 char	*pe;	/* used by grammar */
 
-doeval(ap, c)
-char **ap;
+static int
+doeval (char **ap, int c)
 {
 
 	if (c > 0) {
@@ -635,8 +672,8 @@ char **ap;
 	}
 }
 
-doincl(ap, c, noisy)
-char **ap;
+static int
+doincl (char **ap, int c, int noisy)
 {
 	if (c > 0 && strlen(ap[1]) > 0) {
 		infptr++;
@@ -652,29 +689,29 @@ char **ap;
 	}
 }
 
-dosyscmd(ap, c)
-char **ap;
+static int
+dosyscmd (char **ap, int c)
 {
 	if (c > 0)
 		system(ap[1]);
 }
 
-domake(ap, c)
-char **ap;
+static int
+domake (char **ap, int c)
 {
 	if (c > 0)
 		pbstr(mktemp(ap[1]));
 }
 
-doincr(ap, c)
-char **ap;
+static int
+doincr (char **ap, int c)
 {
 	if (c >= 1)
 		putnum(ctol(ap[1])+1);
 }
 
-putnum(num)
-long num;
+static int
+putnum (long num)
 {
 	register sign;
 
@@ -689,8 +726,8 @@ long num;
 		putbak('-');
 }
 
-dosubstr(ap, c)
-char **ap;
+static int
+dosubstr (char **ap, int c)
 {
 	int nc;
 	register char *sp, *fc;
@@ -707,15 +744,15 @@ char **ap;
 		putbak(*--sp);
 }
 
-doindex(ap, c)
-char **ap;
+static int
+doindex (char **ap, int c)
 {
 	if (c >= 2)
 		putnum((long) strindex(ap[1], ap[2]));
 }
 
-strindex(p1, p2)
-char *p1, *p2;
+static int
+strindex (char *p1, char *p2)
 {
 	register m;
 	register char *s, *t, *p;
@@ -732,8 +769,8 @@ char *p1, *p2;
 	return(-1);
 }
 
-dotransl(ap, c)
-char **ap;
+static int
+dotransl (char **ap, int c)
 {
 	register char *s, *fr, *to;
 
@@ -765,8 +802,8 @@ char **ap;
 	pbstr(ap[1]);
 }
 
-doif(ap, c)
-register char **ap;
+static int
+doif (register char **ap, int c)
 {
 	if (c < 3)
 		return;
@@ -782,8 +819,8 @@ register char **ap;
 		pbstr(ap[1]);
 }
 
-dodiv(ap, c)
-register char **ap;
+static int
+dodiv (register char **ap, int c)
 {
 	register int f;
 
@@ -802,8 +839,8 @@ register char **ap;
 	}
 }
 
-doundiv(ap, c)
-char **ap;
+static int
+doundiv (char **ap, int c)
 {
 	register FILE *fp;
 	register int i, ch;
@@ -843,14 +880,14 @@ char **ap;
 	}
 }
 
-dodivnum(ap, c)
-char **ap;
+static int
+dodivnum (char **ap, int c)
 {
 	putnum((long) curout);
 }
 
-dodnl(ap, c)
-char **ap;
+static int
+dodnl (char **ap, int c)
 {
 	register t;
 
@@ -858,8 +895,8 @@ char **ap;
 		;
 }
 
-long ctol(str)
-register char *str;
+static long
+ctol (register char *str)
 {
 	register sign;
 	long num;
@@ -878,20 +915,22 @@ register char *str;
 	return(sign * num);
 }
 
-ctoi(s)
-char *s;
+static int
+ctoi (char *s)
 {
 	return(ctol(s));
 }
 
-min(a, b)
+static int
+min (int a, int b)
 {
 	if (a>b)
 		return(b);
 	return(a);
 }
 
-max(a, b)
+static int
+max (int a, int b)
 {
 	if (a>b)
 		return(a);

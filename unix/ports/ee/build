@@ -1,0 +1,9 @@
+set -e
+
+sh clean
+CFLAGS="-DV7_TARGET -DNCURSE -DCAP -DNO_CATGETS"
+CFLAGS="$CFLAGS -DNO_LOCALE -DHAS_STDLIB -DHAS_UNISTD"
+CFLAGS="$CFLAGS -DHAS_STDARG -DHAS_CTYPE"
+cc $CFLAGS -c ee.c
+cc $CFLAGS -c new_curse.c
+cc -s -o ee ee.o new_curse.o

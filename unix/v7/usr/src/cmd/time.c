@@ -2,17 +2,20 @@
 
 #include <stdio.h>
 #include <signal.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/times.h>
+#include <unistd.h>
 
-extern int errno;
 extern char *sys_errlist[];
 
-main(argc, argv)
-char **argv;
+static void printt(char *s, long a);
+
+int
+main(int argc, char **argv)
 {
 	struct tms buffer, obuffer;
-	int status;
+	i16 status;
 	register p;
 	time_t before, after;
 
@@ -50,6 +53,7 @@ char *pad  = "000      ";
 char *sep  = "\0\0.\0:\0:\0\0";
 char *nsep = "\0\0.\0 \0 \0\0";
 
+static void
 printt(s, a)
 char *s;
 long a;

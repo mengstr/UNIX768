@@ -1,0 +1,3 @@
+set -e
+
+rm -f m4 *.o m4y.c y.tab.c

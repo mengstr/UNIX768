@@ -9,50 +9,13 @@
 # define COLLECT	1
 # define SKIP2	2
 # define WIDTH 6
-struct	{
+struct	tempent {
 		char	*beg;
 		int	ct;
 		long	wdno;
-	} temp[30];
+	};
 
-int	lflag;
-int	puncfl;
-int	hsw;
-int	san;
-int	t1;
-
-
-
-char	tab[NUMS][NUMC];
-
-int	coll();
-int	save();
-int	hyphen();
-int	hyp1();
-int	hyp2();
-int	error();
-int	ctout();
-int	bsp();
-int	bsp1();
-int	gobble2();
-int	bslash();
-int	punc();
-
-char	line[300];
-int	l;
-int	lno;
-int	c;
-
-int	only;
-int	cs;
-int	(*flag[8])();
-int	fl;
-int	wdflg;
-long	wdnum;
-char	num[WIDTH + 1];
-int	igflg;
-
-struct	htab	{
+struct	htab {
 		int	hsiz;
 		int	ssiz;
 		int	nsym;
@@ -61,11 +24,45 @@ struct	htab	{
 		char	*symt;
 		};
 
-struct	htab	itab;
+extern struct tempent temp[30];
 
-int	ipsp[PTRI];
-char	issp[CHARI];
+extern int	lflag;
+extern int	puncfl;
+extern int	hsw;
+extern int	san;
+extern int	t1;
 
+extern char	tab[NUMS][NUMC];
 
+int	coll(void);
+int	save(void);
+int	hyphen(void);
+int	ctout(void);
+int	bsp(void);
+int	gobble2(void);
+int	bslash(void);
+int	punc(void);
+int	search(char *, int, struct htab *, int);
+int	put(char *, int);
+int	flsh(void);
 
-FILE	*fi;
+extern char	line[300];
+extern int	l;
+extern int	lno;
+extern int	c;
+
+extern int	only;
+extern int	cs;
+extern int	(*flag[8])(void);
+extern int	fl;
+extern int	wdflg;
+extern long	wdnum;
+extern char	num[WIDTH + 1];
+extern int	igflg;
+
+extern struct htab itab;
+
+extern int	ipsp[PTRI];
+extern char	issp[CHARI];
+
+extern FILE	*fi;

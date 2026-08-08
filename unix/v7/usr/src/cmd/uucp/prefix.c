@@ -8,8 +8,8 @@
  *	return 1 - == 
  */
 
-prefix(s1, s2)
-char *s1, *s2;
+int
+prefix (char *s1, char *s2)
 {
 	char c;
 

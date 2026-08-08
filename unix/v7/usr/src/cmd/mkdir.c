@@ -4,13 +4,14 @@
 
 #include	<signal.h>
 #include	<stdio.h>
+#include	<string.h>
+#include	<unistd.h>
 
 int	Errors = 0;
-char	*strcat();
-char	*strcpy();
+void	mkdir(char *d);
 
-main(argc, argv)
-char *argv[];
+int
+main(int argc, char *argv[])
 {
 
 	signal(SIGHUP, SIG_IGN);
@@ -28,8 +29,8 @@ char *argv[];
 	exit(Errors!=0);
 }
 
-mkdir(d)
-char *d;
+void
+mkdir(char *d)
 {
 	char pname[128], dname[128];
 	register i, slash = 0;

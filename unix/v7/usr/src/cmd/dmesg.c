@@ -3,26 +3,32 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include <sys/param.h>
-#include <a.out.h>
+#include <time.h>
+#include <unistd.h>
+
+#define KSYMS	"/etc/ksyms"
 
 char	msgbuf[MSGBUFS];
 char	*msgbufp;
 int	sflg;
 int	of	= -1;
+long	msgbufaddr;
+long	msgbufpaddr;
 
 struct {
 	char	*omsgflg;
 	int	omindex;
 	char	omsgbuf[MSGBUFS];
 } omesg;
-struct nlist nl[3] = {
-	{"_msgbuf"},
-	{"_msgbufp"}
-};
 
-main(argc, argv)
-char **argv;
+int ksyms(void);
+int done(char *s);
+int pdate(void);
+
+int
+main (int argc, char **argv)
 {
 	int mem;
 	register char *mp, *omp, *mstart;
@@ -38,18 +44,18 @@ char **argv;
 	read(of, (char *)&omesg, sizeof(omesg));
 	lseek(of, 0L, 0);
 	sflg = 0;
-	nlist(argc>2? argv[2]:"/unix", nl);
-	if (nl[0].n_type==0)
-		done("No namelist\n");
-	if ((mem = open((argc>1? argv[1]: "/dev/mem"), 0)) < 0)
+	if (ksyms() < 0)
+		done("No ksyms\n");
+	if ((mem = open((argc>1? argv[1]: "/dev/kmem"), 0)) < 0)
 		done("No mem\n");
-	lseek(mem, (long)nl[0].n_value, 0);
+	lseek(mem, msgbufaddr, 0);
 	read(mem, msgbuf, MSGBUFS);
-	lseek(mem, (long)nl[1].n_value, 0);
+	lseek(mem, msgbufpaddr, 0);
 	read(mem, (char *)&msgbufp, sizeof(msgbufp));
-	if (msgbufp < (char *)nl[0].n_value || msgbufp >= (char *)nl[0].n_value+MSGBUFS)
+	if (msgbufp < (char *)msgbufaddr ||
+	    msgbufp >= (char *)msgbufaddr+MSGBUFS)
 		done("Namelist mismatch\n");
-	msgbufp += msgbuf - (char *)nl[0].n_value;
+	msgbufp += msgbuf - (char *)msgbufaddr;
 	mstart = &msgbuf[omesg.omindex];
 	omp = &omesg.omsgbuf[msgbufp-msgbuf];
 	mp = msgbufp;
@@ -81,8 +87,73 @@ char **argv;
 	done((char *)NULL);
 }
 
-done(s)
-char *s;
+int
+ksyms (void)
+{
+	FILE *fp;
+	char line[96], sym[64];
+	register char *cp, *sp;
+	long value;
+	int found;
+
+	if ((fp = fopen(KSYMS, "r")) == NULL)
+		return(-1);
+	found = 0;
+	while (fgets(line, sizeof(line), fp) != NULL) {
+		cp = line;
+		while (*cp == ' ' || *cp == '\t')
+			cp++;
+		sp = sym;
+		while (*cp && *cp != ' ' && *cp != '\t' && *cp != ':' &&
+		    sp < &sym[sizeof(sym)-1])
+			*sp++ = *cp++;
+		*sp = 0;
+		while (*cp && *cp != '\n') {
+			if (cp[0] == 'v' && cp[1] == 'a' && cp[2] == 'l' &&
+			    cp[3] == 'u' && cp[4] == 'e') {
+				cp += 5;
+				break;
+			}
+			if ((*cp >= '0' && *cp <= '9') ||
+			    (cp[0] == '0' && cp[1] == 'x'))
+				break;
+			cp++;
+		}
+		while (*cp == ' ' || *cp == '\t')
+			cp++;
+		value = 0;
+		if (cp[0] == '0' && cp[1] == 'x')
+			cp += 2;
+		while ((*cp >= '0' && *cp <= '9') ||
+		    (*cp >= 'a' && *cp <= 'f') ||
+		    (*cp >= 'A' && *cp <= 'F')) {
+			value <<= 4;
+			if (*cp >= '0' && *cp <= '9')
+				value += *cp - '0';
+			else if (*cp >= 'a' && *cp <= 'f')
+				value += *cp - 'a' + 10;
+			else
+				value += *cp - 'A' + 10;
+			cp++;
+		}
+		if (strcmp(sym, "_msgbuf") == 0) {
+			msgbufaddr = value;
+			found++;
+		} else if (strcmp(sym, "_msgbufp") == 0) {
+			msgbufpaddr = value;
+			found++;
+		}
+		if (found >= 2) {
+			fclose(fp);
+			return(0);
+		}
+	}
+	fclose(fp);
+	return(-1);
+}
+
+int
+done (char *s)
 {
 	register char *p, *q;
 
@@ -99,15 +170,21 @@ char *s;
 	exit(s!=NULL);
 }
 
-pdate()
+int
+pdate (void)
 {
-	extern char *ctime();
 	static firstime;
 	time_t tbuf;
+	register char *cp;
+	register int i;
 
 	if (firstime==0) {
 		firstime++;
 		time(&tbuf);
-		printf("\n%.12s\n", ctime(&tbuf)+4);
+		cp = ctime(&tbuf)+4;
+		putchar('\n');
+		for (i=0; i<12 && cp[i]; i++)
+			putchar(cp[i]);
+		putchar('\n');
 	}
 }

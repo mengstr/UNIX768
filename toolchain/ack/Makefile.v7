@@ -1,0 +1,332 @@
+# V7-make-compatible build of the target-hosted ACK tools.
+#
+# Run through /usr/src/build.dev.  This is an internal ACK makefile; the
+# canonical system entry points remain build.dev, install.dev and clean.dev.
+# The build leaves the installed /usr/lib/ack tools in place.  Use "make
+# install" only after testing the newly built /tmp/ack/cpp.
+
+# V7 defaults.  Empty SRC makes ACK resolve to /usr/src/ack.  Intermediates
+# and the test output stay under /tmp/ack; DEST is used only by install.
+SRC =
+ACK = $(SRC)/usr/src/ack
+BUILD = /tmp/ack
+DEST =
+HOST =
+TOOLS = /usr/lib/ack
+CC = $(HOST)/bin/cc
+# Leave ACK at its default optimisation level.  The stronger -O2 path makes
+# cpp/replace.c exceed the target NCG workspace.
+CFLAGS = -DNORETURN= -DUNREACHABLE_CODE= -DACK_TARGET_CPP_STDARG
+CPP_INCLUDES = -I$(ACK)/shared/generated/h -I$(ACK)/shared/generated/em_data -I$(ACK)/shared/includes/ack-h -I$(ACK)/shared/includes/modules-h -I$(ACK)/shared/includes/read_em -I$(ACK)/shared/modules/src/alloc -I$(ACK)/shared/modules/src/data -I$(ACK)/shared/modules/src/em_code -I$(ACK)/shared/modules/src/em_data -I$(ACK)/shared/modules/src/flt_arith -I$(ACK)/shared/modules/src/idf -I$(ACK)/shared/modules/src/input -I$(ACK)/shared/modules/src/read_em -I$(ACK)/shared/modules/src/string -I$(ACK)/shared/modules/src/system -I$(ACK)/cpp -I$(ACK)/cpp/generated
+CPP_BUILD = $(BUILD)/cpp-build
+CPP = $(TOOLS)/cpp
+C1 = $(TOOLS)/c1
+OPT = $(TOOLS)/opt
+NCG = $(TOOLS)/ncg
+AS = $(TOOLS)/as
+MD5 = /local/bin/md5
+BASENAME = /bin/basename
+C1_CFLAGS = -DNORETURN= -DUNREACHABLE_CODE= -DACK_TARGET_NO_LONG_LONG -DACK_EM_CODE_FILE_BACKED -DACK_TARGET_C1_BUFFERED_INPUT -DBIGMACHINE=1
+C1_INCLUDES = -I$(ACK)/shared/generated/h -I$(ACK)/shared/generated/em_data -I$(ACK)/shared/includes/ack-h -I$(ACK)/shared/includes/modules-h -I$(ACK)/shared/includes/read_em -I$(ACK)/shared/modules/src/alloc -I$(ACK)/shared/modules/src/data -I$(ACK)/shared/modules/src/em_code -I$(ACK)/shared/modules/src/em_data -I$(ACK)/shared/modules/src/flt_arith -I$(ACK)/shared/modules/src/idf -I$(ACK)/shared/modules/src/input -I$(ACK)/shared/modules/src/read_em -I$(ACK)/shared/modules/src/string -I$(ACK)/shared/modules/src/system -I$(ACK)/c1 -I$(ACK)/c1/generated
+C1_BUILD = $(BUILD)/c1-build
+OPT_CFLAGS = -DNORETURN= -DUNREACHABLE_CODE=
+OPT_INCLUDES = -I$(ACK)/shared/generated/h -I$(ACK)/shared/generated/em_data -I$(ACK)/shared/includes/ack-h -I$(ACK)/shared/includes/modules-h -I$(ACK)/shared/modules/src/system -I$(ACK)/opt -I$(ACK)/opt/generated
+OPT_BUILD = $(BUILD)/opt-build
+NCG_CFLAGS = -DNORETURN= -DUNREACHABLE_CODE= -DACK_TARGET_NO_LONG_LONG -DWORD_SIZE=2 -DTBL68000=1 -DNOSTACKTEST
+NCG_INCLUDES = -I$(ACK)/shared/generated/h -I$(ACK)/shared/generated/em_data -I$(ACK)/shared/includes/ack-h -I$(ACK)/shared/includes/modules-h -I$(ACK)/shared/modules/src/flt_arith -I$(ACK)/c2 -I$(ACK)/c2/generated
+NCG_BUILD = $(BUILD)/ncg-build
+AS_CFLAGS = -DNORETURN= -DUNREACHABLE_CODE= -DACK_TARGET_NO_LONG_LONG
+AS_INCLUDES = -I$(ACK)/shared/generated/h -I$(ACK)/shared/generated/em_data -I$(ACK)/shared/includes/ack-h -I$(ACK)/shared/includes/modules-h -I$(ACK)/shared/modules/src/flt_arith -I$(ACK)/shared/modules/src/object -I$(ACK)/as -I$(ACK)/as/generated
+AS_BUILD = $(BUILD)/as-build
+LED_CFLAGS = -DNORETURN= -DUNREACHABLE_CODE= -DACK_TARGET_NO_LONG_LONG
+LED_INCLUDES = -I$(ACK)/shared/generated/h -I$(ACK)/shared/generated/em_data -I$(ACK)/shared/includes/ack-h -I$(ACK)/shared/includes/modules-h -I$(ACK)/shared/modules/src/object -I$(ACK)/ln
+LED_BUILD = $(BUILD)/led-build
+CV_CFLAGS = -DNORETURN= -DUNREACHABLE_CODE= -DACK_TARGET_NO_LONG_LONG -DUNIXSMALL=1
+CV_INCLUDES = -I$(ACK)/shared/generated/h -I$(ACK)/shared/generated/em_data -I$(ACK)/shared/includes/ack-h -I$(ACK)/shared/includes/modules-h -I$(ACK)/shared/modules/src/object -I$(ACK)/cv
+CV_BUILD = $(BUILD)/cv-build
+RUNTIME =
+CRT0 = $(RUNTIME)/lib/crt0.o
+LIBC = $(RUNTIME)/lib/libc.a
+LIBFP = $(RUNTIME)/lib/libfp.a
+END = $(RUNTIME)/lib/end.o
+
+# REAL EXECUTABLES
+
+all: cpp c1 opt opt2 ncg as led cv cc
+cpp: $(BUILD)/cpp
+c1: $(BUILD)/c1
+opt: $(BUILD)/opt
+opt2: $(BUILD)/opt2
+ncg: $(BUILD)/ncg
+as: $(BUILD)/as
+led: $(BUILD)/led
+cv: $(BUILD)/cv
+cc: $(BUILD)/cc
+
+$(BUILD)/cpp: \
+	$(ACK)/shared/modules/src/alloc/st_alloc.c \
+	$(ACK)/shared/modules/src/alloc/std_alloc.c \
+	$(ACK)/shared/modules/src/string/bts2str.c \
+	$(ACK)/shared/modules/src/string/long2str.c \
+	$(ACK)/cpp/LLlex.c \
+	$(ACK)/cpp/LLmessage.c \
+	$(ACK)/cpp/ch3bin.c \
+	$(ACK)/cpp/ch3mon.c \
+	$(ACK)/cpp/domacro.c \
+	$(ACK)/cpp/error.c \
+	$(ACK)/cpp/expr.c \
+	$(ACK)/cpp/idf.c \
+	$(ACK)/cpp/init.c \
+	$(ACK)/cpp/input.c \
+	$(ACK)/cpp/main.c \
+	$(ACK)/cpp/options.c \
+	$(ACK)/cpp/preprocess.c \
+	$(ACK)/cpp/replace.c \
+	$(ACK)/cpp/skip.c \
+	$(ACK)/cpp/tokenname.c \
+	$(ACK)/cpp/generated/Lpars.c \
+	$(ACK)/cpp/generated/expression.c \
+	$(ACK)/cpp/generated/next.c \
+	$(ACK)/cpp/generated/symbol2str.c \
+	$(ACK)/cpp/generated/tabgen.c \
+	$(ACK)/cpp/generated/tokenfile.c
+	-@test -d $(BUILD) || mkdir $(BUILD)
+	@test -d $(BUILD)
+	-@test -d $(CPP_BUILD) || mkdir $(CPP_BUILD)
+	@test -d $(CPP_BUILD)
+	@echo CC st_alloc.c
+	@$(CC) $(CFLAGS) $(CPP_INCLUDES) -c -o $(CPP_BUILD)/st_alloc.o $(ACK)/shared/modules/src/alloc/st_alloc.c
+	@echo CC std_alloc.c
+	@$(CC) $(CFLAGS) $(CPP_INCLUDES) -c -o $(CPP_BUILD)/std_alloc.o $(ACK)/shared/modules/src/alloc/std_alloc.c
+	@echo CC bts2str.c
+	@$(CC) $(CFLAGS) $(CPP_INCLUDES) -c -o $(CPP_BUILD)/bts2str.o $(ACK)/shared/modules/src/string/bts2str.c
+	@echo CC long2str.c
+	@$(CC) $(CFLAGS) $(CPP_INCLUDES) -c -o $(CPP_BUILD)/long2str.o $(ACK)/shared/modules/src/string/long2str.c
+	@echo CC LLlex.c
+	@$(CC) $(CFLAGS) $(CPP_INCLUDES) -c -o $(CPP_BUILD)/LLlex.o $(ACK)/cpp/LLlex.c
+	@echo CC LLmessage.c
+	@$(CC) $(CFLAGS) $(CPP_INCLUDES) -c -o $(CPP_BUILD)/LLmessage.o $(ACK)/cpp/LLmessage.c
+	@echo CC ch3bin.c
+	@$(CC) $(CFLAGS) $(CPP_INCLUDES) -c -o $(CPP_BUILD)/ch3bin.o $(ACK)/cpp/ch3bin.c
+	@echo CC ch3mon.c
+	@$(CC) $(CFLAGS) $(CPP_INCLUDES) -c -o $(CPP_BUILD)/ch3mon.o $(ACK)/cpp/ch3mon.c
+	@echo CC domacro.c
+	@$(CC) $(CFLAGS) $(CPP_INCLUDES) -c -o $(CPP_BUILD)/domacro.o $(ACK)/cpp/domacro.c
+	@echo CC error.c
+	@$(CC) $(CFLAGS) $(CPP_INCLUDES) -c -o $(CPP_BUILD)/error.o $(ACK)/cpp/error.c
+	@echo CC expr.c
+	@$(CC) $(CFLAGS) $(CPP_INCLUDES) -c -o $(CPP_BUILD)/expr.o $(ACK)/cpp/expr.c
+	@echo CC idf.c
+	@$(CC) $(CFLAGS) $(CPP_INCLUDES) -c -o $(CPP_BUILD)/idf.o $(ACK)/cpp/idf.c
+	@echo CC init.c
+	@$(CC) $(CFLAGS) $(CPP_INCLUDES) -c -o $(CPP_BUILD)/init.o $(ACK)/cpp/init.c
+	@echo CC input.c
+	@$(CC) $(CFLAGS) $(CPP_INCLUDES) -c -o $(CPP_BUILD)/input.o $(ACK)/cpp/input.c
+	@echo CC main.c
+	@$(CC) $(CFLAGS) $(CPP_INCLUDES) -c -o $(CPP_BUILD)/main.o $(ACK)/cpp/main.c
+	@echo CC options.c
+	@$(CC) $(CFLAGS) $(CPP_INCLUDES) -c -o $(CPP_BUILD)/options.o $(ACK)/cpp/options.c
+	@echo CC preprocess.c
+	@$(CC) $(CFLAGS) $(CPP_INCLUDES) -c -o $(CPP_BUILD)/preprocess.o $(ACK)/cpp/preprocess.c
+	@echo CC replace.c
+	@$(CC) $(CFLAGS) $(CPP_INCLUDES) -c -o $(CPP_BUILD)/replace.o $(ACK)/cpp/replace.c
+	@echo CC skip.c
+	@$(CC) $(CFLAGS) $(CPP_INCLUDES) -c -o $(CPP_BUILD)/skip.o $(ACK)/cpp/skip.c
+	@echo CC tokenname.c
+	@$(CC) $(CFLAGS) $(CPP_INCLUDES) -c -o $(CPP_BUILD)/tokenname.o $(ACK)/cpp/tokenname.c
+	@echo CC Lpars.c
+	@$(CC) $(CFLAGS) $(CPP_INCLUDES) -c -o $(CPP_BUILD)/Lpars.o $(ACK)/cpp/generated/Lpars.c
+	@echo CC expression.c
+	@$(CC) $(CFLAGS) $(CPP_INCLUDES) -c -o $(CPP_BUILD)/expression.o $(ACK)/cpp/generated/expression.c
+	@echo CC next.c
+	@$(CC) $(CFLAGS) $(CPP_INCLUDES) -c -o $(CPP_BUILD)/next.o $(ACK)/cpp/generated/next.c
+	@echo CC symbol2str.c
+	@$(CC) $(CFLAGS) $(CPP_INCLUDES) -c -o $(CPP_BUILD)/symbol2str.o $(ACK)/cpp/generated/symbol2str.c
+	@echo CC tabgen.c
+	@$(CC) $(CFLAGS) $(CPP_INCLUDES) -c -o $(CPP_BUILD)/tabgen.o $(ACK)/cpp/generated/tabgen.c
+	@echo CC tokenfile.c
+	@$(CC) $(CFLAGS) $(CPP_INCLUDES) -c -o $(CPP_BUILD)/tokenfile.o $(ACK)/cpp/generated/tokenfile.c
+	@echo LD cpp
+	@$(CC) -o $(BUILD)/cpp $(CPP_BUILD)/st_alloc.o $(CPP_BUILD)/std_alloc.o $(CPP_BUILD)/bts2str.o $(CPP_BUILD)/long2str.o $(CPP_BUILD)/LLlex.o $(CPP_BUILD)/LLmessage.o $(CPP_BUILD)/ch3bin.o $(CPP_BUILD)/ch3mon.o $(CPP_BUILD)/domacro.o $(CPP_BUILD)/error.o $(CPP_BUILD)/expr.o $(CPP_BUILD)/idf.o $(CPP_BUILD)/init.o $(CPP_BUILD)/input.o $(CPP_BUILD)/main.o $(CPP_BUILD)/options.o $(CPP_BUILD)/preprocess.o $(CPP_BUILD)/replace.o $(CPP_BUILD)/skip.o $(CPP_BUILD)/tokenname.o $(CPP_BUILD)/Lpars.o $(CPP_BUILD)/expression.o $(CPP_BUILD)/next.o $(CPP_BUILD)/symbol2str.o $(CPP_BUILD)/tabgen.o $(CPP_BUILD)/tokenfile.o
+
+$(BUILD)/c1: $(BUILD)/cpp $(ACK)/build-c1 $(ACK)/c1.list
+	@/bin/sh $(ACK)/build-c1 $(BUILD) $(ACK) $(SRC)/usr/include $(CPP) $(C1) $(OPT) $(NCG) $(AS) $(CC)
+
+$(BUILD)/opt: \
+	$(ACK)/shared/generated/em_data/flag.c \
+	$(ACK)/shared/generated/em_data/mnem.c \
+	$(ACK)/opt/alloc.c \
+	$(ACK)/opt/backward.c \
+	$(ACK)/opt/cleanup.c \
+	$(ACK)/opt/flow.c \
+	$(ACK)/opt/getline.c \
+	$(ACK)/opt/lookup.c \
+	$(ACK)/opt/main.c \
+	$(ACK)/opt/peephole.c \
+	$(ACK)/opt/process.c \
+	$(ACK)/opt/putline.c \
+	$(ACK)/opt/reg.c \
+	$(ACK)/opt/special.c \
+	$(ACK)/opt/tes.c \
+	$(ACK)/opt/util.c \
+	$(ACK)/opt/var.c \
+	$(ACK)/opt/generated/pattern.c \
+	$(ACK)/opt/generated/pop_push.c \
+	$(ACK)/opt-support.c
+	-@test -d $(BUILD) || mkdir $(BUILD)
+	@test -d $(BUILD)
+	-@test -d $(OPT_BUILD) || mkdir $(OPT_BUILD)
+	@test -d $(OPT_BUILD)
+	@echo CC flag.c
+	@$(CC) $(OPT_CFLAGS) $(OPT_INCLUDES) -c -o $(OPT_BUILD)/flag.o $(ACK)/shared/generated/em_data/flag.c
+	@echo CC mnem.c
+	@$(CC) $(OPT_CFLAGS) $(OPT_INCLUDES) -c -o $(OPT_BUILD)/mnem.o $(ACK)/shared/generated/em_data/mnem.c
+	@echo CC alloc.c
+	@$(CC) $(OPT_CFLAGS) $(OPT_INCLUDES) -c -o $(OPT_BUILD)/alloc.o $(ACK)/opt/alloc.c
+	@echo CC backward.c
+	@$(CC) $(OPT_CFLAGS) $(OPT_INCLUDES) -c -o $(OPT_BUILD)/backward.o $(ACK)/opt/backward.c
+	@echo CC cleanup.c
+	@$(CC) $(OPT_CFLAGS) $(OPT_INCLUDES) -c -o $(OPT_BUILD)/cleanup.o $(ACK)/opt/cleanup.c
+	@echo CC flow.c
+	@$(CC) $(OPT_CFLAGS) $(OPT_INCLUDES) -c -o $(OPT_BUILD)/flow.o $(ACK)/opt/flow.c
+	@echo CC getline.c
+	@$(CC) $(OPT_CFLAGS) $(OPT_INCLUDES) -c -o $(OPT_BUILD)/getline.o $(ACK)/opt/getline.c
+	@echo CC lookup.c
+	@$(CC) $(OPT_CFLAGS) $(OPT_INCLUDES) -c -o $(OPT_BUILD)/lookup.o $(ACK)/opt/lookup.c
+	@echo CC main.c
+	@$(CC) $(OPT_CFLAGS) $(OPT_INCLUDES) -c -o $(OPT_BUILD)/main.o $(ACK)/opt/main.c
+	@echo CC peephole.c
+	@$(CC) $(OPT_CFLAGS) $(OPT_INCLUDES) -c -o $(OPT_BUILD)/peephole.o $(ACK)/opt/peephole.c
+	@echo CC process.c
+	@$(CC) $(OPT_CFLAGS) $(OPT_INCLUDES) -c -o $(OPT_BUILD)/process.o $(ACK)/opt/process.c
+	@echo CC putline.c
+	@$(CC) $(OPT_CFLAGS) $(OPT_INCLUDES) -c -o $(OPT_BUILD)/putline.o $(ACK)/opt/putline.c
+	@echo CC reg.c
+	@$(CC) $(OPT_CFLAGS) $(OPT_INCLUDES) -c -o $(OPT_BUILD)/reg.o $(ACK)/opt/reg.c
+	@echo CC special.c
+	@$(CC) $(OPT_CFLAGS) $(OPT_INCLUDES) -c -o $(OPT_BUILD)/special.o $(ACK)/opt/special.c
+	@echo CC tes.c
+	@$(CC) $(OPT_CFLAGS) $(OPT_INCLUDES) -c -o $(OPT_BUILD)/tes.o $(ACK)/opt/tes.c
+	@echo CC util.c
+	@$(CC) $(OPT_CFLAGS) $(OPT_INCLUDES) -c -o $(OPT_BUILD)/util.o $(ACK)/opt/util.c
+	@echo CC var.c
+	@$(CC) $(OPT_CFLAGS) $(OPT_INCLUDES) -c -o $(OPT_BUILD)/var.o $(ACK)/opt/var.c
+	@echo CC pattern.c
+	@$(CC) $(OPT_CFLAGS) $(OPT_INCLUDES) -c -o $(OPT_BUILD)/pattern.o $(ACK)/opt/generated/pattern.c
+	@echo CC pop_push.c
+	@$(CC) $(OPT_CFLAGS) $(OPT_INCLUDES) -c -o $(OPT_BUILD)/pop_push.o $(ACK)/opt/generated/pop_push.c
+	@echo CC opt-support.c
+	@$(CC) $(OPT_CFLAGS) $(OPT_INCLUDES) -c -o $(OPT_BUILD)/support.o $(ACK)/opt-support.c
+	@echo LD opt
+	@$(CC) -o $(BUILD)/opt $(OPT_BUILD)/flag.o $(OPT_BUILD)/mnem.o $(OPT_BUILD)/alloc.o $(OPT_BUILD)/backward.o $(OPT_BUILD)/cleanup.o $(OPT_BUILD)/flow.o $(OPT_BUILD)/getline.o $(OPT_BUILD)/lookup.o $(OPT_BUILD)/main.o $(OPT_BUILD)/peephole.o $(OPT_BUILD)/process.o $(OPT_BUILD)/putline.o $(OPT_BUILD)/reg.o $(OPT_BUILD)/special.o $(OPT_BUILD)/tes.o $(OPT_BUILD)/util.o $(OPT_BUILD)/var.o $(OPT_BUILD)/pattern.o $(OPT_BUILD)/pop_push.o $(OPT_BUILD)/support.o
+
+# opt2 uses the common objects already built by "make opt" and replaces
+# opt/reg.c with its GLOBAL_OPT variant.  It intentionally fails if those
+# common objects have not been built first.
+$(BUILD)/opt2: $(ACK)/opt/reg.c
+	@echo CC reg.c
+	@$(CC) $(OPT_CFLAGS) -DGLOBAL_OPT $(OPT_INCLUDES) -c -o $(OPT_BUILD)/reg2.o $(ACK)/opt/reg.c
+	@echo LD opt2
+	@$(CC) -o $(BUILD)/opt2 $(OPT_BUILD)/flag.o $(OPT_BUILD)/mnem.o $(OPT_BUILD)/alloc.o $(OPT_BUILD)/backward.o $(OPT_BUILD)/cleanup.o $(OPT_BUILD)/flow.o $(OPT_BUILD)/getline.o $(OPT_BUILD)/lookup.o $(OPT_BUILD)/main.o $(OPT_BUILD)/peephole.o $(OPT_BUILD)/process.o $(OPT_BUILD)/putline.o $(OPT_BUILD)/reg2.o $(OPT_BUILD)/special.o $(OPT_BUILD)/tes.o $(OPT_BUILD)/util.o $(OPT_BUILD)/var.o $(OPT_BUILD)/pattern.o $(OPT_BUILD)/pop_push.o $(OPT_BUILD)/support.o
+
+$(BUILD)/ncg: $(ACK)/build-ncg $(ACK)/ncg.list
+	@/bin/sh $(ACK)/build-ncg $(BUILD) $(ACK) "$(NCG_CFLAGS)" "$(NCG_INCLUDES)" $(CC)
+
+$(BUILD)/as: $(BUILD)/led $(ACK)/build-as $(ACK)/as.list
+	@/bin/sh $(ACK)/build-as $(BUILD) $(ACK) "$(AS_CFLAGS)" "$(AS_INCLUDES)" $(CC) $(TOOLS) $(RUNTIME)
+
+$(BUILD)/led: $(ACK)/build-led $(ACK)/led.list
+	@/bin/sh $(ACK)/build-led $(BUILD) $(ACK) "$(LED_CFLAGS)" "$(LED_INCLUDES)" $(CC)
+
+$(BUILD)/cv: $(BUILD)/led $(ACK)/build-cv $(ACK)/cv.list
+	@/bin/sh $(ACK)/build-cv $(BUILD) $(ACK) "$(CV_CFLAGS)" "$(CV_INCLUDES)" $(CC) $(TOOLS) $(RUNTIME)
+
+$(BUILD)/cc: $(ACK)/cc/ccdriver.c
+	@echo CC ccdriver.c
+	@$(CC) -DCC_TOOL_DIR='"/usr/lib/ack"' -DCC_RUNTIME_DIR='"/lib"' -o $(BUILD)/cc $(ACK)/cc/ccdriver.c
+
+# SUPPORT FILES FOR REAL EXECUTABLES
+# CPP and opt have no separately installed support files.
+
+support:
+
+# INSTALL REAL EXECUTABLES AND SUPPORT FILES
+
+install: cpp c1 opt opt2 ncg as led cv cc support
+	-@test -d $(DEST)/usr/lib/ack || mkdir $(DEST)/usr/lib/ack
+	@test -d $(DEST)/usr/lib/ack
+	-@test -d $(DEST)/bin || mkdir $(DEST)/bin
+	@test -d $(DEST)/bin
+	@echo COPY $(DEST)/usr/lib/ack/cpp
+	@cp $(BUILD)/cpp $(DEST)/usr/lib/ack/cpp
+	@cp $(BUILD)/c1 $(DEST)/usr/lib/ack/c1
+	@cp $(BUILD)/opt $(DEST)/usr/lib/ack/opt
+	@cp $(BUILD)/opt2 $(DEST)/usr/lib/ack/opt2
+	@cp $(BUILD)/ncg $(DEST)/usr/lib/ack/ncg
+	@cp $(BUILD)/as $(DEST)/usr/lib/ack/as
+	@cp $(BUILD)/led $(DEST)/usr/lib/ack/led
+	@cp $(BUILD)/cv $(DEST)/usr/lib/ack/cv
+	@cp $(BUILD)/cc $(DEST)/bin/cc
+
+clean:
+	@rm -f $(BUILD)/cpp $(BUILD)/c1 $(BUILD)/opt $(BUILD)/opt2 $(BUILD)/ncg $(BUILD)/as $(BUILD)/led $(BUILD)/cv $(BUILD)/cc
+	@rm -rf $(CPP_BUILD) $(C1_BUILD) $(OPT_BUILD) $(NCG_BUILD) $(AS_BUILD) $(LED_BUILD) $(CV_BUILD)
+
+# TEST EXECUTABLES
+# CPP itself is the test executable.
+
+test: cpp-test c1-test opt-test opt2-test ncg-test as-test led-test cv-test
+
+cpp-test: $(BUILD)/cpp $(SRC)/usr/src/cmd/md5.c
+	@echo TEST cpp md5.c
+	@$(BUILD)/cpp -I$(SRC)/usr/include $(SRC)/usr/src/cmd/md5.c > $(BUILD)/cpp-md5.i
+	@test -s $(BUILD)/cpp-md5.i
+
+c1-test: $(BUILD)/cpp $(BUILD)/c1 $(SRC)/usr/src/cmd/md5.c
+	@echo TEST c1 md5.c
+	@$(BUILD)/cpp -I$(SRC)/usr/include $(SRC)/usr/src/cmd/md5.c > $(BUILD)/c1-md5.i
+	@$(BUILD)/c1 -L -Vw2.2i2.2p4.2f4.2s2.2l4.2d8.2x8.2 $(BUILD)/c1-md5.i $(BUILD)/c1-md5.k
+	@test -s $(BUILD)/c1-md5.k
+
+opt-test: $(BUILD)/opt c1-test
+	@echo TEST opt md5.k
+	@$(BUILD)/opt $(BUILD)/c1-md5.k > $(BUILD)/opt-md5.m
+	@test -s $(BUILD)/opt-md5.m
+
+opt2-test: $(BUILD)/opt2 c1-test
+	@echo TEST opt2 md5.k
+	@$(BUILD)/opt2 $(BUILD)/c1-md5.k > $(BUILD)/opt2-md5.m
+	@test -s $(BUILD)/opt2-md5.m
+
+ncg-test: $(BUILD)/ncg opt-test
+	@echo TEST ncg md5.m
+	@$(BUILD)/ncg $(BUILD)/opt-md5.m $(BUILD)/ncg-md5.s
+	@test -s $(BUILD)/ncg-md5.s
+
+as-test: $(BUILD)/as ncg-test
+	@echo TEST as md5.s
+	@$(BUILD)/as - -o $(BUILD)/as-md5.o $(BUILD)/ncg-md5.s
+	@test -s $(BUILD)/as-md5.o
+
+led-test: $(BUILD)/led as-test
+	@echo TEST led md5.o
+	@$(BUILD)/led -o $(BUILD)/led-md5.ack $(CRT0) $(BUILD)/as-md5.o $(LIBC) $(LIBFP) $(LIBC) $(LIBFP) $(LIBC) $(LIBFP) $(END)
+	@test -s $(BUILD)/led-md5.ack
+
+cv-test: $(BUILD)/cv led-test
+	@echo TEST cv md5.ack
+	@$(BUILD)/cv $(BUILD)/led-md5.ack $(BUILD)/cv-md5
+	@test -s $(BUILD)/cv-md5
+	@$(BUILD)/cv-md5 $(SRC)/usr/src/cmd/md5.c > $(BUILD)/cv-md5.out
+	@$(MD5) $(SRC)/usr/src/cmd/md5.c > $(BUILD)/installed-md5.out
+	@cmp -s $(BUILD)/cv-md5.out $(BUILD)/installed-md5.out
+
+# TEST SUPPORT FILES
+# The installed md5.c source is the CPP test input.
+
+test-support:
+
+# INSTALL TEST RESULTS
+# CPP test output remains in /tmp/ack and is not installed.
+
+test-install: test test-support

@@ -29,15 +29,15 @@ int Stop = 0;
 #define NOMTIME 3600L
 
 
-main(argc, argv)
-char *argv[];
+int
+main (int argc, char *argv[])
 {
 	FILE *plogf, *lsp;
 	char filename[NAMESIZE];
 	time_t nomtime;
 	char *system, *user;
 
-	extern int onintr(), intr1();
+	void onintr(i16), intr1(i16);
 	char buf[BUFSIZ], u[20], s[20];
 
 	nomtime = NOMTIME;
@@ -131,24 +131,27 @@ char *argv[];
  *
  */
 
-onintr()
+void
+onintr (i16 sig)
 {
+	(void)sig;
 	rmlock(NULL);
 	exit(0);
 }
 
 
-intr1()
+void
+intr1 (i16 sig)
 {
+	(void)sig;
 	signal(SIGINT, intr1);
 	signal(SIGHUP, intr1);
 	signal(SIGQUIT, intr1);
 	Stop = 1;
-	return;
 }
 
-cleanup(code)
-int code;
+int
+cleanup (int code)
 {
 	exit(code);
 }

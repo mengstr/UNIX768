@@ -13,13 +13,12 @@ char Path[100], Optns[10];
 char Grade = 'n';
 int Copy = 1;
 
-main(argc, argv)
-char *argv[];
+int
+main (int argc, char *argv[])
 {
 	int ret;
 	char *sysfile1, *sysfile2, *cp;
 	char file1[MAXFULLNAME], file2[MAXFULLNAME];
-	extern char *index();
 
 	Optns[0] = '-';
 	Optns[1] = '\0';
@@ -121,8 +120,8 @@ char *argv[];
 	cleanup(0);
 }
 
-cleanup(code)
-int code;
+int
+cleanup (int code)
 {
 	logcls();
 	rmlock(NULL);
@@ -137,15 +136,14 @@ int code;
  *	return codes 0  |  FAIL
  */
 
-copy(s1, f1, s2, f2)
-char *s1, *f1, *s2, *f2;
+int
+copy (char *s1, char *f1, char *s2, char *f2)
 {
 	int ret, type;
 	struct stat stbuf;
 	char cfile[NAMESIZE], dfile[NAMESIZE];
 	char file1[MAXFULLNAME], file2[MAXFULLNAME];
 	FILE *cfp;
-	extern char *index();
 
 	type = 0;
 	strcpy(file1, f1);

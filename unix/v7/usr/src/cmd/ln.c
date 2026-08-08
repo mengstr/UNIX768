@@ -5,10 +5,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "stdio.h"
-char	*rindex();
+#include <string.h>
+#include <unistd.h>
 
-main(argc, argv)
-char **argv;
+int
+main(int argc, char **argv)
 {
 	struct stat statb;
 	register char *np;

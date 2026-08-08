@@ -1,4 +1,8 @@
 # include <stdio.h>
+# include <stdlib.h>
+# include <stdarg.h>
+# include <string.h>
+# define cfree(p, n, s) free(p)
 # define PP 1
 # ifdef unix
 
@@ -109,8 +113,8 @@ extern int prev;	/* previous input character */
 extern int pres;	/* present input character */
 extern int peek;	/* next input character */
 extern int *name;
-extern int *left;
-extern int *right;
+extern i32 *left;
+extern i32 *right;
 extern int *parent;
 extern char *nullstr;
 extern int tptr;
@@ -158,5 +162,52 @@ extern int optim;
 extern int *verify, *advance, *stoff;
 extern int scon;
 extern char *psave;
-extern char *calloc(), *myalloc();
-extern int buserr(), segviol();
+void *myalloc(int, int);
+char *getl(char *);
+int space(int);
+int digit(int);
+void error(char *, ...);
+void warning(char *, ...);
+int lexindex(int, const char *);
+int alpha(int);
+int printable(int);
+void lgate(void);
+void scopy(char *, char *);
+int siconv(char *);
+int slength(char *);
+int scomp(char *, char *);
+int ctrans(char **);
+void cclinter(int);
+int usescape(int);
+int lookup(char *, char **);
+int cpyact(void);
+int gch(void);
+int mn0(int);
+int mn1(int, i32);
+int mn2(int, i32, i32);
+int dupl(int);
+void munput(int, i32);
+void cfoll(int);
+void first(int);
+void follow(int);
+void cgoto(void);
+void mkmatch(void);
+void layout(void);
+void phead1(void);
+void phead2(void);
+void ptail(void);
+void statistics(void);
+int yylex(void);
+int yyparse(void);
+int yyerror(char *);
+# ifdef DEBUG
+void buserr(i16);
+void segviol(i16);
+void allprint(char);
+void strpt(char *);
+void sect1dump(void);
+void sect2dump(void);
+void pfoll(void);
+void stprt(int);
+void pccl(void);
+# endif

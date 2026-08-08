@@ -2,10 +2,14 @@
  * Run programs submitted by at.
  */
 #include <stdio.h>
+#include <stdlib.h>
+#include <sys/inttypes.h>
 #include <sys/types.h>
 #include <sys/dir.h>
 #include <time.h>
 #include <sys/stat.h>
+#include <string.h>
+#include <unistd.h>
 
 # define DIR "/usr/spool/at"
 # define PDIR	"past"
@@ -15,10 +19,15 @@ int	nowtime;
 int	nowdate;
 int	nowyear;
 
-main(argc, argv)
-char **argv;
+struct tm *localtime(time_t *);
+static void makenowtime(void);
+static void run(char *file);
+static void updatetime(i32 t);
+
+int
+main(int argc, char **argv)
 {
-	int tt, day, year, uniq;
+	i16 tt, day, year, uniq;
 	struct direct dirent;
 	char file[DIRSIZ+1];
 	FILE *dirf;
@@ -49,20 +58,21 @@ char **argv;
 	exit(0);
 }
 
-makenowtime()
+static void
+makenowtime(void)
 {
 	long t;
-	struct tm *localtime();
 	register struct tm *tp;
 
 	time(&t);
 	tp = localtime(&t);
 	nowtime = tp->tm_hour*100 + tp->tm_min;
 	nowdate = tp->tm_yday;
-	nowyear = tp->tm_year;
+	nowyear = tp->tm_year % 100;
 }
 
-updatetime(t)
+static void
+updatetime(i32 t)
 {
 	FILE *tfile;
 
@@ -74,35 +84,40 @@ updatetime(t)
 	fprintf(tfile, "%04d\n", t);
 }
 
-run(file)
-char *file;
+static void
+run(char *file)
 {
 	struct stat stbuf;
 	register pid, i;
-	char sbuf[64];
+	int rc;
+	char tbuf[64];
 
 	if (fork()!=0)
 		return;
+	sprintf(tbuf, "%s/%s", PDIR, file);
+	rc = link(file, tbuf);
+	if (rc == 0) {
+		rc = unlink(file);
+	}
+	chdir(PDIR);
+	rc = stat(file, &stbuf);
+	if (rc == -1)
+		exit(1);
 	for (i=0; i<15; i++)
 		close(i);
 	dup(dup(open("/dev/null", 0)));
-	sprintf(sbuf, "/bin/mv %.14s %s", file, PDIR);
-	system(sbuf);
-	chdir(PDIR);
-	if (stat(file, &stbuf) == -1)
-		exit(1);
 	setgid(stbuf.st_gid);
 	setuid(stbuf.st_uid);
 	if (pid = fork()) {
 		if (pid == -1)
 			exit(1);
-		wait((int *)0);
+		wait((i16 *)0);
 		unlink(file);
 		exit(0);
 	}
 	nice(3);
-	execl("/bin/sh", "sh", file, 0);
-	execl("/usr/bin/sh", "sh", file, 0);
+	execl("/bin/sh", "sh", file, (char *)0);
+	execl("/usr/bin/sh", "sh", file, (char *)0);
 	fprintf(stderr, "Can't execl shell\n");
 	exit(1);
 }

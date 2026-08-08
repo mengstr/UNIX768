@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unistd.h>
 #define LB 256
 int	one;
 int	two;
@@ -8,9 +9,13 @@ char	*ldr[3];
 
 FILE *ib1;
 FILE *ib2;
-FILE *openfil();
-main(argc,argv)
-char	*argv[];
+static i32 comm_rd(FILE *file, char *buf);
+static void comm_wr(char *str, i32 n);
+static void copy(FILE *ibuf, char *lbuf, i32 n);
+static i32 compare(char *a, char *b);
+static FILE *openfil(char *s);
+int
+main(int argc, char *argv[])
 {
 	int	l;
 	char	lb1[LB],lb2[LB];
@@ -58,39 +63,40 @@ char	*argv[];
 	ib2 = openfil(argv[2]);
 
 
-	if(rd(ib1,lb1) < 0) {
-		if(rd(ib2,lb2) < 0)	exit(0);
+	if(comm_rd(ib1,lb1) < 0) {
+		if(comm_rd(ib2,lb2) < 0)	exit(0);
 		copy(ib2,lb2,2);
 	}
-	if(rd(ib2,lb2) < 0)	copy(ib1,lb1,1);
+	if(comm_rd(ib2,lb2) < 0)	copy(ib1,lb1,1);
 
 	while(1) {
 
 		switch(compare(lb1,lb2)) {
 
 			case 0:
-				wr(lb1,3);
-				if(rd(ib1,lb1) < 0) {
-					if(rd(ib2,lb2) < 0)	exit(0);
+				comm_wr(lb1,3);
+				if(comm_rd(ib1,lb1) < 0) {
+					if(comm_rd(ib2,lb2) < 0)	exit(0);
 					copy(ib2,lb2,2);
 				}
-				if(rd(ib2,lb2) < 0)	copy(ib1,lb1,1);
+				if(comm_rd(ib2,lb2) < 0)	copy(ib1,lb1,1);
 				continue;
 
 			case 1:
-				wr(lb1,1);
-				if(rd(ib1,lb1) < 0)	copy(ib2,lb2,2);
+				comm_wr(lb1,1);
+				if(comm_rd(ib1,lb1) < 0)	copy(ib2,lb2,2);
 				continue;
 
 			case 2:
-				wr(lb2,2);
-				if(rd(ib2,lb2) < 0)	copy(ib1,lb1,1);
+				comm_wr(lb2,2);
+				if(comm_rd(ib2,lb2) < 0)	copy(ib1,lb1,1);
 				continue;
 		}
 	}
 }
 
-rd(file,buf)
+static i32
+comm_rd(file,buf)
 FILE *file;
 char *buf;
 {
@@ -109,8 +115,10 @@ char *buf;
 	return(-1);
 }
 
-wr(str,n)
+static void
+comm_wr(str,n)
 	char	*str;
+	i32 n;
 {
 
 	switch(n) {
@@ -129,17 +137,20 @@ wr(str,n)
 	printf("%s%s\n",ldr[n-1],str);
 }
 
+static void
 copy(ibuf,lbuf,n)
 FILE *ibuf;
 char *lbuf;
+i32 n;
 {
 	do {
-		wr(lbuf,n);
-	} while(rd(ibuf,lbuf) >= 0);
+		comm_wr(lbuf,n);
+	} while(comm_rd(ibuf,lbuf) >= 0);
 
 	exit(0);
 }
 
+static i32
 compare(a,b)
 	char	*a,*b;
 {
@@ -152,7 +163,8 @@ compare(a,b)
 	if(*ra < *rb)	return(1);
 	return(2);
 }
-FILE *openfil(s)
+static FILE *
+openfil(s)
 char *s;
 {
 	FILE *b;

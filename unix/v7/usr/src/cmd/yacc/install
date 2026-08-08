@@ -1,0 +1,22 @@
+set -e
+
+if test "x$ROOT" = x
+then
+	ROOT=
+fi
+if test ! -d $ROOT/bin
+then
+	mkdir $ROOT/bin
+fi
+if test ! -d $ROOT/usr
+then
+	mkdir $ROOT/usr
+fi
+if test ! -d $ROOT/usr/lib
+then
+	mkdir $ROOT/usr/lib
+fi
+cp yacc $ROOT/bin/yacc
+chmod 0755 $ROOT/bin/yacc
+cp ../../lib/yaccpar $ROOT/usr/lib/yaccpar
+chmod 0644 $ROOT/usr/lib/yaccpar

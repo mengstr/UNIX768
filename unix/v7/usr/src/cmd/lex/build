@@ -1,0 +1,31 @@
+set -e
+
+YACC=${YACC-../yacc/yacc}
+echo YACC parser.y
+$YACC parser.y
+
+for file in lmain sub1 sub2 header
+do
+	echo CC $file.c
+	cc -O2 -Dunix -I. -c $file.c
+done
+echo CC y.tab.c
+cc -O2 -Dunix -I. -c y.tab.c
+echo LD lex
+cc -s -o lex lmain.o sub1.o sub2.o header.o y.tab.o
+echo CC lmain.c local driver
+cc -O2 -Dunix -DLEX_NCFORM='"/usr/src/lib/lex/ncform"' -I. -c -o lmainlocal.o lmain.c
+echo LD lex.local
+cc -s -o lex.local lmainlocal.o sub1.o sub2.o header.o y.tab.o
+
+cd lib
+for file in allprint main reject yyless yywrap
+do
+	echo CC $file.c
+	cc -O2 -Dunix -c $file.c
+done
+cd ..
+
+AR=${AR-../../ar/ar}
+rm -f libln.a
+$AR rc libln.a lib/allprint.o lib/main.o lib/reject.o lib/yyless.o lib/yywrap.o

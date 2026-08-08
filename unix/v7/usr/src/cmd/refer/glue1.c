@@ -1,36 +1,40 @@
-# include "stdio.h"
+# include "refer.h"
 # define unopen(fil) {if (fil!=NULL) {fclose(fil); fil=NULL;}}
 extern char refdir[];
-int lmaster 1000;
-int reached 0;
-FILE *fd 0;
+int lmaster = 1000;
+int reached = 0;
+FILE *fd = 0;
 int *hfreq, hfrflg;
-int colevel 0;
-static union {unsigned *a; long *b;} master NULL;
+int colevel = 0;
+static union ptr master = { NULL };
 int iflong;
 extern char *fgnames[], **fgnamp;
-int prfreqs 0;
-int typeindex 0;
+int prfreqs = 0;
+int typeindex = 0;
 char usedir[100];
-static int full 1000;
-static int tags 0;
+static int full = 1000;
+static int tags = 0;
 char *sinput, *soutput, *tagout;
-long indexdate 0, gdate();
-int soutlen 1000;
-int taglen 1000;
+long indexdate = 0;
+int soutlen = 1000;
+int taglen = 1000;
 
+static int setfrom(int);
+
+void
 huntmain(argc,argv)
+	int argc;
 	char *argv[];
 {
 /* read query from stdin, expect name of indexes in argv[1] */
 static FILE *fa, *fb, *fc;
-char indexname[100], *qitem[100], *rprog 0;
+char indexname[100], *qitem[100], *rprog = 0;
 char grepquery[200];
 static char oldname[30] ;
-static int nhash 0;
-static int maxhash 0;
-int falseflg 0, nitem, nfound, frtbl;
-static long *hpt 0;
+static int nhash = 0;
+static int maxhash = 0;
+int falseflg = 0, nitem, nfound, frtbl;
+static long *hpt = 0;
 # if D1
 fprintf(stderr, "in glue1 argc %d argv %o %o\n", argc, argv[0],argv[1]);
 # endif
@@ -62,18 +66,18 @@ fprintf(stderr, "argv.1 is %s\n",argv[1]);
 		case 'o':
 			argc--; argv++;
 			soutput = argv[1];
-			if (argv[2]<16000)
+			if ((long)argv[2]<16000)
 				{
-				soutlen = argv[2];
+				soutlen = (int)(long)argv[2];
 				argc--; argv++;
 				}
 			break;
 		case 't': /*tag output to string */
 			argc--; argv++;
 			tagout = argv[1];
-			if (argv[2]<16000)
+			if ((long)argv[2]<16000)
 				{
-				taglen = argv[2];
+				taglen = (int)(long)argv[2];
 				argc--; argv++;
 				}
 			break;
@@ -113,15 +117,15 @@ if (typeindex == 0 || strcmp (oldname, indexname) !=0)
 		fprintf(stderr, "opened f's as %o %o %o\n",fa,fb,fc);
 # endif
 		indexdate = gdate(fb);
-		fread (&nhash, sizeof(nhash), 1, fa);
-		fread (&iflong, sizeof(iflong), 1, fa);
+		fread ((char *)&nhash, sizeof(nhash), 1, fa);
+		fread ((char *)&iflong, sizeof(iflong), 1, fa);
 		if (nhash > maxhash)
 			{
 			if (hpt)
-				free (hpt, maxhash, sizeof(*hpt));
+				free (hpt);
 			hpt=0;
 			if (hfreq)
-				free(hfreq, maxhash, sizeof(*hfreq));
+				free(hfreq);
 			hfreq=0;
 			maxhash=nhash;
 # if D1
@@ -135,12 +139,12 @@ if (typeindex == 0 || strcmp (oldname, indexname) !=0)
 # endif
 		if (hpt == NULL)
 			err ("No space for hash list (%d)", nhash);
-		fread( hpt, sizeof(*hpt), nhash, fa);
+		fread((char *)hpt, sizeof(*hpt), nhash, fa);
 		if (hfreq==0)
 		hfreq=zalloc(nhash, sizeof(*hfreq));
 		if (hfreq==NULL)
 			err ("No space for hash frequencies (%d)", nhash);
-		frtbl = fread(hfreq, sizeof(*hfreq), nhash, fa);
+		frtbl = fread((char *)hfreq, sizeof(*hfreq), nhash, fa);
 		hfrflg = (frtbl == nhash);
 # if D1
 		fprintf(stderr,"Read pointer files\n");
@@ -225,6 +229,7 @@ if (fgnamp>fgnames)
 restodir();
 }
 
+char *
 todir(t)
 	char *t;
 {
@@ -239,7 +244,9 @@ chdir (t);
 strcpy (usedir,t);
 return(s);
 }
+static int
 setfrom(c)
+	int c;
 {
 switch(c)
 	{

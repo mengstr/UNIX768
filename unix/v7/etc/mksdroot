@@ -1,0 +1,122 @@
+/bin/echo "making /dev/sd0 root-style filesystem"
+/bin/sync
+/etc/mkfs /dev/sd0 2880
+/bin/mkdir /mnt
+/etc/mount /dev/sd0 /mnt
+/bin/mkdir /mnt/dev
+/etc/mknod /mnt/dev/console c 0 0
+/etc/mknod /mnt/dev/ymodem c 0 1
+/etc/mknod /mnt/dev/tty0 c 0 2
+/etc/mknod /mnt/dev/tty1 c 0 3
+/etc/mknod /mnt/dev/tty2 c 0 4
+/etc/mknod /mnt/dev/tty3 c 0 5
+/etc/mknod /mnt/dev/rd0 b 0 0
+/etc/mknod /mnt/dev/sd0 b 1 0
+/etc/mknod /mnt/dev/mem c 8 0
+/etc/mknod /mnt/dev/kmem c 8 1
+/etc/mknod /mnt/dev/null c 8 2
+/bin/chmod 0666 /mnt/dev/console
+/bin/chmod 0600 /mnt/dev/ymodem
+/bin/chmod 0666 /mnt/dev/tty0
+/bin/chmod 0666 /mnt/dev/tty1
+/bin/chmod 0666 /mnt/dev/tty2
+/bin/chmod 0666 /mnt/dev/tty3
+/bin/chmod 0600 /mnt/dev/rd0
+/bin/chmod 0600 /mnt/dev/sd0
+/bin/chmod 0440 /mnt/dev/mem
+/bin/chmod 0440 /mnt/dev/kmem
+/bin/chgrp other /mnt/dev/kmem
+/bin/chgrp other /mnt/dev/mem
+/bin/chmod 0666 /mnt/dev/null
+/bin/mkdir /mnt/tmp
+/bin/chmod 0777 /mnt/tmp
+/bin/mkdir /mnt/bin
+/bin/mkdir /mnt/etc
+/bin/mkdir /mnt/usr
+/bin/mkdir /mnt/usr/adm
+/bin/mkdir /mnt/usr/dmr
+/bin/mkdir /mnt/usr/guest
+/bin/mkdir /mnt/usr/tmp
+/bin/chmod 0777 /mnt/usr/tmp
+/bin/cp /unix /mnt/unix
+/bin/cp /.profile /mnt/.profile
+/bin/chmod 0644 /mnt/.profile
+chdir /usr/src/68kasm
+/usr/bin/68kasm rootdev-sd0.s
+/usr/bin/srec2aout rootdev-sd0.h68 rootdev-sd0
+/bin/chmod 0755 rootdev-sd0
+rootdev-sd0
+/bin/rm rootdev-sd0.h68
+/bin/rm rootdev-sd0
+chdir /
+/bin/cp /bin/login /mnt/bin/login
+/bin/cp /bin/osh /mnt/bin/osh
+/bin/cp /bin/sh /mnt/bin/sh
+/bin/cp /bin/cat /mnt/bin/cat
+/bin/cp /bin/chmod /mnt/bin/chmod
+/bin/cp /bin/cp /mnt/bin/cp
+/bin/cp /bin/date /mnt/bin/date
+/bin/cp /bin/df /mnt/bin/df
+/bin/cp /bin/echo /mnt/bin/echo
+/bin/cp /bin/ls /mnt/bin/ls
+/bin/cp /bin/mkdir /mnt/bin/mkdir
+/bin/cp /etc/mknod /mnt/etc/mknod
+/bin/cp /bin/od /mnt/bin/od
+/bin/cp /bin/passwd /mnt/bin/passwd
+/bin/cp /bin/rm /mnt/bin/rm
+/bin/cp /bin/rmdir /mnt/bin/rmdir
+/bin/cp /bin/rx /mnt/bin/rx
+/bin/cp /bin/stty /mnt/bin/stty
+/bin/cp /bin/su /mnt/bin/su
+/bin/cp /bin/sync /mnt/bin/sync
+/bin/cp /bin/who /mnt/bin/who
+/bin/chmod 0755 /mnt/bin/*
+/bin/chmod 4755 /mnt/bin/su
+/bin/cp /bin/chgrp /mnt/bin/chgrp
+/bin/cp /bin/chown /mnt/bin/chown
+/bin/cp /etc/fsck /mnt/etc/fsck
+/bin/cp /etc/getty /mnt/etc/getty
+/bin/cp /etc/glob /mnt/etc/glob
+/bin/cp /etc/group /mnt/etc/group
+/bin/cp /etc/init /mnt/etc/init
+/bin/cp /etc/mkfs /mnt/etc/mkfs
+/bin/cp /etc/mount /mnt/etc/mount
+/bin/cp /etc/motd /mnt/etc/motd
+/bin/cp /etc/passwd /mnt/etc/passwd
+/bin/cp /etc/rc /mnt/etc/rc
+/bin/cp /etc/ttys /mnt/etc/ttys
+/bin/cp /etc/umount /mnt/etc/umount
+/bin/cp /etc/update /mnt/etc/update
+/bin/cp /etc/utmp /mnt/etc/utmp
+/bin/chmod 0755 /mnt/etc/mknod
+/bin/chmod 0755 /mnt/bin/chgrp
+/bin/chmod 0755 /mnt/bin/chown
+/bin/chmod 0755 /mnt/etc/fsck
+/bin/chmod 0755 /mnt/etc/getty
+/bin/chmod 0755 /mnt/etc/glob
+/bin/chmod 0755 /mnt/etc/init
+/bin/chmod 0755 /mnt/etc/mkfs
+/bin/chmod 0755 /mnt/etc/mount
+/bin/chmod 0755 /mnt/etc/rc
+/bin/chmod 0755 /mnt/etc/umount
+/bin/chmod 0755 /mnt/etc/update
+/bin/chmod 0644 /mnt/etc/group
+/bin/chmod 0644 /mnt/etc/motd
+/bin/chmod 0644 /mnt/etc/passwd
+/bin/chmod 0644 /mnt/etc/ttys
+/bin/chmod 0644 /mnt/etc/utmp
+/bin/cp /usr/adm/wtmp /mnt/usr/adm/wtmp
+/bin/chmod 0644 /mnt/usr/adm/wtmp
+/bin/cp /usr/dmr/README /mnt/usr/dmr/README
+/bin/cp /usr/dmr/.profile /mnt/usr/dmr/.profile
+/bin/chmod 0644 /mnt/usr/dmr/README
+/bin/chmod 0644 /mnt/usr/dmr/.profile
+/bin/chown dmr /mnt/usr/dmr /mnt/usr/dmr/README /mnt/usr/dmr/.profile
+/bin/cp /usr/guest/README /mnt/usr/guest/README
+/bin/cp /usr/guest/.profile /mnt/usr/guest/.profile
+/bin/chmod 0644 /mnt/usr/guest/README
+/bin/chmod 0644 /mnt/usr/guest/.profile
+/bin/chown guest /mnt/usr/guest /mnt/usr/guest/README /mnt/usr/guest/.profile
+/bin/sync
+/etc/umount /dev/sd0
+/bin/echo "sd0 root-style filesystem done"

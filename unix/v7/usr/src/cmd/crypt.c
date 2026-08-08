@@ -1,24 +1,36 @@
 /*
- *	A one-rotor machine designed along the lines of Enigma
- *	but considerably trivialized.
+ * A one-rotor machine designed along the lines of Enigma
+ * but considerably trivialized.
  */
 
-#define ECHO 010
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
 #define ROTORSZ 256
 #define MASK 0377
-char	t1[ROTORSZ];
-char	t2[ROTORSZ];
-char	t3[ROTORSZ];
-char	*getpass();
 
-setup(pw)
-char *pw;
+extern char *getpass(char *prompt);
+
+static void setup(char *pw);
+
+static char t1[ROTORSZ];
+static char t2[ROTORSZ];
+static char t3[ROTORSZ];
+
+static void
+setup(char *pw)
 {
-	int ic, i, k, temp, pf[2];
-	unsigned random;
+	i32 ic;
+	i32 i;
+	i32 k;
+	i32 temp;
+	i16 pf[2];
+	u32 random;
 	char buf[13];
-	long seed;
+	i32 seed;
+	i16 status;
 
 	strncpy(buf, pw, 8);
 	while (*pw)
@@ -26,66 +38,71 @@ char *pw;
 	buf[8] = buf[0];
 	buf[9] = buf[1];
 	pipe(pf);
-	if (fork()==0) {
+	if (fork() == 0) {
 		close(0);
 		close(1);
 		dup(pf[0]);
 		dup(pf[1]);
-		execl("/usr/lib/makekey", "-", 0);
-		execl("/lib/makekey", "-", 0);
+		execl("/usr/lib/makekey", "-", (char *)0);
+		execl("/lib/makekey", "-", (char *)0);
 		exit(1);
 	}
 	write(pf[1], buf, 10);
-	wait((int *)NULL);
+	wait(&status);
 	if (read(pf[0], buf, 13) != 13) {
 		fprintf(stderr, "crypt: cannot generate key\n");
 		exit(1);
 	}
 	seed = 123;
-	for (i=0; i<13; i++)
-		seed = seed*buf[i] + i;
-	for(i=0;i<ROTORSZ;i++)
+	for (i = 0; i < 13; i++)
+		seed = seed * buf[i] + i;
+	for (i = 0; i < ROTORSZ; i++)
 		t1[i] = i;
-	for(i=0;i<ROTORSZ;i++) {
-		seed = 5*seed + buf[i%13];
-		random = seed % 65521;
-		k = ROTORSZ-1 - i;
-		ic = (random&MASK)%(k+1);
+	for (i = 0; i < ROTORSZ; i++) {
+		seed = 5 * seed + buf[i % 13];
+		random = (u32)seed % 65521;
+		k = ROTORSZ - 1 - i;
+		ic = (random & MASK) % (k + 1);
 		random >>= 8;
 		temp = t1[k];
 		t1[k] = t1[ic];
 		t1[ic] = temp;
-		if(t3[k]!=0) continue;
-		ic = (random&MASK) % k;
-		while(t3[ic]!=0) ic = (ic+1) % k;
+		if (t3[k] != 0)
+			continue;
+		ic = (random & MASK) % k;
+		while (t3[ic] != 0)
+			ic = (ic + 1) % k;
 		t3[k] = ic;
 		t3[ic] = k;
 	}
-	for(i=0;i<ROTORSZ;i++)
-		t2[t1[i]&MASK] = i;
+	for (i = 0; i < ROTORSZ; i++)
+		t2[t1[i] & MASK] = i;
 }
 
-main(argc, argv)
-char *argv[];
+i32
+main(i32 argc, char **argv)
 {
-	register i, n1, n2;
+	i32 i;
+	i32 n1;
+	i32 n2;
 
-	if (argc != 2){
+	if (argc != 2)
 		setup(getpass("Enter key:"));
-	}
 	else
 		setup(argv[1]);
 	n1 = 0;
 	n2 = 0;
 
-	while((i=getchar()) >=0) {
-		i = t2[(t3[(t1[(i+n1)&MASK]+n2)&MASK]-n2)&MASK]-n1;
+	while ((i = getchar()) >= 0) {
+		i = t2[(t3[(t1[(i + n1) & MASK] + n2) & MASK] - n2) & MASK] - n1;
 		putchar(i);
 		n1++;
-		if(n1==ROTORSZ) {
+		if (n1 == ROTORSZ) {
 			n1 = 0;
 			n2++;
-			if(n2==ROTORSZ) n2 = 0;
+			if (n2 == ROTORSZ)
+				n2 = 0;
 		}
 	}
+	return(0);
 }

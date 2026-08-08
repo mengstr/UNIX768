@@ -9,7 +9,7 @@
 
 #include	"defs.h"
 
-PROC STRING *copyargs();
+LOCAL DOLPTR	copyargs(STRING *, int);
 LOCAL DOLPTR	dolh;
 
 CHAR	flagadr[10];
@@ -80,7 +80,7 @@ VOID	setargs(argi)
 	assnum(&dolladr,dolc=argn-1);
 }
 
-freeargs(blk)
+DOLPTR freeargs(blk)
 	DOLPTR		blk;
 {
 	REG STRING	*argp;
@@ -90,29 +90,29 @@ freeargs(blk)
 	IF argblk=blk
 	THEN	argr = argblk->dolnxt;
 		IF (--argblk->doluse)==0
-		THEN	FOR argp=argblk->dolarg; Rcheat(*argp)!=ENDARGS; argp++
-			DO free(*argp) OD
-			free(argblk);
+		THEN	FOR argp=(STRING *)argblk->dolarg; Rcheat(*argp)!=ENDARGS; argp++
+				DO free((BLKPTR)*argp) OD
+				free((BLKPTR)argblk);
 		FI
 	FI
 	return(argr);
 }
 
-LOCAL STRING *	copyargs(from, n)
+LOCAL DOLPTR	copyargs(from, n)
 	STRING		from[];
 {
-	REG STRING *	np=alloc(sizeof(STRING*)*n+3*BYTESPERWORD);
+	REG DOLPTR	dp=(DOLPTR)alloc(sizeof(STRING*)*n+3*BYTESPERWORD);
+	REG STRING *	np;
 	REG STRING *	fp=from;
-	REG STRING *	pp=np;
 
-	np->doluse=1;	/* use count */
-	np=np->dolarg;
+	dp->doluse=1;	/* use count */
+	np=(STRING *)dp->dolarg;
 	dolv=np;
 
 	WHILE n--
 	DO *np++ = make(*fp++) OD
 	*np++ = ENDARGS;
-	return(pp);
+	return(dp);
 }
 
 clearup()

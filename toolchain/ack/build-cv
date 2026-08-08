@@ -1,0 +1,26 @@
+build=$1
+ack=$2
+flags=$3
+includes=$4
+cc=$5
+tools=$6
+runtime=$7
+
+test -d "$build" || mkdir "$build" || exit 1
+test -d "$build/cv-build" || mkdir "$build/cv-build" || exit 1
+cd "$build/cv-build" || exit 1
+
+objs=
+exec < "$ack/cv.list"
+while read f
+do
+	o=`basename "$f" .c`.o
+	echo CC "$o"
+	$cc $flags $includes -c -o "$o" "$ack/$f" || exit 1
+	objs="$objs $o"
+done
+
+echo LD cv
+"$tools/led" -o "$build/cv.ack" "$runtime/lib/crt0.o" $objs "$runtime/lib/libc.a" "$runtime/lib/libfp.a" "$runtime/lib/libc.a" "$runtime/lib/libfp.a" "$runtime/lib/libc.a" "$runtime/lib/libfp.a" "$runtime/lib/end.o" || exit 1
+echo CV cv
+"$tools/cv" "$build/cv.ack" "$build/cv"

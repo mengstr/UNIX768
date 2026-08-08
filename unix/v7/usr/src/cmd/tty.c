@@ -2,10 +2,14 @@
  * Type tty name
  */
 
-char	*ttyname();
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
-main(argc, argv)
-char **argv;
+char	*ttyname(i32 fd);
+
+int
+main(int argc, char **argv)
 {
 	register char *p;
 

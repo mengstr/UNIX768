@@ -1,6 +1,0 @@
-#!/bin/sh
-
-echo "char* tokentab[] = {"
-awk '/^#define/ { print "\"" $2 "\"," }'
-echo "};"
-

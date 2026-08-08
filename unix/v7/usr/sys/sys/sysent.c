@@ -7,60 +7,59 @@
  * Each row contains the number of arguments expected
  * and a pointer to the routine.
  */
-int	alarm();
-int	mpxchan();
-int	chdir();
-int	chmod();
-int	chown();
-int	chroot();
-int	close();
-int	creat();
-int	dup();
-int	exec();
-int	exece();
-int	fork();
-int	fstat();
-int	getgid();
-int	getpid();
-int	getuid();
-int	gtime();
-int	gtty();
-int	ioctl();
-int	kill();
-int	link();
-int	mknod();
-int	nice();
-int	nosys();
-int	nullsys();
-int	open();
-int	pause();
-int	pipe();
-int	profil();
-int	ptrace();
-int	read();
-int	rexit();
-int	saccess();
-int	sbreak();
-int	seek();
-int	setgid();
-int	setuid();
-int	smount();
-int	ssig();
-int	stat();
-int	stime();
-int	stty();
-int	sumount();
-int	ftime();
-int	sync();
-int	sysacct();
-int	syslock();
-int	sysphys();
-int	times();
-int	umask();
-int	unlink();
-int	utime();
-int	wait();
-int	write();
+i32	alarm(void);
+i32	mpxchan(void);
+i32	chdir(void);
+i32	chmod(void);
+i32	chown(void);
+i32	chroot(void);
+i32	close(void);
+i32	creat(void);
+i32	dup(void);
+i32	exec(void);
+i32	exece(void);
+i32	fork(void);
+i32	fstat(void);
+i32	getgid(void);
+i32	getpid(void);
+i32	getuid(void);
+i32	gtime(void);
+i32	gtty(void);
+i32	ioctl(void);
+i32	kill(void);
+i32	link(void);
+i32	mknod(void);
+i32	nice(void);
+i32	nosys(void);
+i32	nullsys(void);
+i32	open(void);
+i32	pause(void);
+i32	pipe(void);
+i32	profil(void);
+i32	ptrace(void);
+i32	read(void);
+i32	rexit(void);
+i32	saccess(void);
+i32	sbreak(void);
+i32	seek(void);
+i32	setgid(void);
+i32	setuid(void);
+i32	smount(void);
+i32	ssig(void);
+i32	stat(void);
+i32	stime(void);
+i32	stty(void);
+i32	sumount(void);
+i32	ftime(void);
+i32	sync(void);
+i32	sysacct(void);
+i32	syslock(void);
+i32	times(void);
+i32	umask(void);
+i32	unlink(void);
+i32	utime(void);
+i32	wait(void);
+i32	write(void);
 
 struct sysent sysent[64] =
 {
@@ -116,7 +115,7 @@ struct sysent sysent[64] =
 	0, 0, nosys,			/* 49 = reserved for USG */
 	0, 0, nosys,			/* 50 = reserved for USG */
 	1, 0, sysacct,			/* 51 = turn acct off/on */
-	3, 0, sysphys,			/* 52 = set user physical addresses */
+	0, 0, nosys,			/* 52 = set user physical addresses */
 	1, 0, syslock,			/* 53 = lock user in core */
 	3, 0, ioctl,			/* 54 = ioctl */
 	0, 0, nosys,			/* 55 = readwrite (in abeyance) */

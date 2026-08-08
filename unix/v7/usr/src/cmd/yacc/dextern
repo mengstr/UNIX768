@@ -1,5 +1,8 @@
 # include <stdio.h>
 # include <ctype.h>
+# include <stdarg.h>
+# include <stdlib.h>
+# include <unistd.h>
 # include "files"
 
 	/*  MANIFEST CONSTANT DEFINITIONS */
@@ -215,12 +218,58 @@ extern int zzexcp ;
 extern int zzclose ;
 extern int zzrrconf ;
 extern int zzsrconf ;
-	/* define functions with strange types... */
+	/* function declarations */
 
-extern char *cstash();
-extern struct looksets *flset();
-extern char *symnam();
-extern char *writem();
+void setup(i32, char **);
+void others(void);
+char *chcopy(char *, char *);
+char *writem(int *);
+char *symnam(int);
+void summary(void);
+void error(char *, ...);
+void aryfil(int *, int, int);
+int setunion(int *, int *);
+void prlook(struct looksets *);
+void cpres(void);
+void cpfir(void);
+int state(int);
+void putitem(int *, struct looksets *);
+void cempty(void);
+void stagen(void);
+void closure(int);
+struct looksets *flset(struct looksets *);
+
+void finact(void);
+void defin(int, char *);
+void defout(void);
+char *cstash(char *);
+int gettok(void);
+int fdtype(int);
+i32 chfind(int, char *);
+void cpyunion(void);
+void cpycode(void);
+int skipcom(void);
+void cpyact(int);
+
+void output(void);
+int apack(int *, int);
+void go2out(void);
+void go2gen(int);
+void precftn(int, int, int);
+void wract(int);
+void wrstate(int);
+void wdef(char *, int);
+void warray(char *, int *, int);
+void hideprod(void);
+
+void callopt(void);
+void gin(int);
+void stin(int);
+int nxti(void);
+void osummary(void);
+void aoutput(void);
+void arout(char *, int *, int);
+int gtnm(void);
 
 	/* default settings for a number of macros */
 

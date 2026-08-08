@@ -1,4 +1,5 @@
-# include "stdio.h"
+# include "refer.h"
+int
 hash (s)
 	char *s;
 {
@@ -7,14 +8,18 @@ for(n=0; c= *s; s++)
 	n += (c*n+ c << (n%4));
 return(n>0 ? n : -n);
 }
-err (s, a)
-	char *s;
+void
+err (char *s, ...)
 {
+va_list ap;
 fprintf(stderr, "Error: ");
-fprintf(stderr, s, a);
+va_start(ap, s);
+vfprintf(stderr, s, ap);
+va_end(ap);
 putc('\n', stderr);
 exit(1);
 }
+int
 prefix(t, s)
 	char *t, *s;
 {
@@ -23,8 +28,10 @@ while ( (c= *t++) == *s++)
 	if (c==0) return(1);
 return(c==0 ? 1: 0);
 }
+char *
 mindex(s, c)
 	char *s;
+	int c;
 {
 register char *p;
 for( p=s; *p; p++)
@@ -32,15 +39,36 @@ for( p=s; *p; p++)
 		return(p);
 return(0);
 }
+void *
 zalloc(m,n)
+	unsigned m, n;
 {
-	int t;
+	void *t;
 # if D1
 fprintf(stderr, "calling calloc for %d*%d bytes\n",m,n);
 # endif
 t = calloc(m,n);
 # if D1
-fprintf(stderr, "calloc returned %o\n", t);
+fprintf(stderr, "calloc returned %p\n", t);
 # endif
 return(t);
+}
+
+int
+ref_getw(f)
+	FILE *f;
+{
+	int value;
+	if (fread((char *)&value, sizeof(value), 1, f) != 1)
+		return(-1);
+	return(value);
+}
+
+void
+ref_putw(value, f)
+	int value;
+	FILE *f;
+{
+	if (fwrite((char *)&value, sizeof(value), 1, f) != 1)
+		err("write error");
 }

@@ -1,8 +1,8 @@
-# include "stdio.h"
-# include "assert.h"
+# include "refer.h"
+int recopy(FILE *, FILE *, FILE *);
 
-main(argc, argv)
-	char *argv[];
+int
+main(int argc, char **argv)
 {
 /* make inverted file indexes.  Reads a stream from mkey which
    gives record pointer items and keys.  Generates a set of files
@@ -15,21 +15,22 @@ main(argc, argv)
    If the files exist they are updated.
 */
 
-FILE *fa, *fb, *fc, *fta, *ftb, *ftc, *fd;
-int nhash 256;
-int appflg 1;
-int keepkey 0, pipein 0;
+FILE *fa, *fb, *fc, *fta, *ftb, *ftc, *fd = NULL;
+int nhash = 256;
+int appflg = 1;
+int keepkey = 0, pipein = 0;
 char nma[100], nmb[100], nmc[100], com[100], nmd[100];
 char tmpa[20], tmpb[20], tmpc[20];
-char *remove NULL;
-int chatty 0, docs, hashes, fp[2], fr, fw, pfork, pwait, status;
+char *remove = NULL;
+int chatty = 0, docs, hashes;
+i16 fp[2], fr, fw, pfork, pwait, status;
 int i,j,k;
 long keys;
 int iflong =0;
 char *sortdir;
 
 sortdir = (access("/crp/tmp", 06)==0) ? "/crp/tmp" : "/usr/tmp";
-while (argv[1][0] == '-')
+while (argc > 1 && argv[1][0] == '-')
 	{
 	switch(argv[1][1])
 		{
@@ -77,8 +78,8 @@ if (pipein)
 		close(0);
 		_assert(dup(fr)==0);
 		close(fr);
-		execl("/bin/sort", "sort", "-T", sortdir, "-o", tmpa, 0);
-		execl("/usr/bin/sort", "sort", "-T", sortdir, "-o", tmpa, 0);
+		execl("/bin/sort", "sort", "-T", sortdir, "-o", tmpa, (char *)0);
+		execl("/usr/bin/sort", "sort", "-T", sortdir, "-o", tmpa, (char *)0);
 		_assert(0);
 		}
 	_assert(pfork!= -1);
@@ -101,15 +102,15 @@ if (appflg )
 		ftb = fopen(tmpb, "w");
 		if (ftb==NULL)
 			err("Can't get scratch file %s",tmpb);
-		nhash = recopy(ftb, fb, fopen(nma, "r"));
+			nhash = recopy(ftb, fb, fopen(nma, "r"));
 		fclose(ftb);
 		}
 	else
 		appflg=0;
 	}
 fc = fopen(nmc,  appflg ? "a" : "w");
-if (keepkey)
-fd = keepkey ? fopen(nmd, "w") : 0;
+	if (keepkey)
+		fd = fopen(nmd, "w");
 docs = newkeys(fta, stdin, fc, nhash, fd, &iflong);
 fclose(stdin);
 if (remove != NULL)
@@ -152,6 +153,7 @@ if (appflg)
 	}
 if (chatty)
 	
-	printf ("%ld key occurrences,  %d hashes, %d docs\n",
-		keys, hashes, docs);
+		printf ("%ld key occurrences,  %d hashes, %d docs\n",
+			keys, hashes, docs);
+return(0);
 }

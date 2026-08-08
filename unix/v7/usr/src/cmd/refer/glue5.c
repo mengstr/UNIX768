@@ -1,5 +1,4 @@
-# include "stdio.h"
-# include "ctype.h"
+# include "refer.h"
 /*
  * fgrep -- print all lines containing any of a set of keywords
  *
@@ -29,20 +28,32 @@ int	xargc;
 char	**xargv;
 int	numwords;
 int	nfound;
-static int flag 0;
+static int flag = 0;
+static void execute(void);
+static void cgotofn(void);
+static int gch(void);
+static void overflo(void);
+static void cfail(void);
+static int new(struct words *);
 
 
+int
 fgrep(argc, argv)
+int argc;
 char **argv;
 {
-	instr = nsucc = need = inct = rflag = numwords = nfound = 0;
+	instr = 0;
+	nsucc = need = inct = rflag = numwords = nfound = 0;
 	flag = 0;
 	if (www==0)
 		www = zalloc(MAXSIZ, sizeof (*www));
 	if (www==NULL)
 		err("Can't get space for machines", 0);
 	for (q=www; q<www+MAXSIZ; q++)
-		q->inp = q->out = q->nst = q->link = q->fail =0;
+		{
+		q->inp = q->out = 0;
+		q->nst = q->link = q->fail = 0;
+		}
 	xargc = argc-1;
 	xargv = argv+1;
 	while (xargc>0 && xargv[0][0]=='-')
@@ -53,12 +64,12 @@ char **argv;
 				rflag++;
 				break;
 			case 'n': /* number of answers needed */
-				need = xargv[1];
+				need = (int)(long)xargv[1];
 				xargv++; xargc--;
 				break;
 			case 'i':
 				instr = xargv[1];
-				inct = xargv[2]+2;
+				inct = (int)(long)xargv[2]+2;
 # if D2
 fprintf(stderr,"inct %d xargv.2. %o %d\n",inct, xargv[2],xargv[2]);
 # endif
@@ -93,12 +104,13 @@ fprintf(stderr,"inct %d xargv.2. %o %d\n",inct, xargv[2],xargv[2]);
 	return(nsucc == 0);
 }
 
-execute()
+static void
+execute(void)
 {
 	register char *p;
-	register c;
-	register ch;
-	register ccount;
+	register struct words *c;
+	register int ch;
+	register int ccount;
 	int f;
 	char *nlp;
 	f=0;
@@ -122,7 +134,7 @@ fprintf(stderr, "ex loop ccount %d instr %o\n",ccount, instr);
 			if (instr) break;
 			if (p == &buf[1024]) p = buf;
 			if (p > &buf[512]) {
-				if ((ccount = read(f, p, &buf[1024] - p)) <= 0) break;
+				if ((ccount = read(f, p, (int)(&buf[1024] - p))) <= 0) break;
 			}
 			else if ((ccount = read(f, p, 512)) <= 0) break;
 # if D2
@@ -177,7 +189,7 @@ fprintf(stderr, "down ccount2\n");
 					if (--ccount <= 0) {
 						if (p == &buf[1024]) p = buf;
 						if (p > &buf[512]) {
-							if ((ccount = read(f, p, &buf[1024] - p)) <= 0) break;
+						if ((ccount = read(f, p, (int)(&buf[1024] - p))) <= 0) break;
 						}
 						else if ((ccount = read(f, p, 512)) <= 0) break;
 # if D2
@@ -196,10 +208,10 @@ fprintf(stderr, "p %o nlp %o buf %o\n",p,nlp,buf);
 if (p>nlp)
 {write (2, "XX\n", 3); write (2, nlp, p-nlp); write (2, "XX\n", 3);}
 # endif
-					if (p > nlp) write(1, nlp, p-nlp);
+					if (p > nlp) write(1, nlp, (int)(p-nlp));
 					else {
-						write(1, nlp, &buf[1024] - nlp);
-						write(1, buf, p-&buf[0]);
+						write(1, nlp, (int)(&buf[1024] - nlp));
+						write(1, buf, (int)(p-&buf[0]));
 						}
 					if (p[-1]!= '\n') write (1, "\n", 1);
 					}
@@ -231,9 +243,10 @@ fprintf(stderr, "nr end loop p %o\n",p);
 		close(f);
 }
 
-cgotofn() {
-	register c;
-	register s;
+static void
+cgotofn(void) {
+	register int c;
+	register struct words *s;
 	s = smax = www;
 nword:	
 	for(;;) {
@@ -278,7 +291,8 @@ enter:
 
 }
 
-gch()
+static int
+gch(void)
 {
 	static char *s;
 	if (flag==0)
@@ -297,16 +311,18 @@ gch()
 	return('\n');
 }
 
-overflo() {
+static void
+overflo(void) {
 	write(2,"wordlist too large\n", 19);
 	exit(2);
 }
-cfail() {
+static void
+cfail(void) {
 	struct words *queue[QSIZE];
 	struct words **front, **rear;
 	struct words *state;
 	register char c;
-	register s;
+	register struct words *s;
 	s = www;
 	front = rear = queue;
 init:	
@@ -348,8 +364,10 @@ floop:
 			goto cloop;
 	}
 }
-static int seen[50];
+static struct words *seen[50];
+static int
 new (x)
+	struct words *x;
 {
 	int i;
 	for(i=0; i<nfound; i++)

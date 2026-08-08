@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #define	USER	05700	/* user's bits */
 #define	GROUP	02070	/* group's bits */
@@ -21,8 +22,14 @@ char	*ms;
 int	um;
 struct	stat st;
 
-main(argc,argv)
-char **argv;
+static i32 newmode(unsigned nm);
+static i32 abs(void);
+static i32 who(void);
+static i32 what(void);
+static i32 where(i32 om);
+
+int
+main(int argc, char **argv)
 {
 	register i;
 	register char *p;
@@ -52,6 +59,7 @@ char **argv;
 	exit(status);
 }
 
+static i32
 newmode(nm)
 unsigned nm;
 {
@@ -85,6 +93,7 @@ unsigned nm;
 	return(nm);
 }
 
+static i32
 abs()
 {
 	register c, i;
@@ -96,6 +105,7 @@ abs()
 	return(i);
 }
 
+static i32
 who()
 {
 	register m;
@@ -122,6 +132,7 @@ who()
 	}
 }
 
+static i32
 what()
 {
 	switch (*ms) {
@@ -133,8 +144,9 @@ what()
 	return(0);
 }
 
+static i32
 where(om)
-register om;
+register i32 om;
 {
 	register m;
 

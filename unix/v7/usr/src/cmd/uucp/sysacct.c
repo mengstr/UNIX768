@@ -7,9 +7,8 @@
  *	long bytes;
  */
 
-sysacct(bytes, time)
-time_t time;
-long bytes;
+int
+sysacct (long bytes, time_t time)
 {
 	return;
 }

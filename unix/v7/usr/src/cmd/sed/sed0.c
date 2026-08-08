@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unistd.h>
 #include "sed.h"
 
 struct label	*labtab = ltab;
@@ -18,8 +19,8 @@ char	bittab[]  = {
 		128
 	};
 
-main(argc, argv)
-char	*argv[];
+int
+main (int argc, char *argv[])
 {
 
 	eargc = argc;
@@ -102,7 +103,7 @@ char	*argv[];
 
 	dechain();
 
-/*	abort();	/*DEBUG*/
+/* abort(); DEBUG */
 
 	if(eargc <= 0)
 		execute((char *)NULL);
@@ -112,11 +113,11 @@ char	*argv[];
 	fclose(stdout);
 	exit(0);
 }
-fcomp()
+int
+fcomp (void)
 {
 
 	register char	*p, *op, *tp;
-	char	*address();
 	union reptr	*pt, *pt1;
 	int	i;
 	struct label	*lpt;
@@ -140,7 +141,7 @@ fcomp()
 		cp = linebuf;
 
 comploop:
-/*	fprintf(stdout, "cp: %s\n", cp);	/*DEBUG*/
+/* fprintf(stdout, "cp: %s\n", cp); DEBUG */
 		while(*cp == ' ' || *cp == '\t')	cp++;
 		if(*cp == '\0' || *cp == '#')		continue;
 		if(*cp == ';') {
@@ -205,7 +206,7 @@ swit:
 				goto swit;
 
 			case '{':
-				rep->command = BCOM;
+				rep->r1.command = BCOM;
 				rep->negfl = !(rep->negfl);
 				cmpend[depth++] = &rep->lb1;
 				if(++rep >= ptrend) {
@@ -233,7 +234,7 @@ swit:
 				continue;
 
 			case '=':
-				rep->command = EQCOM;
+				rep->r1.command = EQCOM;
 				if(rep->ad2) {
 					fprintf(stderr, AD1MES, linebuf);
 					exit(2);
@@ -277,7 +278,7 @@ swit:
 				continue;
 
 			case 'a':
-				rep->command = ACOM;
+				rep->r1.command = ACOM;
 				if(rep->ad2) {
 					fprintf(stderr, AD1MES, linebuf);
 					exit(2);
@@ -291,7 +292,7 @@ swit:
 				p = text(rep->re1);
 				break;
 			case 'c':
-				rep->command = CCOM;
+				rep->r1.command = CCOM;
 				if(*cp == '\\')	cp++;
 				if(*cp++ != ('\n')) {
 					fprintf(stderr, CGMES, linebuf);
@@ -301,7 +302,7 @@ swit:
 				p = text(rep->re1);
 				break;
 			case 'i':
-				rep->command = ICOM;
+				rep->r1.command = ICOM;
 				if(rep->ad2) {
 					fprintf(stderr, AD1MES, linebuf);
 					exit(2);
@@ -316,27 +317,27 @@ swit:
 				break;
 
 			case 'g':
-				rep->command = GCOM;
+				rep->r1.command = GCOM;
 				break;
 
 			case 'G':
-				rep->command = CGCOM;
+				rep->r1.command = CGCOM;
 				break;
 
 			case 'h':
-				rep->command = HCOM;
+				rep->r1.command = HCOM;
 				break;
 
 			case 'H':
-				rep->command = CHCOM;
+				rep->r1.command = CHCOM;
 				break;
 
 			case 't':
-				rep->command = TCOM;
+				rep->r1.command = TCOM;
 				goto jtcommon;
 
 			case 'b':
-				rep->command = BCOM;
+				rep->r1.command = BCOM;
 jtcommon:
 				while(*cp++ == ' ');
 				cp--;
@@ -379,23 +380,23 @@ jtcommon:
 				break;
 
 			case 'n':
-				rep->command = NCOM;
+				rep->r1.command = NCOM;
 				break;
 
 			case 'N':
-				rep->command = CNCOM;
+				rep->r1.command = CNCOM;
 				break;
 
 			case 'p':
-				rep->command = PCOM;
+				rep->r1.command = PCOM;
 				break;
 
 			case 'P':
-				rep->command = CPCOM;
+				rep->r1.command = CPCOM;
 				break;
 
 			case 'r':
-				rep->command = RCOM;
+				rep->r1.command = RCOM;
 				if(rep->ad2) {
 					fprintf(stderr, AD1MES, linebuf);
 					exit(2);
@@ -409,16 +410,16 @@ jtcommon:
 				break;
 
 			case 'd':
-				rep->command = DCOM;
+				rep->r1.command = DCOM;
 				break;
 
 			case 'D':
-				rep->command = CDCOM;
+				rep->r1.command = CDCOM;
 				rep->lb1 = ptrspace;
 				break;
 
 			case 'q':
-				rep->command = QCOM;
+				rep->r1.command = QCOM;
 				if(rep->ad2) {
 					fprintf(stderr, AD1MES, linebuf);
 					exit(2);
@@ -426,11 +427,11 @@ jtcommon:
 				break;
 
 			case 'l':
-				rep->command = LCOM;
+				rep->r1.command = LCOM;
 				break;
 
 			case 's':
-				rep->command = SCOM;
+				rep->r1.command = SCOM;
 				seof = *cp++;
 				rep->re1 = p;
 				p = compile(rep->re1);
@@ -483,19 +484,19 @@ jtcommon:
 					text(fname[nfiles]);
 					for(i = nfiles - 1; i >= 0; i--)
 						if(cmp(fname[nfiles],fname[i]) == 0) {
-							rep->fcode = fcode[i];
+							rep->r1.fcode = fcode[i];
 							goto done;
 						}
-					if((rep->fcode = fopen(fname[nfiles], "w")) == NULL) {
+					if((rep->r1.fcode = fopen(fname[nfiles], "w")) == NULL) {
 						fprintf(stderr, "cannot open %s\n", fname[nfiles]);
 						exit(2);
 					}
-					fcode[nfiles++] = rep->fcode;
+					fcode[nfiles++] = rep->r1.fcode;
 				}
 				break;
 
 			case 'w':
-				rep->command = WCOM;
+				rep->r1.command = WCOM;
 				if(*cp++ != ' ') {
 					fprintf(stderr, CGMES, linebuf);
 					exit(2);
@@ -508,23 +509,23 @@ jtcommon:
 				text(fname[nfiles]);
 				for(i = nfiles - 1; i >= 0; i--)
 					if(cmp(fname[nfiles], fname[i]) == 0) {
-						rep->fcode = fcode[i];
+						rep->r1.fcode = fcode[i];
 						goto done;
 					}
 
-				if((rep->fcode = fopen(fname[nfiles], "w")) == NULL) {
+				if((rep->r1.fcode = fopen(fname[nfiles], "w")) == NULL) {
 					fprintf(stderr, "Cannot create %s\n", fname[nfiles]);
 					exit(2);
 				}
-				fcode[nfiles++] = rep->fcode;
+				fcode[nfiles++] = rep->r1.fcode;
 				break;
 
 			case 'x':
-				rep->command = XCOM;
+				rep->r1.command = XCOM;
 				break;
 
 			case 'y':
-				rep->command = YCOM;
+				rep->r1.command = YCOM;
 				seof = *cp++;
 				rep->re1 = p;
 				p = ycomp(rep->re1);
@@ -555,11 +556,11 @@ done:
 		}
 
 	}
-	rep->command = 0;
+	rep->r1.command = 0;
 	lastre = op;
 }
-char	*compsub(rhsbuf)
-char	*rhsbuf;
+char *
+compsub (char *rhsbuf)
 {
 	register char	*p, *q;
 
@@ -585,8 +586,8 @@ char	*rhsbuf;
 	}
 }
 
-char *compile(expbuf)
-char	*expbuf;
+char *
+compile (char *expbuf)
 {
 	register c;
 	register char *ep, *sp;
@@ -655,7 +656,7 @@ char	*expbuf;
 			if(c >= '1' && c <= '9') {
 				if((c -= '1') >= closed)
 					return(badp);
-	
+
 				*ep++ = CBACK;
 				*ep++ = c;
 				continue;
@@ -746,8 +747,8 @@ char	*expbuf;
 		}
 	}
 }
-rline(lbuf)
-char	*lbuf;
+int
+rline (char *lbuf)
 {
 	register char	*p, *q;
 	register	t;
@@ -813,8 +814,8 @@ char	*lbuf;
 	return(-1);
 }
 
-char	*address(expbuf)
-char	*expbuf;
+char *
+address (char *expbuf)
 {
 	register char	*rcp;
 	long	lno;
@@ -852,8 +853,8 @@ char	*expbuf;
 	}
 	return(0);
 }
-cmp(a, b)
-char	*a,*b;
+int
+cmp (char *a, char *b)
 {
 	register char	*ra, *rb;
 
@@ -865,8 +866,8 @@ char	*a,*b;
 	return(1);
 }
 
-char	*text(textbuf)
-char	*textbuf;
+char *
+text (char *textbuf)
 {
 	register char	*p, *q;
 
@@ -889,8 +890,8 @@ char	*textbuf;
 }
 
 
-struct label	*search(ptr)
-struct label	*ptr;
+struct label *
+search (struct label *ptr)
 {
 	struct label	*rp;
 
@@ -905,7 +906,8 @@ struct label	*ptr;
 }
 
 
-dechain()
+int
+dechain (void)
 {
 	struct label	*lptr;
 	union reptr	*rptr, *trptr;
@@ -928,8 +930,8 @@ dechain()
 	}
 }
 
-char *ycomp(expbuf)
-char	*expbuf;
+char *
+ycomp (char *expbuf)
 {
 	register char	c, *ep, *tsp;
 	char	*sp;
@@ -966,4 +968,3 @@ char	*expbuf;
 
 	return(ep + 0200);
 }
-

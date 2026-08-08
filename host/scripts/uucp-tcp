@@ -1,0 +1,91 @@
+#!/bin/sh
+# Run the virtual ACU that connects platform/epoch68/emulator UART5 to remote UUCP per call.
+set -eu
+
+repo=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
+root="$repo/build/uucp-tcp"
+state="$root/state"
+log="$root/bridge.log"
+uart_port=${UUCP_UART_PORT:-24005}
+remote_host=${UUCP_REMOTE_HOST:-198.23.169.200}
+remote_port=${UUCP_REMOTE_PORT:-540}
+gateway="$repo/build/bin/uucp-tcp-gateway"
+
+is_live()
+{
+	kill -0 "$1" 2>/dev/null
+}
+
+read_pid()
+{
+	[ -f "$state" ] || return 1
+	sed -n 's/^PID=//p' "$state"
+}
+
+start()
+{
+	[ -x "$gateway" ] || {
+		echo "uucp-tcp: missing $gateway; run make uucp-tcp-gateway" >&2
+		exit 1
+	}
+	if ! command -v lsof >/dev/null 2>&1 || \
+	    ! lsof -nP -iTCP:"$uart_port" -sTCP:LISTEN >/dev/null 2>&1; then
+		echo "uucp-tcp: uartbridge is not listening on TCP $uart_port" >&2
+		exit 1
+	fi
+	old_pid=$(read_pid || :)
+	if [ -n "$old_pid" ] && is_live "$old_pid"; then
+		echo "uucp-tcp: already running (pid $old_pid)" >&2
+		exit 1
+	fi
+	mkdir -p "$root"
+	rm -f "$state"
+	"$gateway" -uart "127.0.0.1:$uart_port" -remote "$remote_host:$remote_port" \
+	    >"$log" 2>&1 &
+	pid=$!
+	sleep 1
+	if ! is_live "$pid"; then
+		echo "uucp-tcp: connection failed; see $log" >&2
+		exit 1
+	fi
+	{
+		echo "PID=$pid"
+		echo "REMOTE_HOST=$remote_host"
+		echo "REMOTE_PORT=$remote_port"
+	} >"$state"
+	echo "uucp-tcp: UART5 virtual ACU ready for $remote_host:$remote_port (pid $pid)"
+	echo "uucp-tcp: remote TCP is opened only when V7 writes a phone number ending in -<"
+	echo "uucp-tcp: log: $log"
+}
+
+stop()
+{
+	pid=$(read_pid || :)
+	if [ -z "$pid" ]; then
+		echo "uucp-tcp: not running"
+		return
+	fi
+	if is_live "$pid"; then
+		kill -TERM "$pid"
+	fi
+	rm -f "$state"
+	echo "uucp-tcp: stopped"
+}
+
+status()
+{
+	pid=$(read_pid || :)
+	if [ -n "$pid" ] && is_live "$pid"; then
+		echo "uucp-tcp: running (pid $pid)"
+		sed -n 's/^REMOTE_HOST=/host: /p; s/^REMOTE_PORT=/port: /p' "$state"
+	else
+		echo "uucp-tcp: stopped"
+	fi
+}
+
+case ${1:-} in
+	start) start ;;
+	stop) stop ;;
+	status) status ;;
+	*) echo "usage: $0 {start|stop|status}" >&2; exit 2 ;;
+esac

@@ -1,7 +1,11 @@
 # include "signal.h"
 # include "refer..c"
-main(argc,argv)
-	char *argv[];
+static void signals(void);
+static void intr(i16);
+static void cleanup(void);
+
+int
+main(int argc, char **argv)
 {
 char line[LLINE], *s;
 int nodeflt =0;
@@ -115,7 +119,7 @@ do
 	while (argc>1);
 if (endpush && fo!=NULL)
 	dumpold();
-output("", ftemp);
+output("");
 if (sort && !labels)
 	recopy(ofile);
 clfgrep();
@@ -123,26 +127,28 @@ cleanup();
 exit(0);
 }
 
-extern int intr();
-signals()
+static void
+signals(void)
 {
-	int oldint;
-oldint = signal(SIGINT, &intr);
-if (oldint==1)
-	signal (SIGINT, 1);
-signal (SIGHUP, &intr);
-signal (SIGPIPE, &intr);
-signal (SIGTERM, &intr);
+	sighandler_t oldint;
+oldint = signal(SIGINT, intr);
+if(oldint==SIG_IGN)
+	signal (SIGINT, SIG_IGN);
+signal (SIGHUP, intr);
+signal (SIGPIPE, intr);
+signal (SIGTERM, intr);
 }
 
-intr()
+static void
+intr(i16 sig)
 {
-	int oldsig;
-signal(SIGINT, 1);
+	(void)sig;
+signal(SIGINT, SIG_IGN);
 cleanup();
 exit(1);
 }
-cleanup()
+static void
+cleanup(void)
 {
 if (tfile[0]) unlink(tfile);
 if (gfile[0]) unlink(gfile);

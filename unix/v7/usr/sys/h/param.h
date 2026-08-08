@@ -1,6 +1,12 @@
+#ifndef V7_SYS_PARAM_H
+#define V7_SYS_PARAM_H
+
 /*
  * tunable variables
  */
+
+#include "inttypes.h"
+#include "types.h"		/* daddr_t/ino_t/off_t/dev_t/... + major/minor/makedev */
 
 #define	NBUF	29		/* size of buffer cache */
 #define	NINODE	200		/* number of in core inodes */
@@ -15,13 +21,13 @@
 #define	CMAPSIZ	50		/* size of core allocation area */
 #define	SMAPSIZ	50		/* size of swap allocation area */
 #define	NCALL	20		/* max simultaneous time callouts */
-#define	NPROC	150		/* max number of processes */
+#define	NPROC	63		/* max number of processes */
 #define	NTEXT	40		/* max number of pure texts */
 #define	NCLIST	100		/* max total clist size */
 #define	HZ	60		/* Ticks/second of the clock */
 #define	TIMEZONE (5*60)		/* Minutes westward from Greenwich */
 #define	DSTFLAG	1		/* Daylight Saving Time applies in this locality */
-#define	MSGBUFS	128		/* Characters saved from error messages */
+#define	MSGBUFS	1024		/* Characters saved from error messages */
 #define	NCARGS	5120		/* # characters in exec arglist */
 
 /*
@@ -71,7 +77,7 @@
  * cannot be changed easily
  */
 
-#define	NBPW	sizeof(int)	/* number of bytes in an integer */
+#define	NBPW	sizeof(i16)	/* historical Unix word size */
 #define	BSIZE	512		/* size of secondary block (bytes) */
 /* BSLOP can be 0 unless you have a TIU/Spider */
 #define	BSLOP	2		/* In case some device needs bigger buffers */
@@ -81,8 +87,11 @@
 #define	NMASK	0177		/* NINDIR-1 */
 #define	NSHIFT	7		/* LOG2(NINDIR) */
 #define	USIZE	16		/* size of user block (*64) */
+#define	EPOCH68_KSTACK_LONGS	(USIZE * 32)	/* 2KB kernel stack per proc */
 #define	UBASE	0140000		/* abs. addr of user block */
+#ifndef NULL
 #define	NULL	0
+#endif
 #define	CMASK	0		/* default mask for file creation */
 #define	NODEV	(dev_t)(-1)
 #define	ROOTINO	((ino_t)2)	/* i number of all roots */
@@ -91,8 +100,8 @@
 #define	NICINOD	100		/* number of superblock inodes */
 #define	NICFREE	50		/* number of superblock free blocks */
 #define	INFSIZE	138		/* size of per-proc info for users */
-#define	CBSIZE	14		/* number of chars in a clist block */
-#define	CROUND	017		/* clist rounding: sizeof(int *) + CBSIZE - 1*/
+#define	CBSIZE	12		/* chars in a 16-byte clist block on 32-bit Epoch68 */
+#define	CROUND	017		/* clist rounding: pointer + CBSIZE - 1 */
 
 /*
  * Some macros for units conversion
@@ -108,7 +117,7 @@
 #define	itod(x)	(daddr_t)((((unsigned)x+15)>>3))
 
 /* inumber to disk offset */
-#define	itoo(x)	(int)((x+15)&07)
+#define	itoo(x)	(i32)((x+15)&07)
 
 /* clicks to bytes */
 #define	ctob(x)	(x<<6)
@@ -116,29 +125,17 @@
 /* bytes to clicks */
 #define	btoc(x)	((((unsigned)x+63)>>6))
 
-/* major part of a device */
-#define	major(x)	(int)(((unsigned)x>>8))
-
-/* minor part of a device */
-#define	minor(x)	(int)(x&0377)
-
-/* make a device number */
-#define	makedev(x,y)	(dev_t)((x)<<8 | (y))
-
-typedef	struct { int r[1]; } *	physadr;
-typedef	long		daddr_t;
-typedef char *		caddr_t;
-typedef	unsigned int	ino_t;
-typedef	long		time_t;
-typedef	int		label_t[6];	/* regs 2-7 */
-typedef	int		dev_t;
-typedef	long		off_t;
+/* major/minor/makedev and the daddr_t/ino_t/off_t/dev_t/... typedefs come
+ * from <types.h> (included near the top).  physadr is kernel-only and stays. */
+typedef	struct { i16 r[1]; } *	physadr;
 
 /*
  * Machine-dependent bits and macros
  */
-#define	UMODE	0170000		/* usermode bits */
-#define	USERMODE(ps)	((ps & UMODE)==UMODE)
+#define	UMODE	0x2000		/* 68k supervisor bit: clear means user mode */
+#define	USERMODE(ps)	((ps & UMODE)==0)
 
-#define	INTPRI	0340		/* Priority bits */
+#define	INTPRI	0x0700		/* 68k interrupt priority mask bits */
 #define	BASEPRI(ps)	((ps & INTPRI) != 0)
+
+#endif

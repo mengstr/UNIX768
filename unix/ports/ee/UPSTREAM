@@ -1,0 +1,17 @@
+ee 1.2.4 (Easy Editor)
+
+Source was supplied locally in the archived repository's source-intake tree
+and moved here for target-port work.
+unix/ports/ee/ee.c identifies the source as version 1.2.4
+and carries an RCS header dated 1995-08-26.
+
+The upstream FreeBSD Makefile links only ee.c against system ncurses.  platform/epoch68/emulator
+instead builds ee.c with the bundled new_curse.c and new_curse.h, using the
+CAP (termcap) path.  The two bundled sources were moved from doc/ into this
+directory because they are build inputs, not documentation.
+
+V7 target adjustments:
+- V7 has no SIGCHLD; child-signal disposition is a no-op and wait() remains
+  responsible for collecting command children.
+- The pseudo-curses key timeout uses its alarm(2) interruption path rather
+  than unavailable fcntl(FNDELAY).

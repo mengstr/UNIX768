@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unistd.h>
 
 /* reverse lines of a file */
 
@@ -6,8 +7,8 @@
 char line[N];
 FILE *input;
 
-main(argc,argv)
-char **argv;
+int
+main(int argc, char **argv)
 {
 	register i,c;
 	input = stdin;
@@ -41,4 +42,5 @@ eof:
 		argc--;
 		argv++;
 	} while(argc>1);
+	return 0;
 }

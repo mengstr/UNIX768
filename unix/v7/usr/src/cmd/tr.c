@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unistd.h>
 
 /* tr - transliterate data stream */
 int	dflag	= 0;
@@ -10,8 +11,11 @@ char	squeez[256];
 char	vect[256];
 struct string { int last, max; char *p; } string1, string2;
 
-main(argc,argv)
-char **argv;
+static i32 next(struct string *s);
+static i32 nextc(struct string *s);
+
+int
+main(int argc, char **argv)
 {
 	register i;
 	int j;
@@ -85,6 +89,7 @@ char **argv;
 	exit(0);
 }
 
+static i32
 next(s)
 struct string *s;
 {
@@ -111,6 +116,7 @@ again:
 	return(s->last = nextc(s));
 }
 
+static i32
 nextc(s)
 struct string *s;
 {

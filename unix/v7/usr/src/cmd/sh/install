@@ -1,0 +1,12 @@
+set -e
+
+if test "x$ROOT" = x
+then
+	ROOT=
+fi
+if test ! -d $ROOT/bin
+then
+	mkdir $ROOT/bin
+fi
+cp sh $ROOT/bin/sh
+chmod 0755 $ROOT/bin/sh

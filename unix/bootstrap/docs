@@ -1,0 +1,12 @@
+echo 'docs: send docs.tar.z'
+cd /dist
+rx /dist/docs.tar.z
+cd /
+/local/bin/pcat /dist/docs.tar.z > /tmp/docs.tar
+rm /dist/docs.tar.z
+tar xf /tmp/docs.tar
+ls /usr/doc/.doc-ok
+rm /usr/doc/.doc-ok
+rm /tmp/docs.tar
+sync
+echo 'docs: installed'

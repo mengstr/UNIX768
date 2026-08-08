@@ -11,12 +11,11 @@
  *	return - 0 no entry | >0 sequence number
  */
 
-gnxseq(rmtname)
-char *rmtname;
+int
+gnxseq (char *rmtname)
 {
 	int count = 0, ct, ret;
 	struct tm *tp;
-	extern struct tm *localtime();
 	time_t clock;
 	FILE *fp0, *fp1;
 	char buf[BUFSIZ], name[NAMESIZE];
@@ -69,7 +68,8 @@ char *rmtname;
  *	return  0  ok | other - link failed
  */
 
-cmtseq()
+int
+cmtseq (void)
 {
 	int ret;
 
@@ -88,7 +88,8 @@ cmtseq()
  *	ulkseq()	unlock sequence file
  */
 
-ulkseq()
+int
+ulkseq (void)
 {
 	unlink(SQTMP);
 	rmlock(SQLOCK);

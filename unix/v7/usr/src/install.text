@@ -1,0 +1,27 @@
+cp cawf/cawf $1/local/bin/cawf
+chmod 0755 $1/local/bin/cawf
+rm -f $1/bin/nroff
+ln $1/local/bin/cawf $1/bin/nroff
+cp cawf/man.mac cawf/me.mac cawf/ms.mac $1/usr/lib/cawf
+cp cawf/common cawf/dumb.dev cawf/device.cf $1/usr/lib/cawf
+chmod 0644 $1/usr/lib/cawf/man.mac $1/usr/lib/cawf/me.mac
+chmod 0644 $1/usr/lib/cawf/ms.mac $1/usr/lib/cawf/common
+chmod 0644 $1/usr/lib/cawf/dumb.dev $1/usr/lib/cawf/device.cf
+cp cmd/man cmd/deroff cmd/checkeq $1/bin
+cp cmd/eqn/eqn cmd/neqn/neqn cmd/tbl/tbl $1/bin
+cp cmd/prep/prep $1/bin/prep
+chmod 0755 $1/bin/man $1/bin/deroff $1/bin/checkeq
+chmod 0755 $1/bin/nroff
+chmod 0755 $1/bin/eqn $1/bin/neqn $1/bin/tbl $1/bin/prep
+cp cmd/spell/spell.sh $1/bin/spell
+cp cmd/spell/spell.bin $1/usr/lib/spell
+cp cmd/spell/spellin cmd/spell/spellout $1/usr/lib
+chmod 0755 $1/bin/spell $1/usr/lib/spell
+chmod 0755 $1/usr/lib/spellin $1/usr/lib/spellout
+cp cmd/refer/refer $1/bin/refer
+cp cmd/refer/mkey cmd/refer/inv cmd/refer/hunt $1/usr/lib/refer
+chmod 0755 $1/bin/refer $1/usr/lib/refer/mkey
+chmod 0755 $1/usr/lib/refer/inv $1/usr/lib/refer/hunt
+cp ee/ee $1/local/bin/ee
+chmod 0755 $1/local/bin/ee
+echo install.text: complete

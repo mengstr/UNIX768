@@ -1,0 +1,35 @@
+build=$1
+ack=$2
+flags=$3
+includes=$4
+cc=$5
+tools=$6
+runtime=$7
+
+test -d "$build" || mkdir "$build" || exit 1
+test -d "$build/as-build" || mkdir "$build/as-build" || exit 1
+cd "$build/as-build" || exit 1
+cp "$ack/as/generated/bison.v7.h" bison.h || exit 1
+includes="-I$build/as-build $includes"
+
+objs=
+exec < "$ack/as.list"
+while read f
+do
+	o=`basename "$f" .c`.o
+	echo CC "$o"
+	case "$f" in
+	as/generated/comm2.c)
+		$cc $flags $includes -c -o "$o" "$ack/as/generated/comm2.v7.c" || exit 1
+		;;
+	*)
+		$cc $flags $includes -c -o "$o" "$ack/$f" || exit 1
+		;;
+	esac
+	objs="$objs $o"
+done
+
+echo LD as
+"$tools/led" -o "$build/as.ack" "$runtime/lib/crt0.o" $objs "$runtime/lib/libc.a" "$runtime/lib/libfp.a" "$runtime/lib/libc.a" "$runtime/lib/libfp.a" "$runtime/lib/libc.a" "$runtime/lib/libfp.a" "$runtime/lib/end.o" || exit 1
+echo CV as
+"$tools/cv" "$build/as.ack" "$build/as"

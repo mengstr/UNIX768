@@ -1,9 +1,6 @@
 /*
- * Structure returned by ftime system call
+ * ftime() timeb structure -- shared with kernel <timeb.h>.
  */
-struct timeb {
-	time_t	time;
-	unsigned short millitm;
-	short	timezone;
-	short	dstflag;
-};
+#include "../../sys/h/timeb.h"
+
+i32	ftime(struct timeb *);

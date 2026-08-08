@@ -1,0 +1,4 @@
+set -e
+
+rm -f red/red red/*.o
+echo clean.editors: complete

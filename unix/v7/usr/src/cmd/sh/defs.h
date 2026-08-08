@@ -71,14 +71,18 @@
 /* arg list terminator */
 #define ENDARGS	0
 
+#include	<sys/inttypes.h>
 #include	"mac.h"
 #include	"mode.h"
 #include	"name.h"
+#define		alloc malloc
+#include	"proto.h"
 
 
 /* result type declarations */
-#define alloc malloc
+#if 0 /* Superseded by the ABI prototypes in proto.h. */
 ADDRESS		alloc();
+VOID		initblok();
 VOID		addblok();
 STRING		make();
 STRING		movstr();
@@ -88,43 +92,59 @@ NAMPTR		lookup();
 VOID		setname();
 VOID		setargs();
 DOLPTR		useargs();
+DOLPTR		freeargs();
 REAL		expr();
 STRING		catpath();
 STRING		getpath();
 STRING		*scan();
 STRING		mactrim();
 STRING		macro();
-STRING		execs();
 VOID		await();
 VOID		post();
-STRING		copyto();
 VOID		exname();
-STRING		staknam();
 VOID		printnam();
 VOID		printflg();
 VOID		prs();
 VOID		prc();
 VOID		getenv();
 STRING		*setenv();
+i32		alarm(i32);
+i32		chdir(char *);
+i32		close(i32);
+i32		creat(char *, i32);
+i32		dup(i32);
+i32		exit(i32);
+i32		fork();
+i32		lseek(i32, i32, i32);
+i32		open(char *, i32);
+i32		pause();
+i32		pipe(i16 *);
+i32		read(i32, char *, i32);
+i32		times(i32 *);
+i32		umask(i32);
+i32		unlink(char *);
+i32		wait(i16 *);
+i32		write(i32, char *, i32);
+#endif
 
 #define attrib(n,f)	(n->namflg |= f)
-#define round(a,b)	(((int)((ADR(a)+b)-1))&~((b)-1))
+#define round(a,b)	(((long)((ADR(a)+b)-1))&~((long)(b)-1))
 #define closepipe(x)	(close(x[INPIPE]), close(x[OTPIPE]))
 #define eq(a,b)		(cf(a,b)==0)
 #define max(a,b)	((a)>(b)?(a):(b))
 #define assert(x)	;
 
 /* temp files and io */
-UFD		output;
-INT		ioset;
-IOPTR		iotemp;		/* files to be deleted sometime */
-IOPTR		iopend;		/* documents waiting to be read at NL */
+extern UFD	output;
+extern INT	ioset;
+extern IOPTR	iotemp;		/* files to be deleted sometime */
+extern IOPTR	iopend;		/* documents waiting to be read at NL */
 
 /* substitution */
-INT		dolc;
-STRING		*dolv;
-DOLPTR		argfor;
-ARGPTR		gchain;
+extern INT	dolc;
+extern STRING	*dolv;
+extern DOLPTR	argfor;
+extern ARGPTR	gchain;
 
 /* stack */
 #define		BLK(x)	((BLKPTR)(x))
@@ -136,68 +156,68 @@ ARGPTR		gchain;
 #include	"stak.h"
 
 /* string constants */
-MSG		atline;
-MSG		readmsg;
-MSG		colon;
-MSG		minus;
-MSG		nullstr;
-MSG		sptbnl;
-MSG		unexpected;
-MSG		endoffile;
-MSG		synmsg;
+extern MSG	atline;
+extern MSG	readmsg;
+extern MSG	colon;
+extern MSG	minus;
+extern MSG	nullstr;
+extern MSG	sptbnl;
+extern MSG	unexpected;
+extern MSG	endoffile;
+extern MSG	synmsg;
 
 /* name tree and words */
-SYSTAB		reserved;
-INT		wdval;
-INT		wdnum;
-ARGPTR		wdarg;
-INT		wdset;
-BOOL		reserv;
+extern SYSTAB	reserved;
+extern INT	wdval;
+extern INT	wdnum;
+extern ARGPTR	wdarg;
+extern INT	wdset;
+extern BOOL	reserv;
 
 /* prompting */
-MSG		stdprompt;
-MSG		supprompt;
-MSG		profile;
+extern MSG	stdprompt;
+extern MSG	supprompt;
+extern MSG	profile;
 
 /* built in names */
-NAMNOD		fngnod;
-NAMNOD		ifsnod;
-NAMNOD		homenod;
-NAMNOD		mailnod;
-NAMNOD		pathnod;
-NAMNOD		ps1nod;
-NAMNOD		ps2nod;
+extern NAMNOD	fngnod;
+extern NAMNOD	ifsnod;
+extern NAMNOD	homenod;
+extern NAMNOD	mailnod;
+extern NAMNOD	pathnod;
+extern NAMNOD	ps1nod;
+extern NAMNOD	ps2nod;
 
 /* special names */
-MSG		flagadr;
-STRING		cmdadr;
-STRING		exitadr;
-STRING		dolladr;
-STRING		pcsadr;
-STRING		pidadr;
+extern MSG	flagadr;
+extern STRING	cmdadr;
+extern STRING	exitadr;
+extern STRING	dolladr;
+extern STRING	pcsadr;
+extern STRING	pidadr;
 
-MSG		defpath;
+extern MSG	defpath;
 
 /* names always present */
-MSG		mailname;
-MSG		homename;
-MSG		pathname;
-MSG		fngname;
-MSG		ifsname;
-MSG		ps1name;
-MSG		ps2name;
+extern MSG	mailname;
+extern MSG	homename;
+extern MSG	pathname;
+extern MSG	fngname;
+extern MSG	ifsname;
+extern MSG	ps1name;
+extern MSG	ps2name;
 
 /* transput */
-CHAR		tmpout[];
-STRING		tmpnam;
-INT		serial;
+extern CHAR	tmpout[];
+extern STRING	tmpnam;
+extern INT	serial;
 #define		TMPNAM 7
-FILE		standin;
+extern FILE	standin;
 #define input	(standin->fdes)
 #define eof	(standin->feof)
-INT		peekc;
-STRING		comdiv;
-MSG		devnull;
+extern INT	peekc;
+extern STRING	comdiv;
+extern MSG	devnull;
 
 /* flags */
 #define		noexec	01
@@ -214,16 +234,16 @@ MSG		devnull;
 #define		execpr	04000
 #define		readpr	010000
 #define		keyflg	020000
-INT		flags;
+extern INT	flags;
 
 /* error exits from various parts of shell */
 #include	<setjmp.h>
-jmp_buf		subshell;
-jmp_buf		errshell;
+extern jmp_buf	subshell;
+extern jmp_buf	errshell;
 
 /* fault handling */
 #include	"brkincr.h"
-POS		brkincr;
+extern POS	brkincr;
 
 #define MINTRAP	0
 #define MAXTRAP	17
@@ -237,51 +257,51 @@ POS		brkincr;
 #define SIGSET	4
 #define SIGMOD	8
 
+#if 0 /* Superseded by the ABI prototype in proto.h. */
 VOID		fault();
-BOOL		trapnote;
-STRING		trapcom[];
-BOOL		trapflg[];
+#endif
+extern BOOL	trapnote;
+extern STRING	trapcom[];
+extern BOOL	trapflg[];
 
 /* name tree and words */
-STRING		*environ;
-CHAR		numbuf[];
-MSG		export;
-MSG		readonly;
+extern STRING	*environ;
+extern CHAR	numbuf[];
+extern MSG	export;
+extern MSG	readonly;
 
 /* execflgs */
-INT		exitval;
-BOOL		execbrk;
-INT		loopcnt;
-INT		breakcnt;
+extern INT	exitval;
+extern BOOL	execbrk;
+extern INT	loopcnt;
+extern INT	breakcnt;
 
 /* messages */
-MSG		mailmsg;
-MSG		coredump;
-MSG		badopt;
-MSG		badparam;
-MSG		badsub;
-MSG		nospace;
-MSG		notfound;
-MSG		badtrap;
-MSG		baddir;
-MSG		badshift;
-MSG		illegal;
-MSG		restricted;
-MSG		execpmsg;
-MSG		notid;
-MSG		wtfailed;
-MSG		badcreate;
-MSG		piperr;
-MSG		badopen;
-MSG		badnum;
-MSG		arglist;
-MSG		txtbsy;
-MSG		toobig;
-MSG		badexec;
-MSG		notfound;
-MSG		badfile;
+extern MSG	mailmsg;
+extern MSG	coredump;
+extern MSG	badopt;
+extern MSG	badparam;
+extern MSG	badsub;
+extern MSG	nospace;
+extern MSG	notfound;
+extern MSG	badtrap;
+extern MSG	baddir;
+extern MSG	badshift;
+extern MSG	illegal;
+extern MSG	restricted;
+extern MSG	execpmsg;
+extern MSG	notid;
+extern MSG	wtfailed;
+extern MSG	badcreate;
+extern MSG	piperr;
+extern MSG	badopen;
+extern MSG	badnum;
+extern MSG	arglist;
+extern MSG	txtbsy;
+extern MSG	toobig;
+extern MSG	badexec;
+extern MSG	badfile;
 
-address	end[];
+extern address	end[];
 
 #include	"ctype.h"
-

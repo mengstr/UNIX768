@@ -28,7 +28,7 @@ cell fldtab[MAXFLD] = {	/*room for fields */
 int	maxfld	= 0;	/* last used field */
 
 
-getrec()
+getrec(void)
 {
 	register char *rr;
 	extern int svargc;
@@ -84,7 +84,7 @@ getrec()
 	return(0);	/* true end of file */
 }
 
-setclvar(s)	/* set var=value from s */
+void setclvar(s)	/* set var=value from s */
 char *s;
 {
 	char *p;
@@ -98,7 +98,7 @@ char *s;
 	dprintf("command line set %s to |%s|\n", s, p, NULL);
 }
 
-fldbld()
+void fldbld(void)
 {
 	register char *r, *fr, sep;
 	int i, j;
@@ -149,7 +149,7 @@ fldbld()
 	donefld = 1;
 	for(i=1; i<=maxfld; i++)
 		if(isnumber(fldtab[i].sval))
-		{	fldtab[i].fval = atof(fldtab[i].sval);
+		{	fldtab[i].fval = awk_atof(fldtab[i].sval);
 			fldtab[i].tval |= NUM;
 		}
 	setfval(lookup("NF", symtab), (awkfloat) maxfld);
@@ -158,7 +158,7 @@ fldbld()
 			printf("field %d: |%s|\n", i, fldtab[i].sval);
 }
 
-recbld()
+void recbld(void)
 {
 	int i;
 	register char *r, *p;
@@ -168,7 +168,7 @@ recbld()
 	r = record;
 	for (i = 1; i <= *NF; i++) {
 		p = getsval(&fldtab[i]);
-		while (*r++ = *p++)
+		while ((*r++ = *p++))
 			;
 		*(r-1) = **OFS;
 	}
@@ -193,11 +193,16 @@ int	errorflag	= 0;
 yyerror(s) char *s; {
 	fprintf(stderr, "awk: %s near line %d\n", s, lineno);
 	errorflag = 2;
+	return(0);
 }
 
-error(f, s, a1, a2, a3, a4, a5, a6, a7) {
+void error(int f, char *s, ...) {
+	va_list args;
+
+	va_start(args, s);
 	fprintf(stderr, "awk: ");
-	fprintf(stderr, s, a1, a2, a3, a4, a5, a6, a7);
+	vfprintf(stderr, s, args);
+	va_end(args);
 	fprintf(stderr, "\n");
 	if (*NR > 0)
 		fprintf(stderr, " record number %g\n", *NR);
@@ -205,7 +210,7 @@ error(f, s, a1, a2, a3, a4, a5, a6, a7) {
 		exit(2);
 }
 
-PUTS(s) char *s; {
+void PUTS(s) char *s; {
 	dprintf("%s\n", s, NULL, NULL);
 }
 

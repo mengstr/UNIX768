@@ -1,4 +1,3 @@
-#
 /*
  * general TTY subroutines
  */
@@ -14,7 +13,17 @@
 #include "../h/reg.h"
 #include "../h/conf.h"
 
-char	partab[];
+extern char	partab[];
+
+void ioctl(void);
+void wflushtty(struct tty *tp);
+void flushtty(struct tty *tp);
+i32 ttyinput(i32 c, struct tty *tp);
+void ttyblock(struct tty *tp);
+void ttyoutput(i32 c, struct tty *tp);
+void ttrstrt(struct tty *tp);
+i32 ttstart(struct tty *tp);
+static i32 canon(struct tty *tp);
 
 
 /*
@@ -58,9 +67,8 @@ char	maptab[] ={
  * establishes a process group for distribution
  * of quits and interrupts from the tty.
  */
-ttyopen(dev, tp)
-dev_t dev;
-register struct tty *tp;
+i32
+ttyopen(i32 dev, struct tty *tp, caddr_t addr)
 {
 	register struct proc *pp;
 
@@ -72,17 +80,20 @@ register struct tty *tp;
 		if (tp->t_pgrp==0)
 			tp->t_pgrp = pp->p_pid;
 		pp->p_pgrp = tp->t_pgrp;
+	} else if (tp->t_pgrp == 0) {
+		tp->t_pgrp = pp->p_pgrp;
 	}
 	tp->t_state &= ~WOPEN;
 	tp->t_state |= ISOPEN;
+	return(0);
 }
 
 
 /*
  * set default control characters.
  */
-ttychars(tp)
-register struct tty *tp;
+void
+ttychars(register struct tty *tp)
 {
 	tun.t_intrc = CINTR;
 	tun.t_quitc = CQUIT;
@@ -97,26 +108,34 @@ register struct tty *tp;
 /*
  * clean tp on last close
  */
-ttyclose(tp)
-register struct tty *tp;
+i32
+ttyclose(struct tty *tp)
 {
 
+	if (u.u_ttyp == tp) {
+		u.u_ttyp = NULL;
+		u.u_ttyd = 0;
+		u.u_procp->p_pgrp = 0;
+	}
 	tp->t_pgrp = 0;
 	wflushtty(tp);
 	tp->t_state = 0;
+	return(0);
 }
 
 /*
  * stty/gtty writearound
  */
-stty()
+void
+stty(void)
 {
 	u.u_arg[2] = u.u_arg[1];
 	u.u_arg[1] = TIOCSETP;
 	ioctl();
 }
 
-gtty()
+void
+gtty(void)
 {
 	u.u_arg[2] = u.u_arg[1];
 	u.u_arg[1] = TIOCGETP;
@@ -128,17 +147,18 @@ gtty()
  * Check legality, execute common code, and switch out to individual
  * device routine.
  */
-ioctl()
+void ioctl()
 {
 	register struct file *fp;
 	register struct inode *ip;
 	register struct a {
-		int	fdes;
-		int	cmd;
+		i32	fdes;
+		i32	cmd;
 		caddr_t	cmarg;
 	} *uap;
 	register dev_t dev;
-	register fmt;
+	register i32 fmt;
+	extern i32 klioctl(i32, i32, caddr_t, i32);
 
 	uap = (struct a *)u.u_ap;
 	if ((fp = getf(uap->fdes)) == NULL)
@@ -157,20 +177,19 @@ ioctl()
 		u.u_error = ENOTTY;
 		return;
 	}
-	dev = (dev_t)ip->i_un.i_rdev;
+	dev = (dev_t)ip->i_un.i_special.i_rdev;
 	(*cdevsw[major(dev)].d_ioctl)(dev, uap->cmd, uap->cmarg, fp->f_flag);
 }
 
 /*
  * Common code for several tty ioctl commands
  */
-ttioccomm(com, tp, addr, dev)
-register struct tty *tp;
-caddr_t addr;
+i32
+ttioccomm(i32 com, struct tty *tp, caddr_t addr, i32 dev)
 {
-	unsigned t;
+	u16 t;
 	struct ttiocb iocb;
-	extern int nldisp;
+	extern i32 nldisp;
 
 	switch(com) {
 
@@ -285,13 +304,21 @@ caddr_t addr;
 /*
  * Wait for output to drain, then flush input waiting.
  */
-wflushtty(tp)
+void wflushtty(tp)
 register struct tty *tp;
 {
 
 	spl5();
-	while (tp->t_outq.c_cc && tp->t_state&CARR_ON) {
+	while ((tp->t_outq.c_cc || tp->t_state&BUSY) &&
+	    tp->t_state&CARR_ON) {
 		(*tp->t_oproc)(tp);
+		/*
+		 * Epoch68 KL may drain both its tty and private UART queues before
+		 * t_oproc returns.  Recheck both before sleeping so a synchronous
+		 * completion cannot create a lost wakeup.
+		 */
+		if (tp->t_outq.c_cc == 0 && (tp->t_state&BUSY) == 0)
+			continue;
 		tp->t_state |= ASLEEP;
 		sleep((caddr_t)&tp->t_outq, TTOPRI);
 	}
@@ -302,7 +329,7 @@ register struct tty *tp;
 /*
  * flush all TTY queues
  */
-flushtty(tp)
+void flushtty(tp)
 register struct tty *tp;
 {
 	register s;
@@ -330,13 +357,13 @@ register struct tty *tp;
  * It waits until a full line has been typed in cooked mode,
  * or until any character has been typed in raw mode.
  */
-canon(tp)
+static i32 canon(tp)
 register struct tty *tp;
 {
 	register char *bp;
 	char *bp1;
-	register int c;
-	int mc;
+	register i32 c;
+	i32 mc;
 
 	spl5();
 	while ((tp->t_flags&(RAW|CBREAK))==0 && tp->t_delct==0
@@ -398,11 +425,10 @@ loop:
 /*
  * block transfer input handler.
  */
-ttyrend(tp, pb, pe)
-register struct tty *tp;
-register char *pb, *pe;
+void
+ttyrend(register struct tty *tp, register char *pb, register char *pe)
 {
-	int	tandem;
+	i16	tandem;
 
 	tandem = tp->t_flags&TANDEM;
 	if (tp->t_flags&RAW) {
@@ -427,11 +453,10 @@ register char *pb, *pe;
  * The arguments are the character and the appropriate
  * tty structure.
  */
-ttyinput(c, tp)
-register c;
-register struct tty *tp;
+i32
+ttyinput(i32 c, struct tty *tp)
 {
-	register int t_flags;
+	register i32 t_flags;
 	register struct chan *cp;
 
 	tk_nin += 1;
@@ -442,39 +467,39 @@ register struct tty *tp;
 	if ((t_flags&RAW)==0) {
 		c &= 0177;
 		if (tp->t_state&TTSTOP) {
-			if (c==tun.t_startc) {
-				tp->t_state &= ~TTSTOP;
-				ttstart(tp);
-				return;
-			}
-			if (c==tun.t_stopc)
-				return;
+				if (c==tun.t_startc) {
+					tp->t_state &= ~TTSTOP;
+					ttstart(tp);
+					return(0);
+				}
+				if (c==tun.t_stopc)
+					return(0);
 			tp->t_state &= ~TTSTOP;
 			ttstart(tp);
 		} else {
-			if (c==tun.t_stopc) {
-				tp->t_state |= TTSTOP;
-				(*cdevsw[major(tp->t_dev)].d_stop)(tp);
-				return;
-			}
-			if (c==tun.t_startc)
-				return;
+				if (c==tun.t_stopc) {
+					tp->t_state |= TTSTOP;
+					(*cdevsw[major(tp->t_dev)].d_stop)(tp);
+					return(0);
+				}
+				if (c==tun.t_startc)
+					return(0);
 		}
 		if (c==tun.t_quitc || c==tun.t_intrc) {
 			flushtty(tp);
 			c = (c==tun.t_intrc) ? SIGINT:SIGQUIT;
 			if (tp->t_chan)
 				scontrol(tp->t_chan, M_SIG, c);
-			else
-				signal(tp->t_pgrp, c);
-			return;
-		}
+				else
+					signal(tp->t_pgrp, c);
+				return(0);
+			}
 		if (c=='\r' && t_flags&CRMOD)
 			c = '\n';
 	}
 	if (tp->t_rawq.c_cc>TTYHOG) {
 		flushtty(tp);
-		return;
+		return(0);
 	}
 	if (t_flags&LCASE && c>='A' && c<='Z')
 		c += 'a'-'A';
@@ -498,10 +523,11 @@ register struct tty *tp;
 /*
  * Send stop character on input overflow.
  */
-ttyblock(tp)
-register struct tty *tp;
+void
+ttyblock(register struct tty *tp)
 {
-register x;
+	register i32 x;
+
 	x = q1.c_cc + q2.c_cc;
 	if (q1.c_cc > TTYHOG) {
 		flushtty(tp);
@@ -514,6 +540,7 @@ register x;
 			ttstart(tp);
 		}
 	}
+	return;
 }
 
 /*
@@ -523,12 +550,11 @@ register x;
  * interrupt level for echoing.
  * The arguments are the character and the tty structure.
  */
-ttyoutput(c, tp)
-register c;
-register struct tty *tp;
+void
+ttyoutput(i32 c, register struct tty *tp)
 {
 	register char *colp;
-	register ctype;
+	register i16 ctype;
 
 	tk_nout += 1;
 	/*
@@ -608,10 +634,10 @@ register struct tty *tp;
 	case 3:
 		ctype = (tp->t_flags >> 8) & 03;
 		if(ctype == 1) { /* tty 37 */
-			if (*colp)
+			if (*colp) {
 				c = max(((unsigned)*colp>>4) + 3, (unsigned)6);
-		} else
-		if(ctype == 2) { /* vt05 */
+			}
+		} else if(ctype == 2) { /* vt05 */
 			c = 6;
 		}
 		*colp = 0;
@@ -655,8 +681,8 @@ register struct tty *tp;
  * The name of the routine is passed to the timeout
  * subroutine and it is called during a clock interrupt.
  */
-ttrstrt(tp)
-register struct tty *tp;
+void
+ttrstrt(register struct tty *tp)
 {
 
 	tp->t_state &= ~TIMEOUT;
@@ -669,8 +695,8 @@ register struct tty *tp;
  * from the interrupt routine to transmit the next
  * character, and after a timeout has finished.
  */
-ttstart(tp)
-register struct tty *tp;
+i32
+ttstart(struct tty *tp)
 {
 	register s;
 
@@ -678,14 +704,15 @@ register struct tty *tp;
 	if((tp->t_state&(TIMEOUT|TTSTOP|BUSY)) == 0)
 		(*tp->t_oproc)(tp);
 	splx(s);
+	return(0);
 }
 
 /*
  * Called from device's read routine after it has
  * calculated the tty-structure given as argument.
  */
-ttread(tp)
-register struct tty *tp;
+i32
+ttread(struct tty *tp)
 {
 
 	if ((tp->t_state&CARR_ON)==0)
@@ -701,8 +728,7 @@ register struct tty *tp;
  * calculated the tty-structure given as argument.
  */
 caddr_t
-ttwrite(tp)
-register struct tty *tp;
+ttwrite(struct tty *tp)
 {
 	register c;
 
@@ -711,9 +737,20 @@ register struct tty *tp;
 	while (u.u_count) {
 		spl5();
 		while (tp->t_outq.c_cc > TTHIWAT) {
-			ttstart(tp);
 			tp->t_state |= ASLEEP;
-			if (tp->t_chan) 
+			ttstart(tp);
+			/*
+			 * Epoch68 note:
+			 * klstart() is currently synchronous/polled, so it can
+			 * drain the output queue before we reach sleep().
+			 * Re-check after ttstart() to avoid sleeping after the
+			 * wakeup opportunity has already passed.
+			 */
+			if (tp->t_outq.c_cc <= TTLOWAT) {
+				tp->t_state &= ~ASLEEP;
+				break;
+			}
+			if (tp->t_chan)
 				return((caddr_t)&tp->t_outq);
 			sleep((caddr_t)&tp->t_outq, TTOPRI);
 		}
@@ -725,4 +762,3 @@ register struct tty *tp;
 	ttstart(tp);
 	return(NULL);
 }
-

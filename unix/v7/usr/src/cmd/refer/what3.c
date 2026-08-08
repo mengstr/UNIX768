@@ -21,7 +21,7 @@ if (  (pid1 = fork())  ==0)
 	fmv(fpa[RD], 0);
 	fmv(fpb[WR], 1);
 	close(fpa[WR]); close(fpb[RD]); close(fpc[RD]); close(fpc[WR]); 
-	execl("/usr/lib/refer/mkey", "mkey", "-s", 0);
+	execl("/usr/lib/refer/mkey", "mkey", "-s", (char *)0);
 	_assert(0);
 	}
 if (  (pid2 = fork()) == 0)

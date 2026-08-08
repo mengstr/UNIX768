@@ -9,6 +9,10 @@
 
 %{
 # include "ldefs.c"
+# define YYSTYPE i32
+# ifdef DEBUG
+static int freturn(int);
+# endif
 %}
 %%
 %{
@@ -42,14 +46,14 @@ lexinput:	defns delim prods end
 	;
 end:		delim | ;
 defns:	defns STR STR
-	={	scopy($2,dp);
+	={	scopy((char *)$2,dp);
 		def[dptr] = dp;
-		dp =+ slength($2) + 1;
-		scopy($3,dp);
+		dp += slength((char *)$2) + 1;
+		scopy((char *)$3,dp);
 		subs[dptr++] = dp;
 		if(dptr >= DEFSIZE)
 			error("Too many definitions");
-		dp =+ slength($3) + 1;
+		dp += slength((char *)$3) + 1;
 		if(dp >= dchar+DEFCHAR)
 			error("Definitions too long");
 		subs[dptr]=def[dptr]=0;	/* for lookup - require ending null */
@@ -89,7 +93,7 @@ r:	CHAR
 	={	$$ = mn0($1); }
 	| STR
 	={
-		p = $1;
+		p = (char *)$1;
 		i = mn0(*p++);
 		while(*p)
 			i = mn2(RSTR,i,*p++);
@@ -114,7 +118,7 @@ r:	CHAR
 			}
 		else
 			p = psave;
-		$$ = mn1(RCCL,p);
+		$$ = mn1(RCCL,(i32)p);
 		cclinter(1);
 		}
 	| CCL
@@ -209,10 +213,11 @@ r:	CHAR
 	={	$$ = mn0(RNULLS); }
 	;
 %%
-yylex(){
+int yylex(void){
 	register char *p;
 	register int c, i;
 	char  *t, *xp;
+	void *probe;
 	int n, j, k, x;
 	static int sectbegin;
 	static char token[TOKENSIZE];
@@ -237,10 +242,10 @@ yylex(){
 						sectbegin = TRUE;
 						i = treesize*(sizeof(*name)+sizeof(*left)+
 							sizeof(*right)+sizeof(*nullstr)+sizeof(*parent))+ALITTLEEXTRA;
-						c = myalloc(i,1);
-						if(c == 0)
+						probe = myalloc(i,1);
+						if(probe == 0)
 							error("Too little core for parse tree");
-						p = c;
+						p = probe;
 						cfree(p,i,1);
 						name = myalloc(treesize,sizeof(*name));
 						left = myalloc(treesize,sizeof(*left));
@@ -357,12 +362,12 @@ yylex(){
 						error("Premature eof");
 					case 's': case 'S':		/* start conditions */
 						lgate();
-						while(*p && index(*p," \t,") < 0) p++;
+						while(*p && lexindex(*p," \t,") < 0) p++;
 						n = TRUE;
 						while(n){
-							while(*p && index(*p," \t,") >= 0) p++;
+							while(*p && lexindex(*p," \t,") >= 0) p++;
 							t = p;
-							while(*p && index(*p," \t,") < 0)p++;
+							while(*p && lexindex(*p," \t,") < 0)p++;
 							if(!*p) n = FALSE;
 							*p++ = 0;
 							if (*t == 0) continue;
@@ -374,7 +379,7 @@ yylex(){
 							sname[sptr] = 0;	/* required by lookup */
 							if(sptr >= STARTSIZE)
 								error("Too many start conditions");
-							sp =+ slength(sp) + 1;
+							sp += slength(sp) + 1;
 							if(sp >= schar+STARTCHAR)
 								error("Start conditions too long");
 							}
@@ -394,7 +399,7 @@ yylex(){
 					prev = *p;
 					*p = 0;
 					bptr = p+1;
-					yylval = buf;
+					yylval = (i32)buf;
 					if(digit(buf[0]))
 						warning("Substitution strings may not begin with digits");
 					return(freturn(STR));
@@ -407,7 +412,7 @@ yylex(){
 				if(*p == 0)
 					warning("No translation given - null string assumed");
 				scopy(p,token);
-				yylval = token;
+				yylval = (i32)token;
 				prev = '\n';
 				return(freturn(STR));
 				}
@@ -518,7 +523,7 @@ yylex(){
 					if(i < 0)
 						warning("Definition %s not found",token);
 					else
-						munput('s',subs[i]);
+						munput('s',(i32)subs[i]);
 					continue;
 					}
 			case '<':		/* start condition ? */
@@ -558,7 +563,7 @@ yylex(){
 					}
 				if(slptr > slist+STARTSIZE)		/* note not packed ! */
 					error("Too many start conditions used");
-				yylval = t;
+				yylval = (i32)t;
 				x = SCON;
 				break;
 			case '"':
@@ -584,7 +589,7 @@ yylex(){
 					x = CHAR;
 					}
 				else {
-					yylval = token;
+					yylval = (i32)token;
 					x = STR;
 					}
 				break;
@@ -628,11 +633,11 @@ yylex(){
 					while(p <ccptr && scomp(token,p) != 0)p++;
 					}
 				if(p < ccptr)	/* found it */
-					yylval = p;
+					yylval = (i32)p;
 				else {
-					yylval = ccptr;
+					yylval = (i32)ccptr;
 					scopy(token,ccptr);
-					ccptr =+ slength(token) + 1;
+					ccptr += slength(token) + 1;
 					if(ccptr >= ccl+CCLSIZE)
 						error("Too many large character classes");
 					}
@@ -649,7 +654,7 @@ yylex(){
 					}
 				if(alpha(peek)){
 					i = 0;
-					yylval = token;
+					yylval = (i32)token;
 					token[i++] = c;
 					while(alpha(peek))
 						token[i++] = gch();
@@ -685,8 +690,7 @@ yylex(){
 	}
 /* end of yylex */
 # ifdef DEBUG
-freturn(i)
-  int i; {
+static int freturn(int i) {
 	if(yydebug) {
 		printf("now return ");
 		if(i < NCH) allprint(i);
@@ -694,13 +698,13 @@ freturn(i)
 		printf("   yylval = ");
 		switch(i){
 			case STR: case CCL: case NCCL:
-				strpt(yylval);
+					strpt((char *)yylval);
 				break;
 			case CHAR:
 				allprint(yylval);
 				break;
 			default:
-				printf("%d",yylval);
+					printf("%ld",yylval);
 				break;
 			}
 		putchar('\n');

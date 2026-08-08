@@ -7,8 +7,8 @@
  *	return - 0 ok  |  FAIL failed
  */
 
-xcp(f1, f2)
-char *f1, *f2;
+int
+xcp (char *f1, char *f2)
 {
 	char buf[BUFSIZ];
 	int len;
@@ -36,8 +36,8 @@ char *f1, *f2;
  *	return  0 ok  |  FAIL failed
  */
 
-xmv(f1, f2)
-char *f1, *f2;
+int
+xmv (char *f1, char *f2)
 {
 	int ret;
 

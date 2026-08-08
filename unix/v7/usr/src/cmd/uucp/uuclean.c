@@ -28,15 +28,14 @@
 #define DPREFIX "U"
 #define NOMTIME 72	/* hours to age files before deletion */
 
-main(argc, argv)
-char *argv[];
+int
+main (int argc, char *argv[])
 {
 	FILE *pdirf;
 	char file[NAMESIZE];
 	time_t nomtime, ptime;
 	struct stat stbuf;
 	int mflg=0;
-	extern int onintr();
 
 	nomtime = NOMTIME * 3600L;
 
@@ -111,8 +110,8 @@ int Npre = 0;
  *		1  -  is prefix
  */
 
-chkpre(file)
-char *file;
+int
+chkpre (char *file)
 {
 	int i;
 
@@ -130,8 +129,8 @@ char *file;
  *	return codes:  none
  */
 
-stpre(p)
-char *p;
+int
+stpre (char *p)
 {
 	if (Npre < MAXPRE - 2)
 		strcpy(Pre[Npre++], p);

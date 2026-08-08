@@ -1,0 +1,49 @@
+: run under the V7 shell if the kernel falls back to /bin/sh
+
+set -e
+
+rm -f ackcc.i ackcc.k \
+	ackcc.0.m ackcc.0.s ackcc.0.o ackcc.0.ack \
+	ackcc.1.m ackcc.1.s ackcc.1.o ackcc.1.ack \
+	ackcc.2.m ackcc.2.s ackcc.2.o ackcc.2.ack \
+	ackcc.3.m ackcc.3.s ackcc.3.o ackcc.3.ack \
+	a0.aout a1.out a2.out a3.out
+
+/local/bin/cpp -I/usr/include "$1" >ackcc.i
+/local/bin/c1 ackcc.i ackcc.k
+
+/local/bin/opt -n ackcc.k >ackcc.0.m
+/local/bin/ncg ackcc.0.m ackcc.0.s
+/local/bin/as - -o ackcc.0.o ackcc.0.s
+/local/bin/led -o ackcc.0.ack /local/lib/crt0.o ackcc.0.o /local/lib/libc.a /local/lib/end.o
+/local/bin/cv ackcc.0.ack a0.aout
+
+echo "acklevels: wrote a0.aout"
+
+/local/bin/opt ackcc.k >ackcc.1.m
+/local/bin/ncg ackcc.1.m ackcc.1.s
+/local/bin/as - -o ackcc.1.o ackcc.1.s
+/local/bin/led -o ackcc.1.ack /local/lib/crt0.o ackcc.1.o /local/lib/libc.a /local/lib/end.o
+/local/bin/cv ackcc.1.ack a1.out
+
+echo "acklevels: wrote a1.out"
+
+/local/bin/opt2 ackcc.k >ackcc.2.m
+/local/bin/ncg ackcc.2.m ackcc.2.s
+/local/bin/as - -o ackcc.2.o ackcc.2.s
+/local/bin/led -o ackcc.2.ack /local/lib/crt0.o ackcc.2.o /local/lib/libc.a /local/lib/end.o
+/local/bin/cv ackcc.2.ack a2.out
+
+echo "acklevels: wrote a2.out"
+
+if /local/bin/opt3 ackcc.k >ackcc.3.m
+then
+	/local/bin/ncg ackcc.3.m ackcc.3.s
+	/local/bin/as - -o ackcc.3.o ackcc.3.s
+	/local/bin/led -o ackcc.3.ack /local/lib/crt0.o ackcc.3.o /local/lib/libc.a /local/lib/end.o
+	/local/bin/cv ackcc.3.ack a3.out
+	echo "acklevels: wrote a3.out"
+else
+	rm -f ackcc.3.m ackcc.3.s ackcc.3.o ackcc.3.ack a3.out
+	echo "acklevels: opt3 not available, skipped a3.out"
+fi

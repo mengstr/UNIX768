@@ -4,13 +4,16 @@
 
 #define	BSIZE	512
 #include <stdio.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 struct	stat	stbuf1, stbuf2;
 char	iobuf[BSIZE];
 
-main(argc, argv)
-char *argv[];
+static i32 copy(char *from, char *to);
+
+int
+main(int argc, char *argv[])
 {
 	register i, r;
 
@@ -31,6 +34,7 @@ usage:
 	exit(1);
 }
 
+static i32
 copy(from, to)
 char *from, *to;
 {

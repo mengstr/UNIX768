@@ -13,23 +13,19 @@
  *	mail at this time.
  */
 
-sdmail(file, uid)
-char *file, *uid;
+int
+sdmail(char *file, i32 uid)
 {
 	static struct passwd *pwd;
-	struct passwd *getpwuid();
 	char mstr[40];
 
 	sprintf(mstr, "uuclean deleted file %s\n", file);
-	if (pwd->pw_uid == uid) {
-		mailst(pwd->pw_name, mstr);
-	return(0);
+	if (pwd == NULL || pwd->pw_uid != uid) {
+		setpwent();
+		pwd = getpwuid(uid);
 	}
-
-	setpwent();
-	if ((pwd = getpwuid(uid)) != NULL) {
+	if (pwd != NULL)
 		mailst(pwd->pw_name, mstr);
-	}
 	return(0);
 }
 
@@ -42,11 +38,10 @@ char *file, *uid;
  *	a mail command sending string (str) to user (user).
  */
 
-mailst(user, str)
-char *user, *str;
+int
+mailst (char *user, char *str)
 {
 	FILE *fp;
-	extern FILE *popen(), *pclose();
 	char cmd[100];
 
 	sprintf(cmd, "mail %s", user);

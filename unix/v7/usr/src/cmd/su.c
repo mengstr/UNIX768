@@ -1,14 +1,16 @@
 #include <stdio.h>
 #include <pwd.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
 
-struct	passwd *pwd,*getpwnam();
-char	*crypt();
-char	*getpass();
-char	**environ;
+struct passwd *pwd, *getpwnam(char *name);
+char *crypt(char *key, char *salt);
+char *getpass(char *prompt);
+extern char	**environ;
 
-main(argc,argv)
-int	argc;
-char	**argv;
+int
+main (int argc, char **argv)
 {
 	register char **p;
 	char *nptr;
@@ -44,7 +46,7 @@ ok:
 			break;
 		}
 	}
-	execl(shell, "su", 0);
+	execl(shell, "su", (char *)0);
 	printf("No shell\n");
 	exit(3);
 }

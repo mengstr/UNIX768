@@ -14,6 +14,7 @@
 
 %{
 #include <stdio.h>
+#include <unistd.h>
 
 #define MAXLIN 350
 #define MAXPOS 4000
@@ -23,7 +24,7 @@
 char gotofn[NSTATES][NCHARS];
 int state[NSTATES];
 char out[NSTATES];
-int line 1;
+int line = 1;
 int name[MAXLIN];
 int left[MAXLIN];
 int right[MAXLIN];
@@ -32,7 +33,7 @@ int foll[MAXLIN];
 int positions[MAXPOS];
 char chars[MAXLIN];
 int nxtpos;
-int nxtchar 0;
+int nxtchar = 0;
 int tmpstat[MAXLIN];
 int initstat[MAXLIN];
 int xstate;
@@ -55,60 +56,81 @@ long	tln;
 int	nsucc;
 
 int	f;
-int	fname;
+char	*fname;
+
+int yyerror(char *s);
+int yylex(void);
+int yyparse(void);
+static int nextch(void);
+static int synerror(void);
+static int enter(int x);
+static int cclenter(int x);
+static int node(int x, int l, int r);
+static int unary(int x, int d);
+static int overflo(void);
+static int cfoll(int v);
+static int cgotofn(void);
+static int cstate(int v);
+static int member(int symb, int set, int torf);
+static int notin(int n);
+static int add(int *array, int n);
+static int follow(int v);
+static int execute(char *file);
 %}
 
 %%
 s:	t
-		={ unary(FINAL, $1);
+		{ unary(FINAL, $1);
 		  line--;
 		}
 	;
 t:	b r
-		={ $$ = node(CAT, $1, $2); }
+		{ $$ = node(CAT, $1, $2); }
 	| OR b r OR
-		={ $$ = node(CAT, $2, $3); }
+		{ $$ = node(CAT, $2, $3); }
 	| OR b r
-		={ $$ = node(CAT, $2, $3); }
+		{ $$ = node(CAT, $2, $3); }
 	| b r OR
-		={ $$ = node(CAT, $1, $2); }
+		{ $$ = node(CAT, $1, $2); }
 	;
 b:
-		={ $$ = enter(DOT);
+		{ $$ = enter(DOT);
 		   $$ = unary(STAR, $$); }
 	;
 r:	CHAR
-		={ $$ = enter($1); }
+		{ $$ = enter($1); }
 	| DOT
-		={ $$ = enter(DOT); }
+		{ $$ = enter(DOT); }
 	| CCL
-		={ $$ = cclenter(CCL); }
+		{ $$ = cclenter(CCL); }
 	| NCCL
-		={ $$ = cclenter(NCCL); }
+		{ $$ = cclenter(NCCL); }
 	;
 
 r:	r OR r
-		={ $$ = node(OR, $1, $3); }
+		{ $$ = node(OR, $1, $3); }
 	| r r %prec CAT
-		={ $$ = node(CAT, $1, $2); }
+		{ $$ = node(CAT, $1, $2); }
 	| r STAR
-		={ $$ = unary(STAR, $1); }
+		{ $$ = unary(STAR, $1); }
 	| r PLUS
-		={ $$ = unary(PLUS, $1); }
+		{ $$ = unary(PLUS, $1); }
 	| r QUEST
-		={ $$ = unary(QUEST, $1); }
+		{ $$ = unary(QUEST, $1); }
 	| '(' r ')'
-		={ $$ = $2; }
-	| error 
+		{ $$ = $2; }
+	| error
 	;
 
 %%
-yyerror(s) {
+int
+yyerror (char *s) {
 	fprintf(stderr, "egrep: %s\n", s);
 	exit(2);
 }
 
-yylex() {
+int
+yylex (void) {
 	extern int yylval;
 	int cclcnt, x;
 	register char c, d;
@@ -125,7 +147,7 @@ yylex() {
 		case '.': return (DOT);
 		case '\0': return (0);
 		case '\n': return (OR);
-		case '[': 
+		case '[':
 			x = CCL;
 			cclcnt = 0;
 			count = nxtchar++;
@@ -158,7 +180,8 @@ yylex() {
 		default: yylval = c; return (CHAR);
 	}
 }
-nextch() {
+static int
+nextch (void) {
 	register char c;
 	if (fflag) {
 		if ((c = getc(stdin)) == EOF) return(0);
@@ -167,12 +190,14 @@ nextch() {
 	return(c);
 }
 
-synerror() {
+static int
+synerror (void) {
 	fprintf(stderr, "egrep: syntax error\n");
 	exit(2);
 }
 
-enter(x) int x; {
+static int
+enter (int x) {
 	if(line >= MAXLIN) overflo();
 	name[line] = x;
 	left[line] = 0;
@@ -180,14 +205,16 @@ enter(x) int x; {
 	return(line++);
 }
 
-cclenter(x) int x; {
+static int
+cclenter (int x) {
 	register linno;
 	linno = enter(x);
 	right[linno] = count;
 	return (linno);
 }
 
-node(x, l, r) {
+static int
+node (int x, int l, int r) {
 	if(line >= MAXLIN) overflo();
 	name[line] = x;
 	left[line] = l;
@@ -197,7 +224,8 @@ node(x, l, r) {
 	return(line++);
 }
 
-unary(x, d) {
+static int
+unary (int x, int d) {
 	if(line >= MAXLIN) overflo();
 	name[line] = x;
 	left[line] = d;
@@ -205,12 +233,14 @@ unary(x, d) {
 	parent[d] = line;
 	return(line++);
 }
-overflo() {
+static int
+overflo (void) {
 	fprintf(stderr, "egrep: regular expression too long\n");
 	exit(2);
 }
 
-cfoll(v) {
+static int
+cfoll (int v) {
 	register i;
 	if (left[v] == 0) {
 		count = 0;
@@ -224,7 +254,8 @@ cfoll(v) {
 		cfoll(right[v]);
 	}
 }
-cgotofn() {
+static int
+cgotofn (void) {
 	register c, i, k;
 	int n, s;
 	char symbol[NCHARS];
@@ -318,7 +349,8 @@ cgotofn() {
 	}
 }
 
-cstate(v) {
+static int
+cstate (int v) {
 	register b;
 	if (left[v] == 0) {
 		if (tmpstat[v] != 1) {
@@ -344,7 +376,8 @@ cstate(v) {
 }
 
 
-member(symb, set, torf) {
+static int
+member (int symb, int set, int torf) {
 	register i, num, pos;
 	num = chars[set];
 	pos = set + 1;
@@ -353,7 +386,8 @@ member(symb, set, torf) {
 	return (!torf);
 }
 
-notin(n) {
+static int
+notin (int n) {
 	register i, j, pos;
 	for (i=0; i<=n; i++) {
 		if (positions[state[i]] == count) {
@@ -368,7 +402,8 @@ notin(n) {
 	return (1);
 }
 
-add(array, n) int *array; {
+static int
+add (int *array, int n) {
 	register i;
 	if (nxtpos + count > MAXPOS) overflo();
 	array[n] = nxtpos;
@@ -380,7 +415,8 @@ add(array, n) int *array; {
 	}
 }
 
-follow(v) int v; {
+static int
+follow (int v) {
 	int p;
 	if (v == line) return;
 	p = parent[v];
@@ -411,8 +447,8 @@ follow(v) int v; {
 }
 
 
-main(argc, argv)
-char **argv;
+int
+main (int argc, char **argv)
 {
 	while (--argc > 0 && (++argv)[0][0]=='-')
 		switch (argv[0][1]) {
@@ -487,8 +523,8 @@ out:
 	exit(nsucc == 0);
 }
 
-execute(file)
-char *file;
+static int
+execute (char *file)
 {
 	register char *p;
 	register cstat;

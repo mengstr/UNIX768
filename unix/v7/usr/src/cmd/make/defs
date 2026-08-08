@@ -1,5 +1,11 @@
 #include <stdio.h>
 #include <ctype.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <time.h>
+#include <pwd.h>
+#include <signal.h>
 
 #define SHELLCOM "/bin/sh"
 typedef long int TIMETYPE;
@@ -122,7 +128,48 @@ struct chain
 	char *datap;
 	};
 
-char *copys(), *concat(), *subst(), *sprintf();
-int *ckalloc();
-struct nameblock *srchname(), *makename();
-TIMETYPE exists();
+char *copys(register char *s);
+char *concat(register char *a, register char *b, char *c);
+char *subst(register char *a, register char *b);
+int *ckalloc(register int n);
+struct nameblock *srchname(char *s);
+struct nameblock *makename(char *s);
+TIMETYPE exists(char *filename);
+TIMETYPE prestime(void);
+struct depblock *srchdir(register char *pat, int mkchain,
+    struct depblock *nextdbl);
+int meter(char *file);
+TIMETYPE lookarch(char *filename);
+int clarch(void);
+int openarch(register char *f);
+int getarch(void);
+int getobj(void);
+int eqstr(register char *a, register char *b, int n);
+int eqsign(char *a);
+int doname(register struct nameblock *p, int reclevel, TIMETYPE *tval);
+int docom(struct shblock *q);
+int docom1(register char *comstring, int nohalt, int noprint);
+int expand(register struct depblock *q);
+int dosys(register char *comstring, int nohalt);
+int metas(register char *s);
+int doshell(char *comstring, int nohalt);
+int await(void);
+int doclose(void);
+int doexec(register char *str);
+int touch(int force, char *name);
+int hashloc(char *s);
+int hasslash(char *s);
+int setvar(char *v, char *s);
+struct varblock *varptr(char *v);
+int suffix(register char *a, register char *b, register char *p);
+int fatal1(char *s, char *t);
+int fatal(char *s);
+struct chain *appendq(struct chain *head, char *tail);
+char *mkqlist(struct chain *p);
+int rddescf(char *descfile);
+int printdesc(int prntflag);
+int isprecious(char *p);
+void enbint(sighandler_t k);
+int rdd1(FILE *file);
+int yyparse(void);
+int yyerror(char *s);

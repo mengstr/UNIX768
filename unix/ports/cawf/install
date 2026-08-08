@@ -1,0 +1,19 @@
+set -e
+
+if test "x$ROOT" = x
+then
+	ROOT=
+fi
+if test ! -d $ROOT/local/bin
+then
+	mkdir $ROOT/local/bin
+fi
+if test ! -d $ROOT/usr/lib/cawf
+then
+	mkdir $ROOT/usr/lib/cawf
+fi
+cp cawf $ROOT/local/bin/cawf
+cp man.mac me.mac ms.mac common $ROOT/usr/lib/cawf/
+cp dumb.dev device.cf $ROOT/usr/lib/cawf/
+chmod 0755 $ROOT/local/bin/cawf
+chmod 0644 $ROOT/usr/lib/cawf/*

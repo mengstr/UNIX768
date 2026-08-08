@@ -1,19 +1,19 @@
 %Start A str chc sc reg comment
 
 %{
-#include	"awk.h"
 #include	"awk.def"
+#include	"awk.h"
 #undef	input	/* defeat lex */
-extern int	yylval;
+extern long	yylval;
 extern int	mustfld;
 
-int	lineno	1;
+int	lineno	= 1;
 #ifdef	DEBUG
 #	define	RETURN(x)	{if (dbg) ptoken(x); return(x); }
 #else
 #	define	RETURN(x)	return(x)
 #endif
-#define	CADD	cbuf[clen++]=yytext[0]; if(clen>=CBUFLEN-1) {yyerror("string too long", cbuf); BEGIN A;}
+#define	CADD	cbuf[clen++]=yytext[0]; if(clen>=CBUFLEN-1) {yyerror("string too long"); BEGIN A;}
 #define	CBUFLEN	150
 char	cbuf[CBUFLEN];
 int	clen, cflag;
@@ -73,7 +73,7 @@ WS	[ \t]
 <A>"$"{WS}*	{ RETURN(INDIRECT); }
 <A>NF		{ mustfld=1; yylval = setsymtab(yytext, NULL, 0.0, NUM, symtab); RETURN(VAR); }
 <A>({D}+("."?){D}*|"."{D}+)((e|E)("+"|-)?{D}+)?	{
-		yylval = setsymtab(yytext, NULL, atof(yytext), CON|NUM, symtab); RETURN(NUMBER); }
+		yylval = setsymtab(yytext, NULL, awk_atof(yytext), CON|NUM, symtab); RETURN(NUMBER); }
 <A>"}"{WS}*\n	{ BEGIN sc; lineno++; RETURN(';'); }
 <A>"}"		{ BEGIN sc; RETURN(';'); }
 <A>;\n		{ lineno++; RETURN(';'); }
@@ -163,7 +163,7 @@ input()
 	return(c);
 }
 
-startreg()
+void startreg()
 {
 	BEGIN reg;
 }

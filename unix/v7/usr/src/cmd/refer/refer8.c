@@ -1,7 +1,8 @@
 # include "refer..c"
 static char ahead[1000];
-static int peeked 0;
-static int noteof 1;
+static int peeked = 0;
+static int noteof = 1;
+char *
 input (s)
 	char *s;
 {
@@ -14,15 +15,18 @@ if (peeked)
 	}
 return(fgets(s, 1000, in));
 }
-lookat()
+char *
+lookat(void)
 {
 if (peeked) return(ahead);
-noteof=input(ahead);
+noteof=(input(ahead) != 0);
 peeked=1;
-return(noteof);
+return(noteof ? ahead : 0);
 }
+void
 addch(s, c)
 	char *s;
+	int c;
 {
 while (*s) s++;
 *s++ = c;

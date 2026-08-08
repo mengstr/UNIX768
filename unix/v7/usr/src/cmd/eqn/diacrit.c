@@ -1,7 +1,8 @@
 # include "e.h"
 # include "e.def"
 
-diacrit(p1, type) int p1, type; {
+void
+diacrit(int p1, int type) {
 	int c, t, effps;
 
 	c = oalloc();

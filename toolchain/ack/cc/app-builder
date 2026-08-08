@@ -1,0 +1,227 @@
+#!/bin/sh
+
+script_dir=`CDPATH=; cd \`dirname "$0"\` && pwd`
+project_root=`CDPATH=; cd "$script_dir/../../.." && pwd`
+cc_bin="$script_dir/cc"
+build_dir="$project_root/build/toolchain/ack/apps"
+out_dir="$build_dir/apps"
+log_dir="$build_dir/apps-logs"
+report="$build_dir/apps-report.txt"
+ramdisk_root="$project_root/build/ramdisk"
+stage_root="$ramdisk_root"
+tar_name=ackapps.tar
+tar_path="$ramdisk_root/dist/$tar_name"
+
+opt=-O2
+strip=-s
+make_tar=yes
+if [ "$ACK_NO_TAR" = 1 ]; then
+	make_tar=no
+fi
+
+usage() {
+	cat <<EOF
+usage: app-builder [app ...]
+
+Build ACK versions of selected single-source V7 utilities.
+With no app names, builds the current broad single-source pass.
+
+Output:
+  $out_dir
+  $log_dir
+  $report
+  $stage_root
+  $tar_path
+EOF
+	exit 1
+}
+
+find_src() {
+	case "$1" in
+		init) echo "unix/v7/usr/src/cmd/init.c" ;;
+		getty) echo "unix/v7/usr/src/cmd/getty.c" ;;
+		login) echo "unix/v7/usr/src/cmd/login.c" ;;
+		cat) echo "unix/v7/usr/src/cmd/cat.c" ;;
+		echo) echo "unix/v7/usr/src/cmd/echo.c" ;;
+		osh) echo "unix/v7/usr/src/cmd/osh.c" ;;
+		rx) echo "unix/v7/usr/src/cmd/rx.c" ;;
+		stty) echo "unix/v7/usr/src/cmd/stty.c" ;;
+		ls) echo "unix/v7/usr/src/cmd/ls.c" ;;
+		id) echo "unix/v7/usr/src/cmd/id.c" ;;
+		who) echo "unix/v7/usr/src/cmd/who.c" ;;
+		chmod) echo "unix/v7/usr/src/cmd/chmod.c" ;;
+		chown) echo "unix/v7/usr/src/cmd/chown.c" ;;
+		chgrp) echo "unix/v7/usr/src/cmd/chgrp.c" ;;
+		mkdir) echo "unix/v7/usr/src/cmd/mkdir.c" ;;
+		rmdir) echo "unix/v7/usr/src/cmd/rmdir.c" ;;
+		mknod) echo "unix/v7/usr/src/cmd/mknod.c" ;;
+		rm) echo "unix/v7/usr/src/cmd/rm.c" ;;
+		ln) echo "unix/v7/usr/src/cmd/ln.c" ;;
+		cp) echo "unix/v7/usr/src/cmd/cp.c" ;;
+		mv) echo "unix/v7/usr/src/cmd/mv.c" ;;
+		pwd) echo "unix/v7/usr/src/cmd/pwd.c" ;;
+		tar) echo "unix/v7/usr/src/cmd/tar/tar.c" ;;
+		glob) echo "unix/v7/usr/src/cmd/glob.c" ;;
+		date) echo "unix/v7/usr/src/cmd/date.c" ;;
+		time) echo "unix/v7/usr/src/cmd/time.c" ;;
+		sync) echo "unix/v7/usr/src/cmd/sync.c" ;;
+		kill) echo "unix/v7/usr/src/cmd/kill.c" ;;
+		update) echo "unix/v7/usr/src/cmd/update.c" ;;
+		dd) echo "unix/v7/usr/src/cmd/dd.c" ;;
+		df) echo "unix/v7/usr/src/cmd/df.c" ;;
+		du) echo "unix/v7/usr/src/cmd/du.c" ;;
+		fsck) echo "unix/v7/usr/src/cmd/fsck.c" ;;
+		od) echo "unix/v7/usr/src/cmd/od.c" ;;
+		mkfs) echo "unix/v7/usr/src/cmd/mkfs.c" ;;
+		mount) echo "unix/v7/usr/src/cmd/mount.c" ;;
+		umount) echo "unix/v7/usr/src/cmd/umount.c" ;;
+		ps) echo "unix/v7/usr/src/cmd/ps.c" ;;
+		ed) echo "unix/v7/usr/src/cmd/ed.c" ;;
+		grep) echo "unix/v7/usr/src/cmd/grep.c" ;;
+		wc) echo "unix/v7/usr/src/cmd/wc.c" ;;
+		cmp) echo "unix/v7/usr/src/cmd/cmp.c" ;;
+		diff) echo "unix/v7/usr/src/cmd/diff.c" ;;
+		sort) echo "unix/v7/usr/src/cmd/sort.c" ;;
+		uniq) echo "unix/v7/usr/src/cmd/uniq.c" ;;
+		tr) echo "unix/v7/usr/src/cmd/tr.c" ;;
+		tee) echo "unix/v7/usr/src/cmd/tee.c" ;;
+		tail) echo "unix/v7/usr/src/cmd/tail.c" ;;
+		test) echo "unix/v7/usr/src/cmd/test.c" ;;
+		sleep) echo "unix/v7/usr/src/cmd/sleep.c" ;;
+		wump) echo "unix/v7/usr/src/games/wump.c" ;;
+		write) echo "unix/v7/usr/src/cmd/write.c" ;;
+		wall) echo "unix/v7/usr/src/cmd/wall.c" ;;
+		mesg) echo "unix/v7/usr/src/cmd/mesg.c" ;;
+		passwd) echo "unix/v7/usr/src/cmd/passwd.c" ;;
+		su) echo "unix/v7/usr/src/cmd/su.c" ;;
+		srec2aout) echo "unix/v7/usr/src/cmd/srec2aout.c" ;;
+		*) return 1 ;;
+	esac
+}
+
+install_path() {
+	case "$1" in
+		init) echo "/etc/init" ;;
+		getty) echo "/etc/getty" ;;
+		login) echo "/bin/login" ;;
+		chown) echo "/etc/chown" ;;
+		chgrp) echo "/etc/chgrp" ;;
+		glob) echo "/etc/glob" ;;
+		update) echo "/etc/update" ;;
+		fsck) echo "/etc/fsck" ;;
+		mkfs) echo "/etc/mkfs" ;;
+		mount) echo "/etc/mount" ;;
+		umount) echo "/etc/umount" ;;
+		wall) echo "/etc/wall" ;;
+		wump) echo "/usr/games/wump" ;;
+		srec2aout) echo "/usr/bin/srec2aout" ;;
+		*) echo "/bin/$1" ;;
+	esac
+}
+
+install_mode() {
+	case "$1" in
+		mkdir|rmdir|mv) echo "4755" ;;
+		passwd) echo "4755" ;;
+		su) echo "4755" ;;
+		ps) echo "2755" ;;
+		*) echo "0755" ;;
+	esac
+}
+
+host_mode() {
+	case "$1" in
+		[234567][0-7][0-7][0-7]) echo "0755" ;;
+		*) echo "$1" ;;
+	esac
+}
+
+default_apps="cat echo osh init getty login rx stty ls chmod chown chgrp mkdir rmdir mknod rm ln cp mv tar glob date sync kill update dd df du fsck od mkfs mount umount ps sleep"
+
+case "$1" in
+	-h|--help)
+		usage
+		;;
+esac
+
+if [ $# -gt 0 ]; then
+	apps="$*"
+else
+	apps="$default_apps"
+fi
+
+cd "$project_root" || exit 1
+
+make -C toolchain/ack -f Makefile.libc ack-runtime >/dev/null || exit 1
+mkdir -p "$out_dir" "$log_dir" "$stage_root" "$ramdisk_root/dist" || exit 1
+
+mkdir -p \
+	"$stage_root/bin" \
+	"$stage_root/etc" \
+	"$stage_root/usr" || exit 1
+
+{
+	printf 'ACK V7 app-builder report\n'
+	printf 'compiler=%s\n' "$cc_bin"
+	printf 'output=%s\n' "$out_dir"
+	printf 'stage_root=%s\n' "$stage_root"
+	printf '\n'
+} > "$report"
+
+ok_count=0
+fail_count=0
+skip_count=0
+ok_paths=
+
+for app in $apps; do
+	src=`find_src "$app"` || {
+		printf 'SKIP   %s no source mapping\n' "$app" | tee -a "$report"
+		skip_count=`expr "$skip_count" + 1`
+		continue
+	}
+	if [ ! -f "$src" ]; then
+		printf 'SKIP   %s missing %s\n' "$app" "$src" | tee -a "$report"
+		skip_count=`expr "$skip_count" + 1`
+		continue
+	fi
+
+	log="$log_dir/$app.log"
+	out="$out_dir/$app"
+	install=`install_path "$app"`
+	mode=`install_mode "$app"`
+	stage_mode=`host_mode "$mode"`
+	stage="$stage_root$install"
+	extra_cflags_var="APP_CFLAGS_$app"
+	eval "extra_cflags=\${$extra_cflags_var-}"
+	printf 'CC     %s\n' "$app"
+	if "$cc_bin" "$opt" "$strip" $extra_cflags -o "$out" "$src" >"$log" 2>&1; then
+		mkdir -p "`dirname "$stage"`" || exit 1
+		cp "$out" "$stage" || exit 1
+		chmod "$stage_mode" "$stage" || exit 1
+		size=`wc -c < "$out" | tr -d ' 	'`
+		printf 'OK     %s size=%s install=%s mode=%s\n' "$app" "$size" "$install" "$mode" | tee -a "$report"
+		ok_count=`expr "$ok_count" + 1`
+		ok_paths="$ok_paths `echo "$install" | sed 's,^/,,'`"
+	else
+		printf 'FAIL   %s log=%s\n' "$app" "$log" | tee -a "$report"
+		sed -n '/^Undefined:/,/^Warning:/p' "$log" | sed 's/^/       /' >> "$report"
+		fail_count=`expr "$fail_count" + 1`
+	fi
+done
+
+if [ "$ok_count" -gt 0 ] && [ "$make_tar" = yes ]; then
+	(
+		cd "$stage_root" || exit 1
+		COPYFILE_DISABLE=1 tar --format ustar --uid 0 --gid 1 -cf "$tar_path" $ok_paths
+	) || exit 1
+	printf 'tar=%s\n' "$tar_path" >> "$report"
+	printf 'TAR    %s\n' "$tar_path"
+fi
+
+{
+	printf '\n'
+	printf 'summary ok=%s fail=%s skip=%s\n' "$ok_count" "$fail_count" "$skip_count"
+} >> "$report"
+
+printf 'DONE   %s\n' "$report"
+exit 0

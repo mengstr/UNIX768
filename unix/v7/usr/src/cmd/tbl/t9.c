@@ -1,7 +1,10 @@
  /* t9.c: write lines for tables over 200 lines */
 # include "t..c"
-static useln;
-yetmore()
+static int useln;
+static int domore(char *);
+
+void
+yetmore(void)
 {
 for(useln=0; useln<MAXLIN && table[useln]==0; useln++);
 if (useln>=MAXLIN)
@@ -16,6 +19,7 @@ while (gets1(cstore=cspace) && domore(cstore))
 last =cstore;
 return;
 }
+static int
 domore(dataln)
 	char *dataln;
 {
@@ -27,7 +31,8 @@ if (dataln[0] == '.' && !isdigit(dataln[1]))
 	puts(dataln);
 	return(1);
 	}
-instead[0]=fullbot[0]=0;
+instead[0]=0;
+fullbot[0]=0;
 if (dataln[1]==0)
 switch(dataln[0])
 	{

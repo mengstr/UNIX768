@@ -1,7 +1,8 @@
 # include "e.h"
 # include "e.def"
 
-integral(p, p1, p2) {
+void
+integral(int p, int p1, int p2) {
 #ifndef	NEQN
 	if (p1 != 0)
 		printf(".ds %d \\h'-0.4m'\\v'0.4m'\\*(%d\\v'-0.4m'\n", p1, p1);
@@ -19,12 +20,13 @@ integral(p, p1, p2) {
 	lfont[p] = ROM;
 }
 
-setintegral() {
+void
+setintegral(void) {
 	char *f;
 
 	yyval = oalloc();
 	f = "\\(is";
-	printf(".ds %d %s\n", yyval, f);
+	printf(".ds %d %s\n", YV, f);
 	eht[yyval] = VERT(2);
 	ebase[yyval] = 0;
 	lfont[yyval] = rfont[yyval] = ROM;

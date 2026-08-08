@@ -1,0 +1,17 @@
+set -e
+
+if test "x$ROOT" = x
+then
+	ROOT=
+fi
+if test ! -d $ROOT/bin
+then
+	mkdir $ROOT/bin
+fi
+if test ! -d $ROOT/usr/lib/refer
+then
+	mkdir $ROOT/usr/lib/refer
+fi
+cp refer $ROOT/bin/refer
+cp mkey inv hunt $ROOT/usr/lib/refer/
+chmod 0755 $ROOT/bin/refer $ROOT/usr/lib/refer/*

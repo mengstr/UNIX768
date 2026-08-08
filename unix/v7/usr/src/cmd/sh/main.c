@@ -14,6 +14,9 @@
 #include	<sys/types.h>
 #include	<sys/stat.h>
 #include	<sgtty.h>
+#include	<sys/inttypes.h>
+
+extern i32 errno;
 
 UFD		output = 2;
 LOCAL BOOL	beenhere = FALSE;
@@ -22,7 +25,7 @@ FILEBLK		stdfile;
 FILE		standin = &stdfile;
 #include	<execargs.h>
 
-PROC VOID	exfile();
+LOCAL VOID	exfile(int);
 
 
 
@@ -36,6 +39,7 @@ main(c, v)
 	/* initialise storage allocation */
 	stdsigs();
 	setbrk(BRKINCR);
+	initblok();
 	addblok((POS)0);
 
 	/* set names from userenv */
@@ -94,7 +98,9 @@ BOOL		prof;
 {
 	REG L_INT	mailtime = 0;
 	REG INT		userid;
+	REG INT		gout, gin;
 	struct stat	statb;
+	struct sgttyb	ttyb;
 
 	/* move input */
 	IF input>0
@@ -109,9 +115,11 @@ BOOL		prof;
 	FI
 
 	userid=getuid();
+	gout = gtty(output,&ttyb);
+	gin = gtty(input,&ttyb);
 
 	/* decide whether interactive */
-	IF (flags&intflg) ORF ((flags&oneflg)==0 ANDF gtty(output,&statb)==0 ANDF gtty(input,&statb)==0)
+	IF (flags&intflg) ORF ((flags&oneflg)==0 ANDF gout==0 ANDF gin==0)
 	THEN	dfault(&ps1nod, (userid?stdprompt:supprompt));
 		dfault(&ps2nod, readmsg);
 		flags |= ttyflg|prompt; ignsig(KILL);
@@ -140,13 +148,12 @@ BOOL		prof;
 			mailtime=statb.st_mtime;
 			prs(ps1nod.namval); alarm(TIMEOUT); flags |= waiting;
 		FI
-
 		trapnote=0; peekc=readc();
 		IF eof
 		THEN	return;
 		FI
 		alarm(0); flags &= ~waiting;
-		execute(cmd(NL,MTFLG),0);
+		execute(cmd(NL,MTFLG),0,0,0);
 		eof |= (flags&oneflg);
 	POOL
 }
@@ -165,10 +172,11 @@ settmp()
 	tmpnam=movstr(numbuf,&tmpout[TMPNAM]);
 }
 
+VOID
 Ldup(fa, fb)
-	REG INT		fa, fb;
+		REG i32		fa, fb;
 {
-	dup(fa|DUPFLG, fb);
+	dup2(fa, fb);
 	close(fa);
 	ioctl(fb, FIOCLEX, 0);
 }

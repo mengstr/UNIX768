@@ -1,0 +1,42 @@
+cp cmd/init $1/etc/init.new
+chmod 0755 $1/etc/init.new
+ln $1/etc/init $1/tmp/init.$$
+mv $1/etc/init.new $1/etc/init
+rm -f $1/tmp/init.$$
+cp cmd/osh $1/bin/osh.new
+chmod 0755 $1/bin/osh.new
+ln $1/bin/osh $1/tmp/osh.$$
+mv $1/bin/osh.new $1/bin/osh
+rm -f $1/tmp/osh.$$
+rm -f $1/etc/chown $1/etc/chgrp $1/etc/clri $1/etc/dcheck
+rm -f $1/etc/icheck $1/etc/ncheck $1/etc/quot $1/bin/mknod
+cp cmd/getty cmd/update cmd/glob cmd/mknod cmd/mkfs cmd/fsck $1/etc
+cp cmd/mount cmd/umount $1/etc
+chmod 0755 $1/etc/getty $1/etc/update $1/etc/glob
+chmod 0755 $1/etc/mknod $1/etc/mkfs $1/etc/fsck $1/etc/mount $1/etc/umount
+cp cmd/login cmd/cat cmd/echo cmd/ls cmd/chmod $1/bin
+cp cmd/mkdir cmd/rmdir cmd/rm cmd/rx cmd/ln $1/bin
+cp cmd/mv cmd/pwd cmd/date cmd/sync cmd/dd cmd/df cmd/du $1/bin
+cp cmd/od cmd/ps cmd/chown cmd/chgrp cmd/clri cmd/dcheck $1/bin
+cp cmd/icheck cmd/ncheck cmd/quot $1/bin
+chmod 0755 $1/bin/login $1/bin/cat $1/bin/echo $1/bin/ls
+chmod 0755 $1/bin/chmod $1/bin/mkdir $1/bin/rmdir
+chmod 0755 $1/bin/rm $1/bin/rx $1/bin/ln $1/bin/mv $1/bin/pwd
+chmod 0755 $1/bin/date $1/bin/sync $1/bin/dd $1/bin/df $1/bin/du
+chmod 0755 $1/bin/od $1/bin/ps $1/bin/chown $1/bin/chgrp
+chmod 0755 $1/bin/clri $1/bin/dcheck $1/bin/icheck $1/bin/ncheck $1/bin/quot
+cp cmd/tar/tar $1/bin/tar
+chmod 0755 $1/bin/tar
+cp cmd/pack/pack cmd/pack/pcat $1/local/bin
+cp cmd/md5 cmd/instar $1/local/bin
+cp cmd/shutdown/shutdown $1/local/bin
+chmod 0755 $1/local/bin/pack $1/local/bin/pcat $1/local/bin/shutdown
+chmod 0755 $1/local/bin/md5 $1/local/bin/instar
+cp termcap $1/etc/termcap
+chmod 0644 $1/etc/termcap
+cp rc ttys passwd group motd utmp $1/etc
+chmod 0755 $1/etc/rc
+cp cmd/cp $1/bin/cp.new
+chmod 0755 $1/bin/cp.new
+mv $1/bin/cp.new $1/bin/cp
+echo install.base: complete

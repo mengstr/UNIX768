@@ -1,6 +1,7 @@
  /* tc.c: find character not in table to delimit fields */
 # include "t..c"
-choochar()
+void
+choochar(void)
 {
 /* choose funny characters to delimit fields */
 int had[128], ilin,icol, k;
@@ -54,7 +55,9 @@ if (F1==0 || F2==0)
 	error("couldn't find characters to use for delimiters");
 return;
 }
+int
 point(s)
+	char *s;
 {
-return(s>= 128 || s<0);
+return((unsigned long)s >= 128UL);
 }

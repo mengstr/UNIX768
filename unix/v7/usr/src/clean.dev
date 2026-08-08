@@ -1,0 +1,5 @@
+make -f ack/Makefile.v7 SRC=$1 BUILD=$1/tmp/ack clean
+rm 68kasm/68kasm
+rm 68kasm/srec2aout
+rm 68kasm/*.o
+echo clean.dev: complete

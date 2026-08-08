@@ -2,15 +2,18 @@
  * kill - send signal to process
  */
 
+#include <stdio.h>
 #include <signal.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <unistd.h>
 
-main(argc, argv)
-char **argv;
+int
+main(int argc, char **argv)
 {
 	register signo, pid, res;
 	int errlev;
 	extern char *sys_errlist[];
-	extern errno;
 
 	errlev = 0;
 	if (argc <= 1) {

@@ -6,6 +6,10 @@
 #include "../h/user.h"
 #include "../h/buf.h"
 
+i32 nodev(i32 dev, i32 flag, caddr_t addr, i32 arg);
+i32 nulldev(i32 dev, i32 flag, caddr_t addr, i32 arg);
+void bcopy(char *from, char *to, i32 count);
+
 /*
  * Bmap defines the structure of file system storage
  * by returning the physical block number on a device given the
@@ -18,10 +22,11 @@ daddr_t
 bmap(ip, bn, rwflg)
 register struct inode *ip;
 daddr_t bn;
+i32 rwflg;
 {
-	register i;
+	register i32 i;
 	struct buf *bp, *nbp;
-	int j, sh;
+	i32 j, sh;
 	daddr_t nb, *bap;
 	dev_t dev;
 
@@ -37,17 +42,17 @@ daddr_t bn;
 	 */
 	if(bn < NADDR-3) {
 		i = bn;
-		nb = ip->i_un.i_addr[i];
+		nb = ip->i_un.i_file.i_addr[i];
 		if(nb == 0) {
 			if(rwflg==B_READ || (bp = alloc(dev))==NULL)
 				return((daddr_t)-1);
 			nb = bp->b_blkno;
 			bdwrite(bp);
-			ip->i_un.i_addr[i] = nb;
+			ip->i_un.i_file.i_addr[i] = nb;
 			ip->i_flag |= IUPD|ICHG;
 		}
 		if(i < NADDR-4)
-			rablock = ip->i_un.i_addr[i+1];
+			rablock = ip->i_un.i_file.i_addr[i+1];
 		return(nb);
 	}
 
@@ -75,13 +80,13 @@ daddr_t bn;
 	/*
 	 * fetch the address from the inode
 	 */
-	nb = ip->i_un.i_addr[NADDR-j];
+	nb = ip->i_un.i_file.i_addr[NADDR-j];
 	if(nb == 0) {
 		if(rwflg==B_READ || (bp = alloc(dev))==NULL)
 			return((daddr_t)-1);
 		nb = bp->b_blkno;
 		bdwrite(bp);
-		ip->i_un.i_addr[NADDR-j] = nb;
+		ip->i_un.i_file.i_addr[NADDR-j] = nb;
 		ip->i_flag |= IUPD|ICHG;
 	}
 
@@ -125,18 +130,20 @@ daddr_t bn;
  * on the last character of the user's read.
  * u_base is in the user address space unless u_segflg is set.
  */
+i32
 passc(c)
-register c;
+i32 c;
 {
-	register id;
+	register i32 id;
 
 	if((id = u.u_segflg) == 1)
 		*u.u_base = c;
-	else
-		if(id?suibyte(u.u_base, c):subyte(u.u_base, c) < 0) {
+	else {
+		if((id ? suibyte(u.u_base, c) : subyte(u.u_base, c)) < 0) {
 			u.u_error = EFAULT;
 			return(-1);
 		}
+	}
 	u.u_count--;
 	u.u_offset++;
 	u.u_base++;
@@ -150,19 +157,21 @@ register c;
  * when u_count is exhausted.  u_base is in the user's
  * address space unless u_segflg is set.
  */
+i32
 cpass()
 {
-	register c, id;
+	register i32 c, id;
 
 	if(u.u_count == 0)
 		return(-1);
 	if((id = u.u_segflg) == 1)
 		c = *u.u_base;
-	else
+	else {
 		if((c = id==0?fubyte(u.u_base):fuibyte(u.u_base)) < 0) {
 			u.u_error = EFAULT;
 			return(-1);
 		}
+	}
 	u.u_count--;
 	u.u_offset++;
 	u.u_base++;
@@ -173,26 +182,36 @@ cpass()
  * Routine which sets a user error; placed in
  * illegal entries in the bdevsw and cdevsw tables.
  */
-nodev()
+i32 nodev(dev, flag, addr, arg)
+i32 dev;
+i32 flag;
+caddr_t addr;
+i32 arg;
 {
 
 	u.u_error = ENODEV;
+	return(-1);
 }
 
 /*
  * Null routine; placed in insignificant entries
  * in the bdevsw and cdevsw tables.
  */
-nulldev()
+i32 nulldev(dev, flag, addr, arg)
+i32 dev;
+i32 flag;
+caddr_t addr;
+i32 arg;
 {
+	return(0);
 }
 
 /*
  * copy count bytes from from to to.
  */
-bcopy(from, to, count)
+void bcopy(from, to, count)
 caddr_t from, to;
-register count;
+i32 count;
 {
 	register char *f, *t;
 

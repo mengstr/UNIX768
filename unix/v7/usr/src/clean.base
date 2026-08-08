@@ -1,0 +1,8 @@
+cd cmd
+rm -f init osh getty update glob login cat echo ls chmod mkdir rmdir
+rm -f mknod rm rx ln cp mv pwd md5 instar date sync dd df du od ps
+rm -f chown chgrp mkfs fsck clri dcheck icheck ncheck quot mount umount
+rm -f tar/tar pack/pack pack/pcat
+rm -f shutdown/shutdown shutdown/shutdown.o shutdown/shutdown-main.o
+rm -f *.o tar/*.o pack/*.o shutdown/*.o
+echo clean.base: complete

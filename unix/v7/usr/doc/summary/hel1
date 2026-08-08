@@ -767,19 +767,3 @@ of files known to system software.
 Boot and maintenance procedures.
 .sh MAN
 Print specified manual section on your terminal.
-.NH 2
-Computer-Aided Instruction
-.LP
-.sh LEARN
-A program for interpreting CAI scripts, plus scripts
-for learning about 
-.UC UNIX
-by using it.
-.op
-Scripts for basic files and commands,
-editor,
-advanced files and commands,
-.UC EQN ,
-.UC MS
-macros,
-C programming language.

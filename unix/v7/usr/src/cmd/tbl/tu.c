@@ -1,6 +1,8 @@
  /* tu.c: draws horizontal lines */
 # include "t..c"
+void
 makeline(i,c,lintype)
+	int i, c, lintype;
 {
 int cr, type, shortl;
 type = thish(i,c);
@@ -14,7 +16,9 @@ else
 	for(cr=c+1; cr<ncol && ctype(i,cr)=='s'; cr++);
 drawline(i, c, cr-1, lintype, 0, shortl);
 }
+void
 fullwide(i, lintype)
+	int i, lintype;
 {
 int cr, cl;
 if (!pr1403)
@@ -36,10 +40,13 @@ if (!pr1403)
 	fprintf(tabout, ".vs \\n(%du\n", SVS);
 }
 
+void
 drawline(i, cl, cr, lintype, noheight, shortl)
+	int i, cl, cr, lintype, noheight, shortl;
 {
 	char *exhr, *exhl;
-	int lcount, ln, linpos, oldpos, nodata, lnch;
+	int lcount, ln, linpos, oldpos, nodata;
+	char *lnch;
 lcount=0;
 exhr=exhl= "";
 switch(lintype)
@@ -127,7 +134,8 @@ if (oldpos!=0)
 if (!nodata)
 	fprintf(tabout, "\\v'+.5m'");
 }
-getstop()
+void
+getstop(void)
 {
 int i,c,k,junk, stopp;
 stopp=1;
@@ -143,7 +151,9 @@ for(i=0; i<nlin; i++)
 if (boxflg || allflg || dboxflg)
 	linestop[0]=1;
 }
+int
 left(i,c, lwidp)
+	int i, c;
 	int *lwidp;
 {
 int kind, li, lj;
@@ -167,7 +177,9 @@ for(i= i+1; i<li; i++)
 		li=i;
 return(li);
 }
+int
 lefdata(i,c)
+	int i, c;
 {
 int ck;
 if (i>=nlin) i=nlin-1;
@@ -185,7 +197,9 @@ if (allflg)return(1);
 if (boxflg && c==0) return(1);
 return(0);
 }
+int
 next(i)
+	int i;
 {
 while (i+1 <nlin)
 	{
@@ -194,7 +208,9 @@ while (i+1 <nlin)
 	}
 return(i);
 }
+int
 prev(i)
+	int i;
 {
 while (--i >=0  && (fullbot[i] || instead[i]))
 	;

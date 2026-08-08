@@ -6,6 +6,8 @@
 #include "../h/user.h"
 #include "../h/buf.h"
 
+i32 schar(void);
+
 /*
  * Convert a pathname into a pointer to
  * an inode. Note that the inode is locked.
@@ -18,14 +20,13 @@
  *	2 if name is to be deleted
  */
 struct inode *
-namei(func, flag)
-int (*func)();
+namei(i32 (*func)(void), i32 flag)
 {
 	register struct inode *dp;
-	register c;
+	register i32 c;
 	register char *cp;
 	struct buf *bp;
-	int i;
+	i32 i;
 	dev_t d;
 	off_t eo;
 
@@ -35,9 +36,14 @@ int (*func)();
 	 */
 
 	dp = u.u_cdir;
-	if((c=(*func)()) == '/')
+	c = (*func)();
+	if(func == uchar) {
+	}
+	if(c == '/')
 		if ((dp = u.u_rdir) == NULL)
 			dp = rootdir;
+	if(func == uchar) {
+	}
 	iget(dp->i_dev, dp->i_number);
 	while(c == '/')
 		c = (*func)();
@@ -71,6 +77,8 @@ cloop:
 	}
 	while(cp < &u.u_dbuf[DIRSIZ])
 		*cp++ = '\0';
+	if(func == uchar) {
+	}
 	while(c == '/')
 		c = (*func)();
 	if (c == '!' && mpxip != NULL) {
@@ -86,9 +94,14 @@ seloop:
 	 * must have X permission.
 	 */
 
-	if((dp->i_mode&IFMT) != IFDIR)
+	if((dp->i_mode&IFMT) != IFDIR) {
+		if(func == uchar) {
+		}
 		u.u_error = ENOTDIR;
-	access(dp, IEXEC);
+	}
+
+
+	(void)access(dp, IEXEC);
 	if(u.u_error)
 		goto out;
 
@@ -161,6 +174,8 @@ eloop:
 	for(i=0; i<DIRSIZ; i++)
 		if(u.u_dbuf[i] != u.u_dent.d_name[i])
 			goto eloop;
+	if(func == uchar) {
+	}
 
 	/*
 	 * Here a component matched in a directory.
@@ -176,18 +191,21 @@ eloop:
 		return(dp);
 	}
 	d = dp->i_dev;
-	if(u.u_dent.d_ino == ROOTINO)
-	if(dp->i_number == ROOTINO)
-	if(u.u_dent.d_name[1] == '.')
-		for(i=1; i<NMOUNT; i++)
-			if(mount[i].m_bufp != NULL)
-			if(mount[i].m_dev == d) {
-				iput(dp);
-				dp = mount[i].m_inodp;
-				dp->i_count++;
-				plock(dp);
-				goto seloop;
+	if(u.u_dent.d_ino == ROOTINO) {
+		if(dp->i_number == ROOTINO) {
+			if(u.u_dent.d_name[1] == '.') {
+				for(i=1; i<NMOUNT; i++)
+					if(mount[i].m_bufp != NULL)
+					if(mount[i].m_dev == d) {
+						iput(dp);
+						dp = mount[i].m_inodp;
+						dp->i_count++;
+						plock(dp);
+						goto seloop;
+					}
 			}
+		}
+	}
 	iput(dp);
 	dp = iget(d, u.u_dent.d_ino);
 	if(dp == NULL)
@@ -203,9 +221,9 @@ out:
  * Return the next character from the
  * kernel string pointed at by dirp.
  */
+i32
 schar()
 {
-
 	return(*u.u_dirp++ & 0377);
 }
 
@@ -213,9 +231,9 @@ schar()
  * Return the next character from the
  * user string pointed at by dirp.
  */
-uchar()
+i32 uchar()
 {
-	register c;
+	register i32 c;
 
 	c = fubyte(u.u_dirp++);
 	if(c == -1)

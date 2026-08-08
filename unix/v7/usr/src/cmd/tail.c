@@ -12,13 +12,16 @@
 #include	<sys/types.h>
 #include	<sys/stat.h>
 #include	<errno.h>
+#include	<string.h>
+#include	<unistd.h>
 #define LBIN 4097
 struct	stat	statb;
 char bin[LBIN];
-int errno;
 
-main(argc,argv)
-char **argv;
+static i32 digit(i32 c);
+
+int
+main(int argc, char **argv)
 {
 	long n,di;
 	register i,j,k;
@@ -178,7 +181,9 @@ errcom:
 	exit(1);
 }
 
+static i32
 digit(c)
+i32 c;
 {
 	return(c>='0'&&c<='9');
 }

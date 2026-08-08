@@ -3,11 +3,14 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/inttypes.h>
 
 #define	L	512
 #define	N	7
 #define	C	20
-#define	MEM	(16*2048)
+#define	MEM	32768UL
 #define NF	10
 
 FILE	*is, *os;
@@ -21,10 +24,11 @@ unsigned	nlines;
 unsigned	ntext;
 int	*lspace;
 char	*tspace;
-int	cmp(), cmpa();
-int	(*compare)() = cmpa;
-char	*eol();
-int	term();
+static i32	cmp(char *i, char *j);
+static i32	cmpa(char *pa, char *pb);
+static i32	(*compare)(char *, char *) = cmpa;
+static char	*eol(char *p);
+static i32	term(void);
 int 	mflg;
 int	cflg;
 int	uflg;
@@ -161,14 +165,28 @@ struct field proto = {
 	0,-1,
 	0,0
 };
+struct merg;
 int	nfields;
 int 	error = 1;
-char	*setfil();
-char	*sbrk();
-char	*brk();
+static char	*setfil(i32 i);
+static void sort(void);
+static void merge(i32 a, i32 b);
+static i32 rline(struct merg *mp);
+static void disorder(char *s, char *t);
+static void newfile(void);
+static void oldfile(void);
+static void safeoutfil(void);
+static void cant(char *f);
+static void diag(char *s, char *t);
+static char *skip(char *pp, struct field *fp, i32 j);
+static void copyproto(void);
+static void field(char *s, i32 k);
+static i32 number(char **ppa);
+static i32 blank(i32 c);
+static void sort_qsort(char **a, char **l);
 
-main(argc, argv)
-char **argv;
+int
+main(int argc, char **argv)
 {
 	register a;
 	extern char end[1];
@@ -237,7 +255,7 @@ char **argv;
 
 	ep = end + MEM;
 	lspace = (int *)sbrk(0);
-	while((int)brk(ep) == -1)
+	while(brk(ep) == -1)
 		ep -= 512;
 	brk(ep -= 512);	/* for recursion */
 	a = ep - (char*)lspace;
@@ -259,11 +277,11 @@ char **argv;
 		exit(1);
 	}
 	close(a);
-	signal(SIGHUP, term);
+	signal(SIGHUP, (sighandler_t)term);
 	if (signal(SIGINT, SIG_IGN) != SIG_IGN)
-		signal(SIGINT, term);
-	signal(SIGPIPE,term);
-	signal(SIGTERM,term);
+		signal(SIGINT, (sighandler_t)term);
+	signal(SIGPIPE, (sighandler_t)term);
+	signal(SIGTERM, (sighandler_t)term);
 	nfiles = eargc;
 	if(!mflg && !cflg) {
 		sort();
@@ -284,6 +302,7 @@ char **argv;
 	term();
 }
 
+static void
 sort()
 {
 	register char *cp;
@@ -325,7 +344,7 @@ sort()
 			}
 			c = getc(is);
 		}
-		qsort((char **)lspace, lp);
+		sort_qsort((char **)lspace, lp);
 		if(done == 0 || nfiles != eargc)
 			newfile();
 		else
@@ -347,7 +366,9 @@ struct merg
 	FILE	*b;
 } *ibuf[256];
 
+static void
 merge(a,b)
+i32 a, b;
 {
 	struct	merg	*p;
 	register char	*cp, *dp;
@@ -373,7 +394,7 @@ merge(a,b)
 
 	do {
 		i = j;
-		qsort((char **)ibuf, (char **)(ibuf+i));
+		sort_qsort((char **)ibuf, (char **)(ibuf+i));
 		l = 0;
 		while(i--) {
 			cp = ibuf[i]->l;
@@ -441,6 +462,7 @@ merge(a,b)
 	fclose(os);
 }
 
+static i32
 rline(mp)
 struct merg *mp;
 {
@@ -463,6 +485,7 @@ struct merg *mp;
 	return(0);
 }
 
+static void
 disorder(s,t)
 char *s, *t;
 {
@@ -473,6 +496,7 @@ char *s, *t;
 	term();
 }
 
+static void
 newfile()
 {
 	register char *f;
@@ -485,8 +509,9 @@ newfile()
 	nfiles++;
 }
 
-char *
+static char *
 setfil(i)
+i32 i;
 {
 
 	if(i < eargc)
@@ -500,6 +525,7 @@ setfil(i)
 	return(file);
 }
 
+static void
 oldfile()
 {
 
@@ -512,6 +538,7 @@ oldfile()
 		os = stdout;
 }
 
+static void
 safeoutfil()
 {
 	register int i;
@@ -530,6 +557,7 @@ safeoutfil()
 	}
 }
 
+static void
 cant(f)
 char *f;
 {
@@ -538,6 +566,7 @@ char *f;
 	term();
 }
 
+static void
 diag(s,t)
 char *s, *t;
 {
@@ -547,7 +576,8 @@ char *s, *t;
 	fputs("\n",stderr);
 }
 
-term()
+static i32
+term(void)
 {
 	register i;
 
@@ -562,11 +592,11 @@ term()
 	exit(error);
 }
 
+static i32
 cmp(i, j)
 char *i, *j;
 {
 	register char *pa, *pb;
-	char *skip();
 	char *code, *ignore;
 	int a, b;
 	int k;
@@ -658,6 +688,7 @@ loop:
 	return(cmpa(i, j));
 }
 
+static i32
 cmpa(pa, pb)
 register char *pa, *pb;
 {
@@ -674,10 +705,11 @@ register char *pa, *pb;
 	);
 }
 
-char *
+static char *
 skip(pp, fp, j)
 struct field *fp;
 char *pp;
+i32 j;
 {
 	register i;
 	register char *p;
@@ -714,7 +746,7 @@ ret:
 	return(p);
 }
 
-char *
+static char *
 eol(p)
 register char *p;
 {
@@ -722,6 +754,7 @@ register char *p;
 	return(p);
 }
 
+static void
 copyproto()
 {
 	register i;
@@ -733,8 +766,10 @@ copyproto()
 		*q++ = *p++;
 }
 
+static void
 field(s,k)
 char *s;
+i32 k;
 {
 	register struct field *p;
 	register d;
@@ -795,6 +830,7 @@ char *s;
 	}
 }
 
+static i32
 number(ppa)
 char **ppa;
 {
@@ -809,7 +845,9 @@ char **ppa;
 	return(n);
 }
 
+static i32
 blank(c)
+i32 c;
 {
 	if(c==' ' || c=='\t')
 		return(1);
@@ -819,7 +857,8 @@ blank(c)
 #define qsexc(p,q) t= *p;*p= *q;*q=t
 #define qstexc(p,q,r) t= *p;*p= *r;*r= *q;*q=t
 
-qsort(a,l)
+static void
+sort_qsort(a,l)
 char **a, **l;
 {
 	register char **i, **j;
@@ -883,10 +922,10 @@ loop:
 			if(uflg)
 				for(k=lp+1; k<=hp;) **k++ = '\0';
 			if(lp-a >= l-hp) {
-				qsort(hp+1, l);
+				sort_qsort(hp+1, l);
 				l = lp;
 			} else {
-				qsort(a, lp);
+				sort_qsort(a, lp);
 				a = hp+1;
 			}
 			goto start;
@@ -898,4 +937,3 @@ loop:
 		j = --hp;
 	}
 }
-

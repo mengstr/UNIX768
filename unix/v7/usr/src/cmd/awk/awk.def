@@ -1,3 +1,12 @@
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <ctype.h>
+#include <unistd.h>
+#include <time.h>
+
 #define	xfree(a)	{ if(a!=NULL) yfree(a); a=NULL;}
 #define yfree free
 #ifdef	DEBUG
@@ -31,7 +40,9 @@ typedef struct val {	/* general value during processing */
 	struct val	*nextval;	/* ptr to next if chained */
 } cell;
 extern cell *symtab[];
-cell	*setsymtab(), *lookup(), **makesymtab();
+cell	*setsymtab(char *, char *, awkfloat, unsigned, cell **);
+cell	*lookup(char *, cell **);
+cell	**makesymtab(void);
 
 extern cell	*recloc;	/* location of input record */
 extern cell	*nrloc;		/* NR */
@@ -43,10 +54,13 @@ extern cell	*nfloc;		/* NF */
 #define	CON	010	/* this is a constant */
 #define	ARR	020	/* this is an array */
 
-awkfloat setfval(), getfval();
-char	*setsval(), *getsval();
-char	*tostring(), *tokname(), *malloc();
-double	log(), sqrt(), exp(), atof();
+awkfloat setfval(cell *, awkfloat);
+awkfloat getfval(cell *);
+char	*setsval(cell *, char *);
+char	*getsval(cell *);
+char	*tostring(char *);
+char	*tokname(int);
+awkfloat awk_atof(char *);
 
 /* function types */
 #define	FLENGTH	1
@@ -61,12 +75,12 @@ typedef struct {
 	cell *optr;
 } obj;
 
-#define BOTCH	1
+#define BOTCH	4
 struct nd {
 	char ntype;
 	char subtype;
 	struct nd *nnext;
-	int nobj;
+	long nobj;
 	struct nd *narg[BOTCH];	/* C won't take a zero length array */
 };
 typedef struct nd node;
@@ -102,7 +116,7 @@ extern node	*nullstat;
 #define NEXPR	3
 #define NPA2	4
 
-extern obj	(*proctab[])();
+extern obj	(*proctab[])(node **, int);
 extern obj	true, false;
 extern int	pairstack[], paircnt;
 
@@ -119,8 +133,76 @@ extern int	pairstack[], paircnt;
 #define istemp(n)	(n.otype == OCELL && n.osub == CTEMP)
 #define isfld(n)	(!donefld && n.osub==CFLD && n.otype==OCELL && n.optr->nval==0)
 #define isrec(n)	(donefld && n.osub==CFLD && n.otype==OCELL && n.optr->nval!=0)
-obj	nullproc();
-obj	relop();
+/* Parser construction. */
+node	*exptostat(node *);
+node	*node0(long);
+node	*node1(int, node *);
+node	*node2(int, node *, node *);
+node	*node3(int, node *, node *, node *);
+node	*node4(int, node *, node *, node *, node *);
+node	*stat1(int, node *);
+node	*stat2(int, node *, node *);
+node	*stat3(int, node *, node *, node *);
+node	*stat4(int, node *, node *, node *, node *);
+node	*op1(int, node *);
+node	*op2(int, node *, node *);
+node	*op3(int, node *, node *, node *);
+node	*valtonode(cell *, int);
+node	*genjump(int);
+node	*pa2stat(node *, node *, node *);
+node	*linkum(node *, node *);
+node	*genprint(void);
+
+/* Scanner, regular expression, input, and symbol-table support. */
+int	yylex(void);
+int	yyparse(void);
+int	yyerror(char *);
+int	yywrap(void);
+void	error(int, char *, ...);
+int	getrec(void);
+void	setclvar(char *);
+void	fldbld(void);
+void	recbld(void);
+cell	*fieldadr(int);
+int	isnumber(char *);
+struct fa;
+struct fa	*makedfa(node *);
+char	*cclenter(char *);
+int	member(int, char *);
+int	match(struct fa *, char *);
+void	startreg(void);
+int	ptoken(int);
+void	PUTS(char *);
+void	syminit(void);
+void	freesymtab(cell *);
+
+/* Interpreter operations, referenced by the generated dispatch table. */
+int	run(void);
+obj	program(node **, int);
+obj	array(node **, int);
+obj	matchop(node **, int);
+obj	boolop(node **, int);
+obj	relop(node **, int);
+obj	indirect(node **, int);
+obj	substr(node **, int);
+obj	sindex(node **, int);
+obj	asprintf(node **, int);
+obj	arith(node **, int);
+obj	incrdecr(node **, int);
+obj	assign(node **, int);
+obj	cat(node **, int);
+obj	pastat(node **, int);
+obj	dopa2(node **, int);
+obj	aprintf(node **, int);
+obj	split(node **, int);
+obj	ifstat(node **, int);
+obj	whilestat(node **, int);
+obj	forstat(node **, int);
+obj	instat(node **, int);
+obj	jump(node **, int);
+obj	fncn(node **, int);
+obj	print(node **, int);
+obj	nullproc(node **, int);
 
 #define MAXSYM	16
 #define	HAT	0177	/* matches ^ in regular expr */

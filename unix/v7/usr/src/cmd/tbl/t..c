@@ -1,7 +1,9 @@
 /* t..c : external declarations */
 
-# include "stdio.h"
-# include "ctype.h"
+# include <stdio.h>
+# include <ctype.h>
+# include <stdlib.h>
+# include <string.h>
 
 # define MAXLIN 200
 # define MAXHEAD 30
@@ -43,7 +45,7 @@ extern char *exstore, *exlim;
 extern int sep[];
 extern int used[], lused[], rused[];
 extern int linestop[];
-extern int leftover;
+extern char *leftover;
 extern char *last, *ifile;
 extern int texname;
 extern int texct, texmax;
@@ -52,6 +54,75 @@ extern int linstart;
 
 
 extern FILE *tabin, *tabout;
+
+int swapin(void);
+void error(char *);
+int gets1(char *);
+void un1getc(int);
+int get1char(void);
+void tableput(void);
+void getcomm(void);
+void getspec(void);
+void readspec(void);
+void gettbl(void);
+int vspand(int, int, int);
+int vspen(char *);
+void maktab(void);
+int filler(char *);
+void runout(void);
+void runtabs(int, int);
+int ifline(char *);
+void need(void);
+void putline(int, int);
+void putfont(char *);
+void putsize(char *);
+void yetmore(void);
+void checkuse(void);
+int real(char *);
+char *chspace(void);
+struct colstr *alocv(int);
+void release(void);
+void choochar(void);
+int point(char *);
+void savefill(void);
+void rstofill(void);
+void endoff(void);
+void ifdivert(void);
+void saveline(void);
+void restline(void);
+void cleanfc(void);
+char *gettext(char *, int, int, char *, char *);
+void untext(void);
+int interv(int, int);
+int interh(int, int);
+char *maknew(char *);
+int match(char *, char *);
+int prefix(char *, char *);
+int letter(int);
+int numb(char *);
+int digit(int);
+int max(int, int);
+void tcopy(char *, char *);
+int ctype(int, int);
+int min(int, int);
+int fspan(int, int);
+int lspan(int, int);
+int ctspan(int, int);
+void tohcol(int);
+int allh(int);
+int thish(int, int);
+void makeline(int, int, int);
+void fullwide(int, int);
+void drawline(int, int, int, int, int, int);
+void getstop(void);
+int left(int, int, int *);
+int lefdata(int, int);
+int next(int);
+int prev(int);
+void drawvert(int, int, int, int);
+int barent(char *);
+
+# define PTRVAL(p) ((int)(long)(p))
 # define CRIGHT 80
 # define CLEFT 40
 # define CMID 60

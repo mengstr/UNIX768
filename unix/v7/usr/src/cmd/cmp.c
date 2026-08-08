@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <ctype.h>
+#include <unistd.h>
 
 FILE	*file1,*file2;
 int	eflg;
@@ -9,10 +10,10 @@ long	chr	= 0;
 long	skip1;
 long	skip2;
 
-long	otoi();
+long	otoi(char *s);
 
-main(argc, argv)
-char **argv;
+int
+main(int argc, char **argv)
 {
 	register c1, c2;
 	char *arg;

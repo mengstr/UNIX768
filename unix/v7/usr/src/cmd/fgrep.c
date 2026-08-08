@@ -8,6 +8,7 @@
  */
 
 #include <stdio.h>
+#include <unistd.h>
 
 #define	MAXSIZ 6000
 #define QSIZE 400
@@ -30,8 +31,14 @@ long	tln;
 FILE	*wordf;
 char	*argptr;
 
-main(argc, argv)
-char **argv;
+int execute(char *file);
+int getargc(void);
+int cgotofn(void);
+int overflo(void);
+int cfail(void);
+
+int
+main (int argc, char **argv)
 {
 	while (--argc > 0 && (++argv)[0][0]=='-')
 		switch (argv[0][1]) {
@@ -109,8 +116,8 @@ out:
 	exit(nsucc == 0);
 }
 
-execute(file)
-char *file;
+int
+execute (char *file)
 {
 	register char *p;
 	register struct words *c;
@@ -222,7 +229,8 @@ char *file;
 	}
 }
 
-getargc()
+int
+getargc (void)
 {
 	register c;
 	if (wordf)
@@ -232,7 +240,8 @@ getargc()
 	return(c);
 }
 
-cgotofn() {
+int
+cgotofn (void) {
 	register c;
 	register struct words *s;
 
@@ -295,11 +304,13 @@ nword:	for(;;) {
 		goto nword;
 }
 
-overflo() {
+int
+overflo (void) {
 	fprintf(stderr, "wordlist too large\n");
 	exit(2);
 }
-cfail() {
+int
+cfail (void) {
 	struct words *queue[QSIZE];
 	struct words **front, **rear;
 	struct words *state;

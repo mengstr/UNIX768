@@ -1,11 +1,14 @@
  /* tm.c: split numerical fields */
 # include "t..c"
+static int ineqn(char *, char *);
+
+char *
 maknew(str)
 	char *str;
 {
 	/* make two numerical fields */
-	int dpoint, c;
-	char *p, *q, *ba;
+	int c;
+	char *p, *q, *ba, *dpoint;
 	p = str;
 	for (ba= 0; c = *str; str++)
 		if (c == '\\' && *(str+1)== '&')
@@ -43,6 +46,7 @@ maknew(str)
 	*p = 0;
 	return(q);
 	}
+static int
 ineqn (s, p)
 	char *s, *p;
 {

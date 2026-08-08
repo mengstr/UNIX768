@@ -1,0 +1,21 @@
+cp cmd/yacc/yacc $1/bin/yacc
+chmod 0755 $1/bin/yacc
+cp lib/yaccpar $1/usr/lib/yaccpar
+chmod 0644 $1/usr/lib/yaccpar
+cp cmd/make/make $1/bin/make
+cp cmd/m4/m4 $1/bin/m4
+cp ar/ar $1/bin/ar
+cp ar/ar $1/bin/ranlib
+cp cmd/lex/lex $1/bin/lex
+cp cmd/awk/awk $1/bin/awk
+cp cmd/dc/dc $1/bin/dc
+cp cmd/size cmd/nm cmd/strip cmd/expr cmd/bc cmd/cb $1/bin
+chmod 0755 $1/bin/make $1/bin/m4 $1/bin/ar $1/bin/ranlib
+chmod 0755 $1/bin/lex $1/bin/awk $1/bin/dc
+chmod 0755 $1/bin/size $1/bin/nm $1/bin/strip
+chmod 0755 $1/bin/expr $1/bin/bc $1/bin/cb
+cp cmd/lex/libln.a $1/lib/libln.a
+chmod 0644 $1/lib/libln.a
+cp lib/lex/ncform $1/usr/lib/lex/ncform
+chmod 0644 $1/usr/lib/lex/ncform
+echo install.tools: complete

@@ -1,6 +1,9 @@
 /*	join F1 F2 on stuff */
 
 #include	<stdio.h>
+#include	<stdlib.h>
+#include	<string.h>
+#include	<unistd.h>
 #define F1 0
 #define F2 1
 #define	NFLD	20	/* max field per line */
@@ -22,13 +25,17 @@ int	unpub1;
 int	unpub2;
 int	aflg;
 
-main(argc, argv)
-char *argv[];
+static i32 input(i32 n);
+static void output(i32 on1, i32 on2);
+static void error(char *s1, char *s2, char *s3, char *s4, char *s5);
+static i32 cmp(char *s1, char *s2);
+
+int
+main(int argc, char *argv[])
 {
 	int i;
 	int n1, n2;
 	long top2, bot2;
-	long ftell();
 
 	while (argc > 1 && argv[1][0] == '-') {
 		if (argv[1][1] == '\0')
@@ -85,7 +92,8 @@ char *argv[];
 	for (i = 0; i < no; i++)
 		olist[i]--;	/* 0 origin */
 	if (argc != 3)
-		error("usage: join [-j1 x -j2 y] [-o list] file1 file2");
+		error("usage: join [-j1 x -j2 y] [-o list] file1 file2",
+			NULL, NULL, NULL, NULL);
 	j1--;
 	j2--;	/* everyone else believes in 0 origin */
 	s1 = ppi[F1][j1];
@@ -93,9 +101,9 @@ char *argv[];
 	if (argv[1][0] == '-')
 		f[F1] = stdin;
 	else if ((f[F1] = fopen(argv[1], "r")) == NULL)
-		error("can't open %s", argv[1]);
+		error("can't open %s", argv[1], NULL, NULL, NULL);
 	if ((f[F2] = fopen(argv[2], "r")) == NULL)
-		error("can't open %s", argv[2]);
+		error("can't open %s", argv[2], NULL, NULL, NULL);
 
 #define get1() n1=input(F1)
 #define get2() n2=input(F2)
@@ -139,7 +147,9 @@ char *argv[];
 	return(0);
 }
 
+static i32
 input(n)		/* get input line and split into fields */
+i32 n;
 {
 	register int i, c;
 	char *bp;
@@ -167,8 +177,9 @@ input(n)		/* get input line and split into fields */
 	return(i);
 }
 
+static void
 output(on1, on2)	/* print items from olist */
-int on1, on2;
+i32 on1, on2;
 {
 	int i;
 	char *temp;
@@ -198,8 +209,8 @@ int on1, on2;
 	}
 }
 
-error(s1, s2, s3, s4, s5)
-char *s1;
+static void
+error(char *s1, char *s2, char *s3, char *s4, char *s5)
 {
 	fprintf(stderr, "join: ");
 	fprintf(stderr, s1, s2, s3, s4, s5);
@@ -207,6 +218,7 @@ char *s1;
 	exit(1);
 }
 
+static i32
 cmp(s1, s2)
 char *s1, *s2;
 {

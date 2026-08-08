@@ -1,5 +1,29 @@
 %{
-	int *getout();
+#include <signal.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+typedef char *bc_value;
+
+static int cpeek(int, int, int);
+static int getch(void);
+static bc_value bundle(int, ...);
+static void routput(bc_value);
+static void output(bc_value);
+static void conout(bc_value, bc_value);
+static void pp(bc_value);
+static void tp(bc_value);
+static void yyinit(int, char **);
+static void getout(void);
+static bc_value getf(bc_value);
+static bc_value geta(bc_value);
+
+int yylex(void);
+int yyerror(char *);
+int yyparse(void);
+extern bc_value yylval;
 %}
 %right '='
 %left '+' '-'
@@ -15,22 +39,21 @@
 %term QSTR
 
 %{
-#include <stdio.h>
-int in;
-char cary[1000], *cp = { cary };
-char string[1000], *str = {string};
-int crs = '0';
-int rcrs = '0';  /* reset crs */
-int bindx = 0;
-int lev = 0;
-int ln;
-char *ss;
-int bstack[10] = { 0 };
-char *numb[15] = {
+static FILE *in;
+static char cary[1000], *cp = cary;
+static char string[1000], *str = string;
+static int crs = '0';
+static int rcrs = '0';  /* reset crs */
+static int bindx = 0;
+static int lev = 0;
+static int ln;
+static char *ss;
+static int bstack[10] = { 0 };
+static char *numb[15] = {
   " 0", " 1", " 2", " 3", " 4", " 5",
   " 6", " 7", " 8", " 9", " 10", " 11",
   " 12", " 13", " 14" };
-int *pre, *post;
+static bc_value pre, post;
 %}
 %%
 start	: 
@@ -283,9 +306,9 @@ constant:
 	  '_'
 		={ $$ = cp; *cp++ = '_'; }
 	|  DIGIT
-		={ $$ = cp; *cp++ = $1; }
+		={ $$ = cp; *cp++ = *$1; }
 	|  constant DIGIT
-		={ *cp++ = $2; }
+		={ *cp++ = *$2; }
 	;
 
 CRS	:
@@ -300,8 +323,8 @@ CRS	:
 
 def	:  _DEFINE LETTER '('
 		={	$$ = getf($2);
-			pre = "";
-			post = "";
+			pre = (bc_value)"";
+			post = (bc_value)"";
 			lev = 1;
 			bstack[bindx=0] = 0;
 			}
@@ -327,24 +350,27 @@ lora	:  LETTER
 %%
 # define error 256
 
-int peekc = -1;
-int sargc;
-int ifile;
-char **sargv;
+static int peekc = -1;
+static int sargc;
+static int ifile;
+static char **sargv;
 
-char funtab[52] = {
+static char funtab[52] = {
 	01,0,02,0,03,0,04,0,05,0,06,0,07,0,010,0,011,0,012,0,013,0,014,0,015,0,016,0,017,0,
 	020,0,021,0,022,0,023,0,024,0,025,0,026,0,027,0,030,0,031,0,032,0 };
-char atab[52] = {
+static char atab[52] = {
 	0241,0,0242,0,0243,0,0244,0,0245,0,0246,0,0247,0,0250,0,0251,0,0252,0,0253,0,
 	0254,0,0255,0,0256,0,0257,0,0260,0,0261,0,0262,0,0263,0,0264,0,0265,0,0266,0,
 	0267,0,0270,0,0271,0,0272,0};
-char *letr[26] = {
+static char *letr[26] = {
   "a","b","c","d","e","f","g","h","i","j",
   "k","l","m","n","o","p","q","r","s","t",
   "u","v","w","x","y","z" } ;
-char *dot = { "." };
-yylex(){
+static char digit_value[256];
+
+int
+yylex(void)
+{
 	int c, ch;
 restart:
 	c = getch();
@@ -388,7 +414,8 @@ restart:
 		return( LETTER );
 	}
 	if( c>= '0' && c <= '9' || c>= 'A' && c<= 'F' ){
-		yylval = c;
+		digit_value[c] = (char)c;
+		yylval = &digit_value[c];
 		return( DIGIT );
 	}
 	switch( c ){
@@ -431,7 +458,9 @@ restart:
 	}
 }
 
-cpeek( c, yes, no ){
+static int
+cpeek(int c, int yes, int no)
+{
 	if( (peekc=getch()) != c ) return( no );
 	else {
 		peekc = -1;
@@ -439,7 +468,9 @@ cpeek( c, yes, no ){
 	}
 }
 
-getch(){
+static int
+getch(void)
+{
 	int ch;
 loop:
 	ch = (peekc < 0) ? getc(in) : peekc;
@@ -460,37 +491,53 @@ loop:
 	yyerror("cannot open input file");
 }
 # define b_sp_max 3000
-int b_space [ b_sp_max ];
-int * b_sp_nxt = { b_space };
+static bc_value b_space[b_sp_max];
+static bc_value *b_sp_nxt = b_space;
 
-int	bdebug = 0;
-bundle(a){
-	int i, *p, *q;
+static int bdebug = 0;
 
-	p = &a;
-	i = *p++;
+static bc_value
+bundle(int count, ...)
+{
+	int i;
+	bc_value *q;
+	va_list ap;
+
 	q = b_sp_nxt;
-	if( bdebug ) printf("bundle %d elements at %o\n",i,  q );
-	while(i-- > 0){
+	if (bdebug)
+		printf("bundle %d elements\n", count);
+	va_start(ap, count);
+	for (i = 0; i < count; i++) {
 		if( b_sp_nxt >= & b_space[b_sp_max] ) yyerror( "bundling space exceeded" );
-		* b_sp_nxt++ = *p++;
+		*b_sp_nxt++ = va_arg(ap, bc_value);
 	}
-	* b_sp_nxt++ = 0;
-	yyval = q;
-	return( q );
+	va_end(ap);
+	*b_sp_nxt++ = 0;
+	yyval = (bc_value)q;
+	return((bc_value)q);
 }
 
-routput(p) int *p; {
-	if( bdebug ) printf("routput(%o)\n", p );
+static void
+routput(bc_value value)
+{
+	bc_value *p;
+
+	p = (bc_value *)value;
+	if (bdebug)
+		printf("routput\n");
 	if( p >= &b_space[0] && p < &b_space[b_sp_max]){
 		/* part of a bundle */
-		while( *p != 0 ) routput( *p++ );
+		while (*p != 0)
+			routput(*p++);
 	}
-	else printf( p );	 /* character string */
+	else
+		printf("%s", value);	 /* character string */
 }
 
-output( p ) int *p; {
-	routput( p );
+static void
+output(bc_value p)
+{
+	routput(p);
 	b_sp_nxt = & b_space[0];
 	printf( "\n" );
 	fflush(stdout);
@@ -498,15 +545,19 @@ output( p ) int *p; {
 	crs = rcrs;
 }
 
-conout( p, s ) int *p; char *s; {
+static void
+conout(bc_value p, bc_value s)
+{
 	printf("[");
-	routput( p );
-	printf("]s%s\n", s );
+	routput(p);
+	printf("]s%s\n", s);
 	fflush(stdout);
 	lev--;
 }
 
-yyerror( s ) char *s; {
+int
+yyerror(char *s)
+{
 	if(ifile > sargc)ss="teletype";
 	printf("c[%s on line %d, %s]pc\n", s ,ln+1,ss);
 	fflush(stdout);
@@ -515,9 +566,12 @@ yyerror( s ) char *s; {
 	bindx = 0;
 	lev = 0;
 	b_sp_nxt = &b_space[0];
+	return 0;
 }
 
-pp( s ) char *s; {
+static void
+pp(bc_value s)
+{
 	/* puts the relevant stuff on pre and post for the letter s */
 
 	bundle(3, "S", s, pre );
@@ -526,15 +580,19 @@ pp( s ) char *s; {
 	post = yyval;
 }
 
-tp( s ) char *s; { /* same as pp, but for temps */
+static void
+tp(bc_value s)
+{ /* same as pp, but for temps */
 	bundle(3, "0S", s, pre );
 	pre = yyval;
 	bundle(4, post, "L", s, "s." );
 	post = yyval;
 }
 
-yyinit(argc,argv) int argc; char *argv[];{
-	signal( 2, (int(*)())1 );	/* ignore all interrupts */
+static void
+yyinit(int argc, char **argv)
+{
+	signal(SIGINT, SIG_IGN);	/* ignore all interrupts */
 	sargv=argv;
 	sargc= -- argc;
 	if(sargc == 0)in=stdin;
@@ -544,37 +602,48 @@ yyinit(argc,argv) int argc; char *argv[];{
 	ln = 0;
 	ss = sargv[1];
 }
-int *getout(){
+static void
+getout(void)
+{
 	printf("q");
 	fflush(stdout);
-	exit();
+	exit(0);
 }
 
-int *
-getf(p) char *p;{
-	return(&funtab[2*(*p -0141)]);
-}
-int *
-geta(p) char *p;{
-	return(&atab[2*(*p - 0141)]);
-}
-
-main(argc, argv)
-char **argv;
+static bc_value
+getf(bc_value value)
 {
-	int p[2];
+	char *p;
+
+	p = value;
+	return((bc_value)&funtab[2*(*p -0141)]);
+}
+
+static bc_value
+geta(bc_value value)
+{
+	char *p;
+
+	p = value;
+	return((bc_value)&atab[2*(*p - 0141)]);
+}
+
+int
+main(int argc, char **argv)
+{
+	i16 p[2];
 
 
 	if (argc > 1 && *argv[1] == '-') {
 		if((argv[1][1] == 'd')||(argv[1][1] == 'c')){
 			yyinit(--argc, ++argv);
 			yyparse();
-			exit();
+			exit(0);
 		}
 		if(argv[1][1] != 'l'){
 			printf("unrecognizable argument\n");
 			fflush(stdout);
-			exit();
+			exit(1);
 		}
 		argv[1] = "/usr/lib/lib.b";
 	}
@@ -586,12 +655,13 @@ char **argv;
 		close(p[1]);
 		yyinit(argc, argv);
 		yyparse();
-		exit();
+		exit(0);
 	}
 	close(0);
 	dup(p[0]);
 	close(p[0]);
 	close(p[1]);
-	execl("/bin/dc", "dc", "-", 0);
-	execl("/usr/bin/dc", "dc", "-", 0);
+	execl("/bin/dc", "dc", "-", (char *)0);
+	execl("/usr/bin/dc", "dc", "-", (char *)0);
+	return 1;
 }

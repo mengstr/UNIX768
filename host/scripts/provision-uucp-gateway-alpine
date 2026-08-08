@@ -1,0 +1,159 @@
+#!/bin/sh
+# Provision Alpine Linux as the capture-only Taylor UUCP peer used by UNIX768.
+# Incoming rmail requests are stored as files; no host MTA is installed.
+set -eu
+
+die()
+{
+	printf 'provision-uucp: %s\n' "$*" >&2
+	exit 1
+}
+
+[ "$(id -u)" -eq 0 ] || die "must run as root"
+[ -r /etc/os-release ] || die "cannot identify operating system"
+. /etc/os-release
+[ "${ID-}" = alpine ] || die "this script supports Alpine Linux only"
+
+node_name=${UUCP_NODE_NAME:-dedirock}
+remote_system=${UUCP_REMOTE_SYSTEM:-unix768}
+called_login=${UUCP_LOGIN:-neighbor_login}
+listen_port=${UUCP_PORT:-540}
+inbox=${UUCP_INBOX:-/var/spool/uucp/inbox}
+called_password=${UUCP_PASSWORD-}
+
+[ -n "$called_password" ] || die "UUCP_PASSWORD is required"
+case $node_name:$remote_system:$called_login in
+	*[!A-Za-z0-9_.:-]*) die "node, system, and login names contain unsupported characters" ;;
+esac
+case $listen_port in
+	''|*[!0-9]*) die "UUCP_PORT must be numeric" ;;
+esac
+[ "$listen_port" -ge 1 ] && [ "$listen_port" -le 65535 ] ||
+	die "UUCP_PORT must be between 1 and 65535"
+case $called_password in
+	*' '*|*'	'*|*'
+') die "UUCP_PASSWORD must not contain whitespace" ;;
+esac
+case $inbox in
+	/var/spool/uucp/*) ;;
+	*) die "UUCP_INBOX must be below /var/spool/uucp" ;;
+esac
+
+# uucp is presently in edge/testing, conventionally tagged "testing" in
+# /etc/apk/repositories. busybox-extras supplies the tcpsvd listener.
+apk add uucp@testing busybox-extras
+
+getent passwd uucp >/dev/null || die "the uucp package did not create its service user"
+getent group uucp >/dev/null || die "the uucp package did not create its service group"
+
+install -d -o root -g root -m 0755 /etc/uucp
+config_tmp=$(mktemp)
+cat >"$config_tmp" <<EOF
+nodename $node_name
+passwdfile /etc/uucp/passwd
+spool /var/spool/uucp
+pubdir /var/spool/uucppublic
+lockdir /var/spool/uucp
+logfile /var/log/uucp/Log
+statfile /var/log/uucp/Stats
+debugfile /var/log/uucp/Debug
+EOF
+install -o root -g uucp -m 0644 "$config_tmp" /etc/uucp/config
+rm -f "$config_tmp"
+
+sys_tmp=$(mktemp)
+cat >"$sys_tmp" <<EOF
+system $remote_system
+called-login $called_login
+protocol g
+commands rmail
+command-path /usr/local/lib/uucp
+EOF
+install -o root -g uucp -m 0644 "$sys_tmp" /etc/uucp/sys
+rm -f "$sys_tmp"
+
+passwd_tmp=$(mktemp)
+chmod 0600 "$passwd_tmp"
+printf '%s %s\n' "$called_login" "$called_password" >"$passwd_tmp"
+install -o uucp -g uucp -m 0600 "$passwd_tmp" /etc/uucp/passwd
+rm -f "$passwd_tmp"
+
+install -d -o uucp -g uucp -m 0755 /var/spool/uucp
+install -d -o uucp -g uucp -m 0700 "$inbox"
+install -d -o uucp -g uucp -m 0755 /var/spool/uucppublic
+install -d -o uucp -g uucp -m 0750 /var/log/uucp
+install -d -o root -g root -m 0755 /usr/local/lib/uucp
+
+rmail_tmp=$(mktemp)
+cat >"$rmail_tmp" <<EOF
+#!/bin/sh
+# Capture an incoming UUCP rmail request without passing it to a host MTA.
+set -eu
+
+PATH=/usr/bin:/bin
+export PATH
+inbox=$inbox
+umask 077
+
+stamp=\$(date -u '+%Y%m%dT%H%M%SZ')
+tmp=\$(mktemp "\$inbox/.incoming.XXXXXX")
+trap 'rm -f "\$tmp"' 0 1 2 3 15
+
+{
+	printf 'X-UUCP-Received-UTC: %s\n' "\$stamp"
+	for recipient do
+		printf 'X-UUCP-Recipient: %s\n' "\$recipient"
+	done
+	printf '\n'
+	cat
+} >"\$tmp"
+
+final="\$inbox/message-\$stamp-\$\$.mail"
+mv "\$tmp" "\$final"
+trap - 0 1 2 3 15
+EOF
+install -o root -g root -m 0755 "$rmail_tmp" /usr/local/lib/uucp/rmail
+rm -f "$rmail_tmp"
+
+install -d -o root -g root -m 0755 /etc/init.d
+service_tmp=$(mktemp)
+cat >"$service_tmp" <<EOF
+#!/sbin/openrc-run
+
+name="Taylor UUCP TCP netserver"
+description="One Taylor uucico slave per TCP connection"
+command="/usr/bin/tcpsvd"
+command_args="-v -c 4 -C 1 -u uucp:uucp 0.0.0.0 $listen_port /usr/sbin/uucico -D -l -I /etc/uucp/config"
+command_background="yes"
+pidfile="/run/uucp-netserver.pid"
+output_log="/var/log/uucp-netserver.log"
+error_log="/var/log/uucp-netserver.log"
+
+depend()
+{
+	need net
+	after firewall
+}
+EOF
+install -o root -g root -m 0755 "$service_tmp" /etc/init.d/uucp-netserver
+rm -f "$service_tmp"
+
+uuchk_output=$(mktemp)
+if ! /usr/sbin/uuchk -I /etc/uucp/config >"$uuchk_output" 2>&1; then
+	cat "$uuchk_output" >&2
+	rm -f "$uuchk_output"
+	die "Taylor UUCP configuration validation failed"
+fi
+rm -f "$uuchk_output"
+
+rc-update add uucp-netserver default
+rc-service uucp-netserver restart
+rc-service uucp-netserver status >/dev/null || die "uucp-netserver did not start"
+netstat -ltn | grep -Eq "[.:]$listen_port[[:space:]]" ||
+	die "nothing is listening on TCP port $listen_port"
+
+printf '%s\n' "Taylor UUCP capture gateway is ready."
+printf '  node:      %s\n' "$node_name"
+printf '  caller:    %s via login %s\n' "$remote_system" "$called_login"
+printf '  listener:  TCP %s\n' "$listen_port"
+printf '  inbox:     %s\n' "$inbox"

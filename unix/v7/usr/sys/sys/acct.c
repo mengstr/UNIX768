@@ -7,11 +7,16 @@
 #include "../h/proc.h"
 #include "../h/seg.h"
 
+void sysacct(void);
+void acct(void);
+comp_t compress(time_t t);
+void syslock(void);
+
 /*
  * Perform process accounting functions.
  */
 
-sysacct()
+void sysacct()
 {
 	register struct inode *ip;
 	register struct a {
@@ -48,7 +53,7 @@ sysacct()
 /*
  * On exit, write a record on the accounting file.
  */
-acct()
+void acct()
 {
 	register i;
 	register struct inode *ip;
@@ -85,7 +90,7 @@ acct()
  * Produce a pseudo-floating point representation
  * with 3 bits base-8 exponent, 13 bits fraction.
  */
-compress(t)
+comp_t compress(t)
 register time_t t;
 {
 	register exp = 0, round = 0;
@@ -110,11 +115,11 @@ register time_t t;
  * as possible. swapping may still
  * occur if core grows.
  */
-syslock()
+void syslock()
 {
 	register struct proc *p;
 	register struct a {
-		int	flag;
+		i32	flag;
 	} *uap;
 
 	uap = (struct a *)u.u_ap;

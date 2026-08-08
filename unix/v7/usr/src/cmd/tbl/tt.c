@@ -1,6 +1,8 @@
  /* tt.c: subroutines for drawing horizontal lines */
 # include "t..c"
+int
 ctype(il, ic)
+	int il, ic;
 {
 if (instead[il])
 	return(0);
@@ -9,16 +11,22 @@ if (fullbot[il])
 il = stynum[il];
 return(style[il][ic]);
 }
+int
 min(a,b)
+	int a, b;
 {
 return(a<b ? a : b);
 }
+int
 fspan(i,c)
+	int i, c;
 {
 c++;
 return(c<ncol && ctype(i,c)=='s');
 }
+int
 lspan(i,c)
+	int i, c;
 {
 int k;
 if (ctype(i,c) != 's') return(0);
@@ -28,7 +36,9 @@ if (c < ncol && ctype(i,c)== 's')
 for(k=0; ctype(i,--c) == 's'; k++);
 return(k);
 }
+int
 ctspan(i,c)
+	int i, c;
 {
 int k;
 c++;
@@ -36,14 +46,18 @@ for(k=1; c<ncol && ctype(i,c)=='s'; k++)
 	c++;
 return(k);
 }
+void
 tohcol(ic)
+	int ic;
 {
 			if (ic==0)
 				fprintf(tabout, "\\h'|0'");
 			else
 				fprintf(tabout, "\\h'(|\\n(%du+|\\n(%du)/2u'", ic+CLEFT, ic+CRIGHT-1);
 }
+int
 allh(i)
+	int i;
 {
 /* return true if every element in line i is horizontal */
 /* also at least one must be horizontl */
@@ -58,7 +72,9 @@ for(one=c=0; c<ncol; c++)
 	}
 return(one);
 }
+int
 thish(i,c)
+	int i, c;
 {
 	int t;
 	char *s;

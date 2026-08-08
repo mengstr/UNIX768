@@ -17,7 +17,10 @@ cell	*recloc;	/* location of record */
 cell	*nrloc;		/* NR */
 cell	*nfloc;		/* NF */
 
-syminit()
+static int hash(char *);
+static void checkval(cell *);
+
+void syminit(void)
 {
 	setsymtab("0", tostring("0"), 0.0, NUM|STR|CON|FLD, symtab);
 	recloc = setsymtab("$record", record, 0.0, STR|FLD, symtab);
@@ -34,12 +37,12 @@ syminit()
 	NR = &nrloc->fval;
 }
 
-cell **makesymtab()
+cell **makesymtab(void)
 {
 	int i;
 	cell **cp;
 
-	cp = (char *) malloc(MAXSYM * sizeof(cell *));
+	cp = (cell **) malloc(MAXSYM * sizeof(cell *));
 	if (cp == NULL)
 		error(FATAL, "out of space in makesymtab");
 	for (i = 0; i < MAXSYM; i++)
@@ -47,7 +50,7 @@ cell **makesymtab()
 	return(cp);
 }
 
-freesymtab(ap)	/* free symbol table */
+void freesymtab(ap)	/* free symbol table */
 cell *ap;
 {
 	cell *cp, **tp;
@@ -74,8 +77,6 @@ cell **tab;
 {
 	register h;
 	register cell *p;
-	cell *lookup();
-
 	if (n != NULL && (p = lookup(n, tab)) != NULL) {
 		xfree(s);
 		dprintf("setsymtab found %o: %s", p, p->nval, NULL);
@@ -97,7 +98,7 @@ cell **tab;
 	return(p);
 }
 
-hash(s)	/* form hash value for string s */
+static hash(s)	/* form hash value for string s */
 register char *s;
 {
 	register int hashval;
@@ -155,8 +156,6 @@ char *s;
 awkfloat getfval(vp)
 register cell *vp;
 {
-	awkfloat atof();
-
 	if (vp->sval == record && donerec == 0)
 		recbld();
 	dprintf("getfval: %o", vp, NULL, NULL);
@@ -167,7 +166,7 @@ register cell *vp;
 		/* $1 == $2 comparisons sort of make sense when */
 		/* one or the other is numeric */
 		if (isnumber(vp->sval)) {
-			vp->fval = atof(vp->sval);
+			vp->fval = awk_atof(vp->sval);
 			if (!(vp->tval & CON))	/* don't change type of a constant */
 				vp->tval |= NUM;
 		}
@@ -202,7 +201,7 @@ register cell *vp;
 	return(vp->sval);
 }
 
-checkval(vp)
+static void checkval(vp)
 register cell *vp;
 {
 	if (vp->tval & ARR)
@@ -222,6 +221,53 @@ register char *s;
 		error(FATAL, "out of space in tostring on %s", s);
 	strcpy(p, s);
 	return(p);
+}
+
+awkfloat awk_atof(s)
+char *s;
+{
+	awkfloat value, scale;
+	int exponent, exponent_sign, sign;
+
+	while (*s == ' ' || *s == '\t' || *s == '\n')
+		s++;
+	sign = 1;
+	if (*s == '-' || *s == '+') {
+		if (*s == '-')
+			sign = -1;
+		s++;
+	}
+	value = 0.0;
+	while (isdigit(*s))
+		value = value * 10.0 + (*s++ - '0');
+	if (*s == '.') {
+		s++;
+		scale = 0.1;
+		while (isdigit(*s)) {
+			value += (*s++ - '0') * scale;
+			scale *= 0.1;
+		}
+	}
+	exponent = 0;
+	exponent_sign = 1;
+	if (*s == 'e' || *s == 'E') {
+		s++;
+		if (*s == '-' || *s == '+') {
+			if (*s == '-')
+				exponent_sign = -1;
+			s++;
+		}
+		while (isdigit(*s))
+			exponent = exponent * 10 + (*s++ - '0');
+		scale = 1.0;
+		while (exponent-- > 0)
+			scale *= 10.0;
+		if (exponent_sign < 0)
+			value /= scale;
+		else
+			value *= scale;
+	}
+	return(sign * value);
 }
 #ifndef yfree
 yfree(a) char *a;

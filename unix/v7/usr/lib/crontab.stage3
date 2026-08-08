@@ -1,0 +1,13 @@
+# stage3 cron table
+0	*	*	*	*	/usr/lib/atrun
+5	*	*	*	*	/usr/lib/atrun
+10	*	*	*	*	/usr/lib/atrun
+15	*	*	*	*	/usr/lib/atrun
+20	*	*	*	*	/usr/lib/atrun
+25	*	*	*	*	/usr/lib/atrun
+30	*	*	*	*	/usr/lib/atrun
+35	*	*	*	*	/usr/lib/atrun
+40	*	*	*	*	/usr/lib/atrun
+45	*	*	*	*	/usr/lib/atrun
+50	*	*	*	*	/usr/lib/atrun
+55	*	*	*	*	/usr/lib/atrun

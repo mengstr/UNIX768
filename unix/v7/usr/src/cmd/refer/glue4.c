@@ -1,14 +1,14 @@
-# include "stdio.h"
-# include "ctype.h"
+# include "refer.h"
+extern char gfile[];
 
+int
 grepcall (in, out, arg)
 	char *in, *out, *arg;
 {
 char line[200], *s, argig[100], *cv[50];
 char *inp, inb[500];
-extern char gfile[];
-FILE *qf, *gf;
-int c, oldc 0, alph 0, nv 0;
+FILE *gf;
+int c, oldc = 0, alph = 0, nv = 0;
 int sv0, sv1;
 strcpy (argig, arg); strcat(argig, ".ig");
 strcpy (inp=inb, in);
@@ -89,7 +89,8 @@ unlink (gfile);
 return(0);
 }
 
-clfgrep()
+void
+clfgrep(void)
 {
 if (gfile[0])
 	unlink(gfile);

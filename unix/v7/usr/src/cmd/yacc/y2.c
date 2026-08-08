@@ -1,4 +1,5 @@
 # include "dextern"
+# include <string.h>
 # define IDENTIFIER 257
 # define MARK 258
 # define TERM 259
@@ -62,7 +63,7 @@ int *prdptr[NPROD];	/* pointers to descriptions of productions */
 int levprd[NPROD] ;	/* precedence levels for the productions */
 
 
-setup(argc,argv) int argc; char *argv[];
+void setup(i32 argc, char *argv[])
 {	int i,j,lev,t, ty;
 	int c;
 	int *p;
@@ -318,7 +319,7 @@ setup(argc,argv) int argc; char *argv[];
 		if( t == '=' ){
 			levprd[nprod] |= ACTFLAG;
 			fprintf( faction, "\ncase %d:", nprod );
-			cpyact( mem-prdptr[nprod]-1 );
+			cpyact( (int)(mem-prdptr[nprod]-1) );
 			fprintf( faction, " break;" );
 			if( (t=gettok()) == IDENTIFIER ){
 				/* action within rule... */
@@ -391,7 +392,7 @@ setup(argc,argv) int argc; char *argv[];
 	fclose( finput );
 	}
 
-finact(){
+void finact(void){
 	/* finish action routine */
 
 	fclose(faction);
@@ -400,7 +401,7 @@ finact(){
 
 	}
 
-defin( t, s ) register char  *s; {
+void defin(int t, register char *s) {
 /*	define s to be a terminal if t=0
 	or a nonterminal if t=1		*/
 
@@ -409,7 +410,7 @@ defin( t, s ) register char  *s; {
 	if (t) {
 		if( ++nnonter >= NNONTERM ) error("too many nonterminals, limit %d",NNONTERM);
 		nontrst[nnonter].name = cstash(s);
-		return( NTBASE + nnonter );
+		return;
 		}
 	/* must be a token */
 	if( ++ntokens >= NTERMS ) error("too many terminals, limit %d",NTERMS );
@@ -446,10 +447,9 @@ defin( t, s ) register char  *s; {
 		}
 	tokset[ntokens].value = val;
 	toklev[ntokens] = 0;
-	return( ntokens );
 	}
 
-defout(){ /* write out the defines (at the end of the declaration section) */
+void defout(void){ /* write out the defines (at the end of the declaration section) */
 
 	register int i, c;
 	register char *cp;
@@ -475,8 +475,7 @@ defout(){ /* write out the defines (at the end of the declaration section) */
 
 	}
 
-char *
-cstash( s ) register char *s; {
+char *cstash(register char *s) {
 	char *temp;
 
 	temp = cnamp;
@@ -487,7 +486,7 @@ cstash( s ) register char *s; {
 	return( temp );
 	}
 
-gettok() {
+int gettok(void) {
 	register i, base;
 	static int peekline; /* number of '\n' seen in lookahead */
 	register c, match, reserve;
@@ -622,7 +621,7 @@ begin:
 	return( IDENTIFIER );
 }
 
-fdtype( t ){ /* determine the type of a symbol */
+int fdtype(int t){ /* determine the type of a symbol */
 	register v;
 	if( t >= NTBASE ) v = nontrst[t-NTBASE].tvalue;
 	else v = TYPE( toklev[t] );
@@ -631,8 +630,9 @@ fdtype( t ){ /* determine the type of a symbol */
 	return( v );
 	}
 
-chfind( t, s ) register char *s; {
+i32 chfind(int t, register char *s) {
 	int i;
+	i32 found;
 
 	if (s[0]==' ')t=0;
 	TLOOP(i){
@@ -648,10 +648,12 @@ chfind( t, s ) register char *s; {
 	/* cannot find name */
 	if( t>1 )
 		error( "%s should have been defined earlier", s );
-	return( defin( t, s ) );
-	}
+	defin( t, s );
+	found = t ? NTBASE+nnonter : ntokens;
+	return( found );
+}
 
-cpyunion(){
+void cpyunion(void){
 	/* copy the union declaration to the output, and the define file if present */
 
 	int level, c;
@@ -686,7 +688,7 @@ cpyunion(){
 		}
 	}
 
-cpycode(){ /* copies code between \{ and \} */
+void cpycode(void){ /* copies code between \{ and \} */
 
 	int c;
 	c = getc(finput);
@@ -697,11 +699,19 @@ cpycode(){ /* copies code between \{ and \} */
 	fprintf( ftable, "\n# line %d \"%s\"\n", lineno, infile );
 	while( c>=0 ){
 		if( c=='\\' )
-			if( (c=getc(finput)) == '}' ) return;
-			else putc('\\', ftable );
+			if( (c=getc(finput)) == '}' ) {
+				return;
+				}
+			else {
+				putc('\\', ftable );
+				}
 		if( c=='%' )
-			if( (c=getc(finput)) == '}' ) return;
-			else putc('%', ftable );
+			if( (c=getc(finput)) == '}' ) {
+				return;
+				}
+			else {
+				putc('%', ftable );
+				}
 		putc( c , ftable );
 		if( c == '\n' ) ++lineno;
 		c = getc(finput);
@@ -709,7 +719,7 @@ cpycode(){ /* copies code between \{ and \} */
 	error("eof before %%}" );
 	}
 
-skipcom(){ /* skip over comments */
+int skipcom(void){ /* skip over comments */
 	register c, i=0;  /* i is the number of lines skipped */
 
 	/* skipcom is called after reading a / */
@@ -727,7 +737,7 @@ skipcom(){ /* skip over comments */
 	/* NOTREACHED */
 	}
 
-cpyact(offset){ /* copy C action to the next ; or closing } */
+void cpyact(int offset){ /* copy C action to the next ; or closing } */
 	int brac, c, match, j, s, tok;
 
 	fprintf( faction, "\n# line %d \"%s\"\n", lineno, infile );

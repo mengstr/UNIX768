@@ -1,14 +1,15 @@
-# include "stdio.h"
-# include "assert.h"
+# include "refer.h"
 # define TXTLEN 1000
-char *outbuf 0;
+char *outbuf = 0;
 extern char *soutput;
 extern int soutlen, iflong;
 extern long indexdate;
+int
 baddrop(master, nf, fc, nitem, qitem, rprog, full)
-	union ptr {unsigned *a; long *b; } master;
+	union ptr master;
 	FILE *fc;
 	char *qitem[], *rprog;
+	int nf, nitem, full;
 {
 /* checks list of drops for real bad drops;
    uses "deliv" to find items. */
@@ -60,10 +61,10 @@ for (i=g=0; i<nf; i++)
 	ar[na++] = "fgrep";
 	ar[na++] = "-r";
 	ar[na++] = "-n";
-	ar[na++] = need;
+	ar[na++] = (char *)(long)need;
 	ar[na++] = "-i";
 	ar[na++] = output;
-	ar[na++] = len;
+	ar[na++] = (char *)(long)len;
 	for(j=0; j<nitem; j++)
 		ar[na++] = qitem[j];
 # ifdef D1
@@ -90,6 +91,7 @@ for (i=g=0; i<nf; i++)
 	}
 return(g);
 }
+int
 auxil( res, output)
 	char *res, *output;
 {

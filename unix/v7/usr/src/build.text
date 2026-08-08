@@ -1,0 +1,27 @@
+set -e
+
+cd cawf
+sh build
+
+cd ../cmd
+cc -s -o man man.c
+cc -s -o deroff deroff.c
+cc -s -o checkeq checkeq.c
+
+cd eqn
+sh build
+cd ../neqn
+sh build
+cd ../tbl
+sh build
+cd ../spell
+sh build
+cd ../refer
+sh build
+cd ../prep
+sh build
+
+cd ../../ee
+sh build
+echo build.text: complete
+exit 0

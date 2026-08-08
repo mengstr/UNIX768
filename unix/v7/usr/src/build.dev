@@ -1,0 +1,41 @@
+echo BUILD ACK
+make -f ack/Makefile.v7 SRC=$1 BUILD=$1/tmp/ack DEST=$1 CC=$1/bin/cc TOOLS=$1/usr/lib/ack RUNTIME=$1
+
+cd 68kasm
+echo CC assemble.c
+cc -O2 -c assemble.c
+echo CC build.c
+cc -O2 -c build.c
+echo CC codegen.c
+cc -O2 -c codegen.c
+echo CC directive.c
+cc -O2 -c directive.c
+echo CC error.c
+cc -O2 -c error.c
+echo CC eval.c
+cc -O2 -c eval.c
+echo CC globals.c
+cc -O2 -c globals.c
+echo CC include.c
+cc -O2 -c include.c
+echo CC instlookup.c
+cc -O2 -c instlookup.c
+echo CC insttable.c
+cc -O2 -c insttable.c
+echo CC listing.c
+cc -O2 -c listing.c
+echo CC main.c
+cc -O2 -c main.c
+echo CC movem.c
+cc -O2 -c movem.c
+echo CC object.c
+cc -O2 -c object.c
+echo CC opparse.c
+cc -O2 -c opparse.c
+echo CC symbol.c
+cc -O2 -c symbol.c
+echo LD 68kasm
+cc -s -o 68kasm assemble.o build.o codegen.o directive.o error.o eval.o globals.o include.o instlookup.o insttable.o listing.o main.o movem.o object.o opparse.o symbol.o
+echo CC srec2aout.c
+cc -O2 -o srec2aout srec2aout.c
+echo build.dev: complete

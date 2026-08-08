@@ -3,15 +3,16 @@ extern FILE *in;
 # define NFLD 30
 # define TLEN 400
 char one[ANSLEN];
-int onelen ANSLEN;
-static char dr [100] "";
+int onelen = ANSLEN;
+static char dr [100] = "";
+void
 doref(firline)
 	char *firline;
 {
 char buff[QLEN], dbuff[3*QLEN], answer[ANSLEN], temp[TLEN];
 char line[LLINE];
 char *p, **sr, *flds[NFLD], *r;
-int nf, nr, alph, query 0, chp, digs;
+int nf, nr, alph, query = 0, chp, digs;
 
 /* get query */
 buff[0] = dbuff[0] = 0;
@@ -105,7 +106,8 @@ switch (newline(answer))
 		fprintf (stderr, "No such paper %s\n", buff);
 		return;
 	default:
-		fprintf(stderr, "too many hits for '%s'\n", trimnl(buff));
+		trimnl(buff);
+		fprintf(stderr, "too many hits for '%s'\n", buff);
 		choices(answer);
 		p = buff;
 		while (*p != '\n') p++;
@@ -153,15 +155,17 @@ putref (nf, flds);
 fprintf(stderr, "put ref\n");
 # endif
 }
+int
 newline(s)
 	char *s;
 {
-int k 0, c;
+int k = 0, c;
 while (c = *s++)
 	if (c == '\n')
 		k++;
 return(k);
 }
+void
 choices( buff )
 	char *buff;
 {
@@ -195,7 +199,9 @@ for(r=p= buff; *p; p++)
 	}
 }
 
+int
 control(c)
+	int c;
 	{
 	if (c=='.') return(1);
 	if (c=='%') return(1);

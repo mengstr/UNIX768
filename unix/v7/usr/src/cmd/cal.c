@@ -1,14 +1,22 @@
-char	dayw[] = {
-	" S  M Tu  W Th  F  S"
-};
+#include <stdio.h>
+#include <unistd.h>
+
+char	*dayw = " S  M Tu  W Th  F  S";
 char	*smon[]= {
 	"January", "February", "March", "April",
 	"May", "June", "July", "August",
 	"September", "October", "November", "December",
 };
 char	string[432];
-main(argc, argv)
-char *argv[];
+
+static void pmon(char *s);
+static i32 number(char *str);
+static void pstr(char *str, i32 n);
+static void cal(i32 m, i32 y, char *p, i32 w);
+static i32 jan1(i32 yr);
+
+int
+main(int argc, char *argv[])
 {
 	register y, i, j;
 	int m;
@@ -51,9 +59,13 @@ xlong:
 	for(i=0; i<12; i+=3) {
 		for(j=0; j<6*72; j++)
 			string[j] = '\0';
-		printf("	 %.3s", smon[i]);
-		printf("			%.3s", smon[i+1]);
-		printf("		       %.3s\n", smon[i+2]);
+		printf("	 ");
+		pmon(smon[i]);
+		printf("			");
+		pmon(smon[i+1]);
+		printf("		       ");
+		pmon(smon[i+2]);
+		printf("\n");
 		printf("%s   %s   %s\n", dayw, dayw, dayw);
 		cal(i+1, y, string, 72);
 		cal(i+2, y, string+23, 72);
@@ -68,6 +80,17 @@ badarg:
 	printf("Bad argument\n");
 }
 
+static void
+pmon(s)
+char *s;
+{
+	register i;
+
+	for (i=0; i<3 && s[i]; i++)
+		putchar(s[i]);
+}
+
+static i32
 number(str)
 char *str;
 {
@@ -84,8 +107,10 @@ char *str;
 	return(n);
 }
 
+static void
 pstr(str, n)
 char *str;
+i32 n;
 {
 	register i;
 	register char *s;
@@ -110,7 +135,9 @@ char	mon[] = {
 	30, 31, 30, 31,
 };
 
+static void
 cal(m, y, p, w)
+i32 m, y, w;
 char *p;
 {
 	register d, i;
@@ -170,7 +197,9 @@ char *p;
  *	of jan 1 of given year
  */
 
+static i32
 jan1(yr)
+i32 yr;
 {
 	register y, d;
 

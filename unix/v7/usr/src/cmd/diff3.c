@@ -1,9 +1,10 @@
 #include <stdio.h>
-#
+#include <unistd.h>
+#include <stdlib.h>
 
 /* diff3 - 3-way differential file comparison*/
 
-/* diff3 [-e] d13 d23 f1 f2 f3 
+/* diff3 [-e] d13 d23 f1 f2 f3
  *
  * d13 = diff report on f1 vs f3
  * d23 = diff report on f2 vs f3
@@ -42,8 +43,25 @@ int last[4];
 int eflag;
 int debug  = 0;
 
-main(argc,argv)
-char **argv;
+int readin(char *name, struct diff *dd);
+int number(char **lc);
+int digit(int c);
+int merge(int m1, int m2);
+int separate(char *s);
+int change(int i, struct range *rold, int dup);
+int prange(struct range *rold);
+int keep(int i, struct range *rold, struct range *rnew);
+int skip(int i, int from, char *pr);
+int duplicate(struct range *r1, struct range *r2);
+int repos(int nchar);
+int trouble(void);
+int edit(struct diff *diff, int dup, int j);
+int edscript(int n);
+int getchange(FILE *b);
+int getline(FILE *b);
+
+int
+main (int argc, char **argv)
 {
 	register i,m,n;
 	if(*argv[1]=='-') {
@@ -72,6 +90,7 @@ char **argv;
 			exit(1);
 		}
 	merge(m,n);
+	return(0);
 }
 
 /*pick up the line numbers of allcahnges from
@@ -82,9 +101,8 @@ char **argv;
  * out of existence)
 */
 
-readin(name,dd)
-char *name;
-struct diff *dd;
+int
+readin (char *name, struct diff *dd)
 {
 	register i;
 	int a,b,c,d;
@@ -125,8 +143,8 @@ struct diff *dd;
 	return(i);
 }
 
-number(lc)
-char **lc;
+int
+number (char **lc)
 {
 	register nn;
 	nn = 0;
@@ -135,13 +153,14 @@ char **lc;
 	return(nn);
 }
 
-digit(c)
+int
+digit (int c)
 {
 	return(c>='0'&&c<='9');
 }
 
-getchange(b)
-FILE *b;
+int
+getchange (FILE *b)
 {
 	while(getline(b))
 		if(digit(line[0]))
@@ -149,8 +168,8 @@ FILE *b;
 	return(0);
 }
 
-getline(b)
-FILE *b;
+int
+getline (FILE *b)
 {
 	register i, c;
 	for(i=0;i<sizeof(line)-1;i++) {
@@ -166,7 +185,8 @@ FILE *b;
 	return(0);
 }
 
-merge(m1,m2)
+int
+merge (int m1, int m2)
 {
 	register struct diff *d1, *d2, *d3;
 	int dup;
@@ -265,8 +285,8 @@ merge(m1,m2)
 		edscript(j);
 }
 
-separate(s)
-char *s;
+int
+separate (char *s)
 {
 	printf("====%s\n",s);
 }
@@ -275,8 +295,8 @@ char *s;
  *	is to be changed. it is to be printed only if
  *	it does not duplicate something to be printed later
 */
-change(i,rold,dup)
-struct range *rold;
+int
+change (int i, struct range *rold, int dup)
 {
 	printf("%d:",i);
 	last[i] = rold->to;
@@ -293,8 +313,8 @@ struct range *rold;
 /*	print the range of line numbers, rold.from  thru rold.to
  *	as n1,n2 or n1
 */
-prange(rold)
-struct range *rold;
+int
+prange (struct range *rold)
 {
 	if(rold->to<=rold->from)
 		printf("%da\n",rold->from-1);
@@ -311,8 +331,8 @@ struct range *rold;
  *	must be ginned up to correspond to the change reported
  *	in the other file
 */
-keep(i,rold,rnew)
-struct range *rold, *rnew;
+int
+keep (int i, struct range *rold, struct range *rnew)
 {
 	register delta;
 	struct range trange;
@@ -326,8 +346,8 @@ struct range *rold, *rnew;
  *	if "pr" is nonzero, print all skipped stuff
  * w	with string pr as a prefix
 */
-skip(i,from,pr)
-char *pr;
+int
+skip (int i, int from, char *pr)
 {
 	register j,n;
 	for(n=0;cline[i]<from-1;n+=j) {
@@ -344,8 +364,8 @@ char *pr;
  *	(in file 1) contains exactly the same data
  *	as the new range (in file 2)
 */
-duplicate(r1,r2)
-struct range *r1, *r2;
+int
+duplicate (struct range *r1, struct range *r2)
 {
 	register c,d;
 	register nchar;
@@ -364,7 +384,7 @@ struct range *r1, *r2;
 			nchar++;
 			if(c!=d) {
 				repos(nchar);
-				return;
+				return(0);
 			}
 		} while(c!= '\n');
 	}
@@ -372,14 +392,16 @@ struct range *r1, *r2;
 	return(1);
 }
 
-repos(nchar)
+int
+repos (int nchar)
 {
 	register i;
-	for(i=0;i<2;i++) 
+	for(i=0;i<2;i++)
 		fseek(fp[i], (long)-nchar, 1);
 }
 
-trouble()
+int
+trouble (void)
 {
 	fprintf(stderr,"diff3: logic error\n");
 	abort();
@@ -387,8 +409,8 @@ trouble()
 
 /*	collect an editing script for later regurgitation
 */
-edit(diff,dup,j)
-struct diff *diff;
+int
+edit (struct diff *diff, int dup, int j)
 {
 	if(((dup+1)&eflag)==0)
 		return(j);
@@ -403,7 +425,8 @@ struct diff *diff;
 }
 
 /*		regurgitate */
-edscript(n)
+int
+edscript (int n)
 {
 	register j,k;
 	char block[512];

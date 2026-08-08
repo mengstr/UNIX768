@@ -1,9 +1,15 @@
 # include "refer..c"
+static int callhunt(char *, char *, char *, int);
+static int dodeliv(char *, char *, char *, int);
+
+int
 corout(in, out, rprog, arg, outlen)
-	char *in, *out, *rprog;
+	char *in, *out, *rprog, *arg;
+	int outlen;
 {
 # define move(x, y) close(y); dup(x); close(x);
-int pipev[2], fr1, fr2, fw1, fw2, n;
+i16 pipev[2];
+int fr1, fr2, fw1, fw2, n;
 
 if (strcmp (rprog, "hunt") ==0)
 	return(callhunt(in, out, arg, outlen));
@@ -18,7 +24,7 @@ if (fork()==0)
 	move (fw2, 1);
 	if (rprog[0]!= '/')
 		chdir("/usr/lib/refer");
-	execl(rprog, "deliv", arg, 0);
+	execl(rprog, "deliv", arg, (char *)0);
 	err ("Can't run %s", rprog);
 	}
 close(fw2); close(fr1);
@@ -28,9 +34,12 @@ wait(0);
 n = read (fr2, out, outlen);
 out[n]=0;
 close(fr2);
+return(n);
 }
+static int
 callhunt(in, out, arg, outlen)
 	char *in, *out, *arg;
+	int outlen;
 {
 # define ALEN 50
 char *argv[20], abuff[ALEN];
@@ -43,12 +52,12 @@ argv[1] = "-i";
 argv[2] = in;
 argv[3] = "-t";
 argv[4] = out;
-argv[5] = outlen;
+argv[5] = (char *)(long)outlen;
 argv[6] = "-T";
 argv[7] = "-F1";
 argv[8] = "-o";
 argv[9] = one;
-argv[10] = onelen;
+argv[10] = (char *)(long)onelen;
 argv[11] = abuff; strcpy (abuff,arg);
 if (strlen(abuff) > ALEN)
 	err("abuff not big enough %d", strlen(abuff));
@@ -56,14 +65,17 @@ argc = 6;
 huntmain (argc,argv);
 return(0);
 }
+static int
 dodeliv(in, out, arg, outlen)
 	char *in, *out, *arg;
+	int outlen;
 {
 # if D1
 fprintf(stderr, "in dodeliv, arg /%s/\n", arg?arg:"");
 # endif
 if (arg && arg[0])
 	chdir(arg);
-findline(in, out, outlen, 0L);
+outlen = findline(in, out, outlen, 0L);
 restodir();
+return(outlen);
 }

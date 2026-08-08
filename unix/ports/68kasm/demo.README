@@ -1,0 +1,22 @@
+68kasm demo source
+===================
+
+`demo.s` is a small syntax and code-generation smoke test for the imported
+68000 assembler.  It uses labels, `ORG`, `EQU`, `REG`, branches, `MOVEM`, and
+`DC`/`DS` data directives.
+
+Run inside platform/epoch68/emulator V7 from the directory containing `demo.s`:
+
+	68kasm -l demo.s
+	ls -l demo.h68 demo.lis
+	cat demo.h68
+
+The generated `demo.h68` is Motorola S-record text.  It is not intended to be
+executed directly as a UNIX program.
+
+For a runnable single-file program, use `hello.s`:
+
+	68kasm hello.s
+	srec2aout hello.h68 hello
+	chmod 0755 hello
+	hello

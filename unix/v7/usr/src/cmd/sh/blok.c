@@ -21,7 +21,13 @@
 POS		brkincr=BRKINCR;
 BLKPTR		blokp;			/*current search pointer*/
 BLKPTR		bloktop=BLK(end);	/*top of arena (last blok)*/
+BLKPTR		blokbot=BLK(end);	/*bottom of aligned arena*/
 
+
+VOID	initblok()
+{
+	blokbot=bloktop=BLK(round(end,BYTESPERWORD));
+}
 
 
 ADDRESS	alloc(nbytes)
@@ -50,14 +56,17 @@ ADDRESS	alloc(nbytes)
 }
 
 VOID	addblok(reqd)
-	POS		reqd;
+		POS		reqd;
 {
+	REG BLKPTR	newtop;
+	REG STKPTR	newstak;
+
 	IF stakbas!=staktop
 	THEN	REG STKPTR	rndstak;
 		REG BLKPTR	blokstak;
 
 		pushstak(0);
-		rndstak=round(staktop,BYTESPERWORD);
+		rndstak=STK(round(staktop,BYTESPERWORD));
 		blokstak=BLK(stakbas)-1;
 		blokstak->word=stakbsy; stakbsy=blokstak;
 		bloktop->word=BLK(Rcheat(rndstak)|BUSY);
@@ -65,10 +74,15 @@ VOID	addblok(reqd)
 	FI
 	reqd += brkincr; reqd &= ~(brkincr-1);
 	blokp=bloktop;
-	bloktop=bloktop->word=BLK(Rcheat(bloktop)+reqd);
-	bloktop->word=BLK(ADR(end)+1);
+	newtop=BLK(Rcheat(bloktop)+reqd);
+	newstak=STK(newtop+2);
+	IF newstak>brkend
+	THEN	setbrk((i32)(newstak-brkend));
+	FI
+	bloktop=bloktop->word=newtop;
+	bloktop->word=BLK(Rcheat(blokbot)|BUSY);
 	BEGIN
-	   REG STKPTR stakadr=STK(bloktop+2);
+	   REG STKPTR stakadr=newstak;
 	   staktop=movstr(stakbot,stakadr);
 	   stakbas=stakbot=stakadr;
 	END
@@ -80,7 +94,7 @@ VOID	free(ap)
 	REG BLKPTR	p;
 
 	IF (p=ap) ANDF p<bloktop
-	THEN	Lcheat((--p)->word) &= ~BUSY;
+	THEN	--p; p->word = BLK(Rcheat(p->word)&~BUSY);
 	FI
 }
 

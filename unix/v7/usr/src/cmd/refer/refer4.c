@@ -1,6 +1,7 @@
 # include "refer..c"
-static gate 0;
+static int gate = 0;
 static char buff[LLINE];
+void
 output (s)
 	char *s;
 {
@@ -12,6 +13,7 @@ strcpy(buff,s);
 if (strlen(buff)>LLINE)
 	err("one buff too big (%d)!", LLINE);
 }
+void
 append(s)
 	char *s;
 {
@@ -46,17 +48,19 @@ if (strlen(buff)>LLINE)
 	err("output buff too long (%d)", LLINE);
 }
 
-flout()
+void
+flout(void)
 {
 if (gate)
 	fputs(buff,ftemp);
 gate=0;
 }
 
+char *
 trimnl(ln)
 	char *ln;
 {
-register char *p ln;
+register char *p = ln;
 while (*p) p++;
 p--;
 if (*p == '\n') *p=0;

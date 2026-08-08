@@ -9,6 +9,9 @@
 
 #include	"defs.h"
 #include	"sym.h"
+#include	<sys/inttypes.h>
+
+LOCAL int	readb(void);
 
 
 /* ========	character handling for command lines	========*/
@@ -17,7 +20,8 @@
 word()
 {
 	REG CHAR	c, d;
-	REG CHAR	*argp=locstak()+BYTESPERWORD;
+	REG CHAR	*arg=locstak()+BYTESPERWORD;
+	REG ARGPTR	argp;
 	INT		alpha=1;
 
 	wdnum=0; wdset=0;
@@ -25,21 +29,21 @@ word()
 	WHILE (c=nextc(0), space(c)) DONE
 	IF !eofmeta(c)
 	THEN	REP	IF c==LITERAL
-			THEN	*argp++=(DQUOTE);
+			THEN	*arg++=(DQUOTE);
 				WHILE (c=readc()) ANDF c!=LITERAL
-				DO *argp++=(c|QUOTE); chkpr(c) OD
-				*argp++=(DQUOTE);
-			ELSE	*argp++=(c);
+				DO *arg++=(c|QUOTE); chkpr(c) OD
+				*arg++=(DQUOTE);
+			ELSE	*arg++=(c);
 				IF c=='=' THEN wdset |= alpha FI
 				IF !alphanum(c) THEN alpha=0 FI
 				IF qotchar(c)
 				THEN	d=c;
-					WHILE (*argp++=(c=nextc(d))) ANDF c!=d
+					WHILE (*arg++=(c=nextc(d))) ANDF c!=d
 					DO chkpr(c) OD
 				FI
 			FI
 		PER (c=nextc(0), !eofmeta(c)) DONE
-		argp=endstak(argp);
+		argp=(ARGPTR)endstak(arg);
 		IF !letter(argp->argval[0]) THEN wdset=0 FI
 
 		peekc=c|MARK;

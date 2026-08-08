@@ -9,6 +9,12 @@
 #include "../h/ino.h"
 #include "../h/dir.h"
 #include "../h/user.h"
+
+void free(i32 dev, daddr_t bno);
+void ifree(i32 dev, i32 ino);
+void update(void);
+
+
 typedef	struct fblk *FBLKP;
 
 /*
@@ -24,7 +30,7 @@ typedef	struct fblk *FBLKP;
  */
 struct buf *
 alloc(dev)
-dev_t dev;
+i32 dev;
 {
 	daddr_t bno;
 	register struct filsys *fp;
@@ -60,6 +66,7 @@ dev_t dev;
 	}
 	bp = getblk(dev, bno);
 	clrbuf(bp);
+	fp->s_tfree--;
 	fp->s_fmod = 1;
 	return(bp);
 
@@ -75,8 +82,8 @@ nospace:
  * back on the free list of the
  * specified device.
  */
-free(dev, bno)
-dev_t dev;
+void free(dev, bno)
+i32 dev;
 daddr_t bno;
 {
 	register struct filsys *fp;
@@ -105,6 +112,7 @@ daddr_t bno;
 		wakeup((caddr_t)&fp->s_flock);
 	}
 	fp->s_free[fp->s_nfree++] = bno;
+	fp->s_tfree++;
 	fp->s_fmod = 1;
 }
 
@@ -117,10 +125,11 @@ daddr_t bno;
  *
  * bad block on dev x/y -- not in range
  */
+i32
 badblock(fp, bn, dev)
 register struct filsys *fp;
 daddr_t bn;
-dev_t dev;
+i32 dev;
 {
 
 	if (bn < fp->s_isize || bn >= fp->s_fsize) {
@@ -143,12 +152,12 @@ dev_t dev;
  */
 struct inode *
 ialloc(dev)
-dev_t dev;
+i32 dev;
 {
 	register struct filsys *fp;
 	register struct buf *bp;
 	register struct inode *ip;
-	int i;
+	i32 i;
 	struct dinode *dp;
 	ino_t ino;
 	daddr_t adr;
@@ -157,16 +166,20 @@ dev_t dev;
 	while(fp->s_ilock)
 		sleep((caddr_t)&fp->s_ilock, PINOD);
 loop:
-	if(fp->s_ninode > 0) {
-		ino = fp->s_inode[--fp->s_ninode];
-		if (ino < ROOTINO)
-			goto loop;
-		ip = iget(dev, ino);
-		if(ip == NULL)
-			return(NULL);
+		if(fp->s_ninode > 0) {
+			ino = fp->s_inode[--fp->s_ninode];
+			if (ino < ROOTINO)
+				goto loop;
+			for(ip = &inode[0]; ip < &inode[NINODE]; ip++)
+				if(dev == ip->i_dev && ino == ip->i_number && ip->i_count != 0)
+					goto loop;
+			ip = iget(dev, ino);
+			if(ip == NULL)
+				return(NULL);
 		if(ip->i_mode == 0) {
 			for (i=0; i<NADDR; i++)
-				ip->i_un.i_addr[i] = 0;
+				ip->i_un.i_file.i_addr[i] = 0;
+			fp->s_tinode--;
 			fp->s_fmod = 1;
 			return(ip);
 		}
@@ -220,19 +233,20 @@ loop:
  * to NICINOD I nodes in the super
  * block and throws away any more.
  */
-ifree(dev, ino)
-dev_t dev;
-ino_t ino;
+void ifree(dev, ino)
+i32 dev;
+i32 ino;
 {
 	register struct filsys *fp;
 
 	fp = getfs(dev);
+	fp->s_tinode++;
+	fp->s_fmod = 1;
 	if(fp->s_ilock)
 		return;
 	if(fp->s_ninode >= NICINOD)
 		return;
 	fp->s_inode[fp->s_ninode++] = ino;
-	fp->s_fmod = 1;
 }
 
 /*
@@ -255,7 +269,7 @@ ino_t ino;
  */
 struct filsys *
 getfs(dev)
-dev_t dev;
+i32 dev;
 {
 	register struct mount *mp;
 	register struct filsys *fp;
@@ -283,7 +297,7 @@ dev_t dev;
  * the mount table to initiate modified
  * super blocks.
  */
-update()
+void update()
 {
 	register struct inode *ip;
 	register struct mount *mp;

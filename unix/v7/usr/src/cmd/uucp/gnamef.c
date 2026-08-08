@@ -14,16 +14,15 @@
  */
 
 
-gnamef(p, filename)
-FILE *p;
-char *filename;
+int
+gnamef(FILE *p, char *filename)
 {
 	static struct direct dentry;
 	int i;
 	char *s;
 
 	while (1) {
-		if (fread(&dentry,  sizeof(dentry), 1, p) != 1)
+		if (fread((char *)&dentry, sizeof(dentry), 1, p) != 1)
 			return(0);
 		if (dentry.d_ino != 0)
 			break;
@@ -35,4 +34,3 @@ char *filename;
 	filename[NAMESIZE] = '\0';
 	return(1);
 }
-

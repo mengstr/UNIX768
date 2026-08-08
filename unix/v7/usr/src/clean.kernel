@@ -1,0 +1,7 @@
+rm -f $1/usr/sys/sys/*.o
+rm -f $1/usr/sys/dev/*.o
+rm -f $1/usr/sys/conf/*.o
+rm -f $1/usr/sys/conf/unix.out
+rm -f $1/usr/sys/conf/unix
+rm -f $1/usr/sys/conf/ksyms
+echo clean.kernel: complete

@@ -1,43 +1,53 @@
 #include <stdio.h>
-int	slevel[10];
-int	clevel	= 0;
-int	spflg[20][10];
-int	sind[20][10];
-int	siflev[10];
-int	sifflg[10];
-int	iflev	= 0;
-int	ifflg	= -1;
-int	level	= 0;
-int	ind[10]	= {
+static int	slevel[10];
+static int	clevel	= 0;
+static int	spflg[20][10];
+static int	sind[20][10];
+static int	siflev[10];
+static int	sifflg[10];
+static int	iflev	= 0;
+static int	ifflg	= -1;
+static int	level	= 0;
+static int	ind[10]	= {
 	0,0,0,0,0,0,0,0,0,0 };
-int	eflg	= 0;
-int	paren	= 0;
-int	pflg[10] = {
+static int	eflg	= 0;
+static int	paren	= 0;
+static int	pflg[10] = {
 	0,0,0,0,0,0,0,0,0,0 };
-char	lchar;
-char	pchar;
-int	aflg	= 0;
-int	ct;
-int	stabs[20][10];
-int	qflg	= 0;
-char	*wif[] = {
+static char	lchar;
+static char	pchar;
+static int	aflg	= 0;
+static int	ct;
+static int	stabs[20][10];
+static int	qflg	= 0;
+static char	*wif[] = {
 	"if",0};
-char	*welse[] = {
+static char	*welse[] = {
 	"else",0};
-char	*wfor[] = {
+static char	*wfor[] = {
 	"for",0};
-char	*wds[] = {
+static char	*wds[] = {
 	"case","default",0};
-int	j	= 0;
-char	string[200];
-char	cc;
-int	sflg	= 1;
-int	peek	= -1;
-int	tabs	= 0;
-int	lastchar;
-int	c;
-main(argc,argv) int argc;
-char argv[];
+static int	j	= 0;
+static char	string[200];
+static char	cc;
+static int	sflg	= 1;
+static int	peek	= -1;
+static int	tabs	= 0;
+static int	lastchar;
+static int	c;
+
+static void ptabs(void);
+static int getch(void);
+static void cb_puts(void);
+static int lookup(char **tab);
+static int cb_gets(void);
+static void gotelse(void);
+static int getnl(void);
+static void comment(void);
+
+int
+main(void)
 {
 	while((c = getch()) != EOF){
 		switch(c){
@@ -46,10 +56,10 @@ char argv[];
 			if(lookup(welse) == 1){
 				gotelse();
 				if(sflg == 0 || j > 0)string[j++] = c;
-				puts();
+				cb_puts();
 				sflg = 0;
 				if(getnl() == 1){
-					puts();
+					cb_puts();
 					printf("\n");
 					sflg = 1;
 					pflg[level]++;
@@ -61,7 +71,7 @@ char argv[];
 			continue;
 		case '\n':
 			if((eflg = lookup(welse)) == 1)gotelse();
-			puts();
+			cb_puts();
 			printf("\n");
 			sflg = 1;
 			if(eflg == 1){
@@ -83,9 +93,9 @@ char argv[];
 				tabs--;
 			}
 			string[j++] = c;
-			puts();
+			cb_puts();
 			getnl();
-			puts();
+			cb_puts();
 			printf("\n");
 			tabs++;
 			sflg = 1;
@@ -103,7 +113,7 @@ char argv[];
 				tabs -= pflg[level];
 				pflg[level] = 0;
 			}
-			puts();
+			cb_puts();
 			tabs--;
 			ptabs();
 			if((peek = getch()) == ';'){
@@ -112,7 +122,7 @@ char argv[];
 			}
 			else printf("%c",c);
 			getnl();
-			puts();
+			cb_puts();
 			printf("\n");
 			sflg = 1;
 			if(clevel < slevel[level])if(level > 0)level--;
@@ -131,7 +141,7 @@ char argv[];
 					string[j++] = getch();
 				}
 				if(cc == '\n'){
-					puts();
+					cb_puts();
 					sflg = 1;
 				}
 			}
@@ -143,20 +153,21 @@ char argv[];
 			continue;
 		case ';':
 			string[j++] = c;
-			puts();
+			cb_puts();
 			if(pflg[level] > 0 && ind[level] == 0){
 				tabs -= pflg[level];
 				pflg[level] = 0;
 			}
 			getnl();
-			puts();
+			cb_puts();
 			printf("\n");
 			sflg = 1;
-			if(iflev > 0)
+			if(iflev > 0) {
 				if(ifflg == 1){iflev--;
 					ifflg = 0;
 				}
 				else iflev = 0;
+			}
 			continue;
 		case '\\':
 			string[j++] = c;
@@ -174,11 +185,11 @@ char argv[];
 			}
 			if(lookup(wds) == 0){
 				sflg = 0;
-				puts();
+				cb_puts();
 			}
 			else{
 				tabs--;
-				puts();
+				cb_puts();
 				tabs++;
 			}
 			if((peek = getch()) == ';'){
@@ -186,7 +197,7 @@ char argv[];
 				peek = -1;
 			}
 			getnl();
-			puts();
+			cb_puts();
 			printf("\n");
 			sflg = 1;
 			continue;
@@ -200,7 +211,7 @@ char argv[];
 		case ')':
 			paren--;
 			string[j++] = c;
-			puts();
+			cb_puts();
 			if(getnl() == 1){
 				peek = '\n';
 				if(paren != 0)aflg = 1;
@@ -216,17 +227,17 @@ char argv[];
 			while((cc = getch()) != '\n')string[j++] = cc;
 			string[j++] = cc;
 			sflg = 0;
-			puts();
+			cb_puts();
 			sflg = 1;
 			continue;
 		case '(':
 			string[j++] = c;
 			paren++;
 			if(lookup(wfor) == 1){
-				while((c = gets()) != ';');
+				while((c = cb_gets()) != ';');
 				ct=0;
 cont:
-				while((c = gets()) != ')'){
+				while((c = cb_gets()) != ')'){
 					if(c == '(') ct++;
 				}
 				if(ct != 0){
@@ -234,7 +245,7 @@ cont:
 					goto cont;
 				}
 				paren--;
-				puts();
+				cb_puts();
 				if(getnl() == 1){
 					peek = '\n';
 					pflg[level]++;
@@ -244,7 +255,7 @@ cont:
 				continue;
 			}
 			if(lookup(wif) == 1){
-				puts();
+				cb_puts();
 				stabs[clevel][iflev] = tabs;
 				spflg[clevel][iflev] = pflg[level];
 				sind[clevel][iflev] = ind[level];
@@ -257,18 +268,22 @@ cont:
 			if(c != ',')lchar = c;
 		}
 	}
+	return(0);
 }
-ptabs(){
+static void
+ptabs(void){
 	int i;
 	for(i=0; i < tabs; i++)printf("\t");
 }
-getch(){
+static int
+getch(void){
 	if(peek < 0 && lastchar != ' ' && lastchar != '\t')pchar = lastchar;
 	lastchar = (peek<0) ? getc(stdin):peek;
 	peek = -1;
 	return(lastchar);
 }
-puts(){
+static void
+cb_puts(void){
 	if(j > 0){
 		if(sflg != 0){
 			ptabs();
@@ -289,8 +304,8 @@ puts(){
 		}
 	}
 }
-lookup(tab)
-char *tab[];
+static int
+lookup(char **tab)
 {
 	char r;
 	int l,kk,k,i;
@@ -304,8 +319,9 @@ char *tab[];
 	}
 	return(0);
 }
-gets(){
-	char ch;
+static int
+cb_gets(void){
+	int ch;
 beg:
 	if((ch = string[j++] = getch()) == '\\'){
 		string[j++] = getch();
@@ -316,19 +332,21 @@ beg:
 		goto beg;
 	}
 	if(ch == '\n'){
-		puts();
+		cb_puts();
 		aflg = 1;
 		goto beg;
 	}
 	else return(ch);
 }
-gotelse(){
+static void
+gotelse(void){
 	tabs = stabs[clevel][iflev];
 	pflg[level] = spflg[clevel][iflev];
 	ind[level] = sind[clevel][iflev];
 	ifflg = 1;
 }
-getnl(){
+static int
+getnl(void){
 	while((peek = getch()) == '\t' || peek == ' '){
 		string[j++] = peek;
 		peek = -1;
@@ -349,11 +367,12 @@ getnl(){
 	}
 	return(0);
 }
-comment(){
+static void
+comment(void){
 rep:
 	while((c = string[j++] = getch()) != '*')
 		if(c == '\n'){
-			puts();
+			cb_puts();
 			sflg = 1;
 		}
 gotstar:

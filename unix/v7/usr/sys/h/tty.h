@@ -1,3 +1,8 @@
+#ifndef V7_SYS_TTY_H
+#define V7_SYS_TTY_H
+
+#include "param.h"
+
 /*
  * A clist structure is the head
  * of a linked list queue of characters.
@@ -8,7 +13,7 @@
  */
 struct clist
 {
-	int	c_cc;		/* character count */
+	i32	c_cc;		/* character count */
 	char	*c_cf;		/* pointer to first char */
 	char	*c_cl;		/* pointer to last char */
 };
@@ -38,8 +43,8 @@ struct tty
 	struct	clist t_rawq;	/* input chars right off device */
 	struct	clist t_canq;	/* input chars after erase and kill */
 	struct	clist t_outq;	/* output list to device */
-	int	(* t_oproc)();	/* routine to start output */
-	int	(* t_iproc)();	/* routine to start input */
+	i32	(* t_oproc)(struct tty *);	/* routine to start output */
+	i32	(* t_iproc)(struct tty *);	/* routine to start input */
 	struct chan *t_chan;	/* destination channel */
 	caddr_t	t_linep;	/* aux line discipline pointer */
 	caddr_t	t_addr;		/* device address */
@@ -56,12 +61,12 @@ struct tty
 	char	t_ispeed;	/* input speed */
 	char	t_ospeed;	/* output speed */
 	union {
-		struct tc;
+		struct tc t_tc;	/* 768 - Anonymous union member is not allowed */
 		struct clist t_ctlq;
 	} t_un;
 };
 
-#define	tun	tp->t_un
+#define	tun	tp->t_un.t_tc
 
 /*
  * structure of arg for ioctl
@@ -71,7 +76,7 @@ struct	ttiocb {
 	char	ioc_ospeed;
 	char	ioc_erase;
 	char	ioc_kill;
-	int	ioc_flags;
+	i32	ioc_flags;
 };
 
 #define	TTIPRI	28
@@ -81,7 +86,11 @@ struct	ttiocb {
 #define	CEOT	004
 #define	CKILL	'@'
 #define	CQUIT	034		/* FS, cntl shift L */
-#define	CINTR	0177		/* DEL */
+/*
+ * Historical V7 used DEL as the interrupt character. Epoch68's host terminal
+ * path sends ETX for Ctrl-C, so use the modern console value by default.
+ */
+#define	CINTR	003		/* Ctrl-C */
 #define	CSTOP	023		/* Stop output: ctl-s */
 #define	CSTART	021		/* Start output: ctl-q */
 #define	CBRK	0377
@@ -160,3 +169,5 @@ struct	ttiocb {
 #define	FIONCLEX	(('f'<<8)|2)
 #define	MXLSTN		(('x'<<8)|1)
 #define	MXNBLK		(('x'<<8)|2)
+
+#endif /* V7_SYS_TTY_H */

@@ -11,10 +11,11 @@
  *		non zero -  failed  -  status from child
  */
 
-shio(cmd, fi, fo, user)
-char *cmd, *fi, *fo, *user;
+int
+shio (char *cmd, char *fi, char *fo, char *user)
 {
-	int status, f;
+	i16 status;
+	int f;
 	int uid, pid, ret;
 	char path[MAXFULLNAME];
 
@@ -35,7 +36,7 @@ char *cmd, *fi, *fo, *user;
 		ASSERT(f == 1, "BAD OPEN fileno %d", f);
 		if (gninfo(user, &uid, path) == 0)
 			setuid(uid);
-		execl(SHELL, "sh", "-c", cmd, 0);
+		execl(SHELL, "sh", "-c", cmd, (char *)0);
 		exit(100);
 	}
 	while ((ret = wait(&status)) != pid && ret != -1);

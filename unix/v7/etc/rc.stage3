@@ -1,0 +1,6 @@
+date >/dev/console
+/etc/update
+cat /dev/null >/etc/utmp
+rm -f /usr/tmp/*
+rm -f /tmp/*
+/etc/cron

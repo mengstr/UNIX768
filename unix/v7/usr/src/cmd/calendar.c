@@ -5,6 +5,7 @@
    used by calendar command
 */
 #include <time.h>
+#include <stdio.h>
 
 #define DAY (3600*24L)
 
@@ -22,20 +23,24 @@ char *month[] = {
 	"[Nn]ov",
 	"[Dd]ec"
 };
-struct tm *localtime();
+static void tprint(time_t t);
 
-tprint(t)
-long t;
+static void
+tprint(time_t t)
 {
 	struct tm *tm;
+	int year;
+
 	tm = localtime(&t);
-	printf("(^|[ (,;])((%s[^ ]* *|%d/)0*%d)([^0123456789]|$)\n",
-		month[tm->tm_mon], tm->tm_mon + 1, tm->tm_mday);
+	year = (tm->tm_year + 1900) % 100;
+	printf("(^|[ (,;])((%s[^ ]* *|%d/)0*%d(/(20%02d|%02d))?)([^0123456789]|$)\n",
+		month[tm->tm_mon], tm->tm_mon + 1, tm->tm_mday, year, year);
 }
 
-main()
+int
+main(void)
 {
-	long t;
+	time_t t;
 	time(&t);
 	tprint(t);
 	switch(localtime(&t)->tm_wday) {

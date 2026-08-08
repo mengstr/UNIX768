@@ -1,0 +1,68 @@
+: bootstrap/recovery driver; the installed compiler is /bin/cc
+
+prog=$0
+bin_dir=/usr/lib/ack
+runtime_dir=/lib
+
+cpp_bin=$bin_dir/cpp
+c1_bin=$bin_dir/c1
+opt_bin=$bin_dir/opt
+opt2_bin=$bin_dir/opt2
+c2_bin=$bin_dir/ncg
+as_bin=$bin_dir/as
+led_bin=$bin_dir/led
+cv_bin=$bin_dir/cv
+
+crt_object=$runtime_dir/crt0.o
+libc_archive=$runtime_dir/libc.a
+libfp_archive=$runtime_dir/libfp.a
+end_object=$runtime_dir/end.o
+
+compile_only=
+keep_temps=
+strip_output=
+verbose=
+c1_flags="-L -Vw2.2i2.2p4.2f4.2s2.2l4.2d8.2x8.2"
+opt_level=1
+output_name=
+source_file=
+link_inputs=
+cpp_flags=
+need_arg=
+
+while :
+do
+	case "$1" in "") break;; esac
+	case "$need_arg" in 1) cpp_flags="$cpp_flags $1"; need_arg=; shift; continue;; esac
+	case "$1" in
+	-O0) opt_level=0;; -O1) opt_level=1;; -O2) opt_level=2;;
+	-c) compile_only=1;; -k) keep_temps=1;; -s) strip_output=1;; -v) verbose=1;;
+	-w) c1_flags="$c1_flags -a";;
+	-o) shift; test -n "$1" || exit 1; output_name=$1;;
+	-D*|-I*|-U*) cpp_flags="$cpp_flags $1";; -D|-I|-U) need_arg=1;;
+	*.c|*.C) test -z "$source_file" || { echo "$prog: only one C source is supported"; exit 1; }; source_file=$1;;
+	-*) echo "$prog: unsupported option: $1"; exit 1;;
+	*) link_inputs="$link_inputs $1";;
+	esac
+	shift
+done
+test -z "$need_arg" || exit 1
+test -n "$source_file$link_inputs" || exit 1
+test "$compile_only:$source_file" != 1: || exit 1
+
+base=`basename "$source_file" .c`
+object_name=$base.o
+test -n "$compile_only" && test -n "$output_name" && object_name=$output_name
+pre=ackcc$$.i; ack=ackcc$$.k; em=ackcc$$.m; asm=ackcc$$.s
+run() { test -z "$verbose" || echo "$@"; "$@" || exit 1; }
+run "$cpp_bin" -I/usr/include $cpp_flags "$source_file" >$pre
+run "$c1_bin" $c1_flags $pre $ack
+case "$opt_level" in 0) run "$opt_bin" -n $ack >$em;; 1) run "$opt_bin" $ack >$em;; 2) run "$opt2_bin" $ack >$em;; esac
+run "$c2_bin" $em $asm
+run "$as_bin" - -o "$object_name" $asm
+test -n "$keep_temps" || rm -f $pre $ack $em $asm
+test -n "$compile_only" && exit 0
+test -n "$output_name" || output_name=a.out
+run "$led_bin" ${strip_output:+-s} -o ackcc$$.ack $crt_object "$object_name" $link_inputs $libc_archive $libfp_archive $libc_archive $end_object
+run "$cv_bin" ackcc$$.ack "$output_name"
+test -n "$keep_temps" || rm -f ackcc$$.ack

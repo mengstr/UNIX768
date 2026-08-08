@@ -3,7 +3,14 @@
 #include "../h/seg.h"
 #include "../h/buf.h"
 #include "../h/conf.h"
+#include "../../include/stdarg.h"
 
+#pragma dontwarn 213
+void printn(long n, i32 b);
+void panic(char *s);
+void prdev(char *str, i32 dev);
+void deverror(struct buf *bp, i32 o1, i32 o2);
+static void prf_core(char *fmt, va_list args);
 /*
  * In case console is off,
  * panicstr contains argument to last
@@ -22,16 +29,12 @@ char	*panicstr;
  * suspended.
  * Printf should not be used for chit-chat.
  */
-/* VARARGS 1 */
-printf(fmt, x1)
-register char *fmt;
-unsigned x1;
+static void
+prf_core(register char *fmt, va_list args)
 {
-	register c;
-	register unsigned int *adx;
+	register i32 c;
 	char *s;
 
-	adx = &x1;
 loop:
 	while((c = *fmt++) != '%') {
 		if(c == '\0')
@@ -40,24 +43,33 @@ loop:
 	}
 	c = *fmt++;
 	if(c == 'd' || c == 'u' || c == 'o' || c == 'x')
-		printn((long)*adx, c=='o'? 8: (c=='x'? 16:10));
+		printn((long)va_arg(args, i32), c=='o'? 8: (c=='x'? 16:10));
 	else if(c == 's') {
-		s = (char *)*adx;
+		s = va_arg(args, char *);
 		while(c = *s++)
 			putchar(c);
 	} else if (c == 'D') {
-		printn(*(long *)adx, 10);
-		adx += (sizeof(long) / sizeof(int)) - 1;
+		printn(va_arg(args, long), 10);
 	}
-	adx++;
 	goto loop;
+}
+
+void
+printf(char *fmt, ...)
+{
+	va_list args;
+
+	va_start(args, fmt);
+	prf_core(fmt, args);
+	va_end(args);
 }
 
 /*
  * Print an unsigned integer in base b.
  */
-printn(n, b)
+void printn(n, b)
 long n;
+i32 b;
 {
 	register long a;
 
@@ -67,7 +79,7 @@ long n;
 	}
 	if(a = n/b)
 		printn(a, b);
-	putchar("0123456789ABCDEF"[(int)(n%b)]);
+	putchar("0123456789ABCDEF"[(i32)(n%b)]);
 }
 
 /*
@@ -76,7 +88,7 @@ long n;
  * It syncs, prints "panic: mesg" and
  * then loops.
  */
-panic(s)
+void panic(s)
 char *s;
 {
 	panicstr = s;
@@ -92,9 +104,9 @@ char *s;
  * x and y are the major and minor parts of
  * the device argument.
  */
-prdev(str, dev)
+void prdev(str, dev)
 char *str;
-dev_t dev;
+i32 dev;
 {
 
 	printf("%s on dev %u/%u\n", str, major(dev), minor(dev));
@@ -107,10 +119,11 @@ dev_t dev;
  * and an octal word (usually some error
  * status register) passed as argument.
  */
-deverror(bp, o1, o2)
+void deverror(bp, o1, o2)
 register struct buf *bp;
+i32 o1;
+i32 o2;
 {
-
 	prdev("err", bp->b_dev);
 	printf("bn=%D er=%o,%o\n", bp->b_blkno, o1, o2);
 }

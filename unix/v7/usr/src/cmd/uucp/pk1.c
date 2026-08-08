@@ -6,6 +6,7 @@
 #include <sys/buf.h>
 #include <setjmp.h>
 #include <signal.h>
+#include "pkuser.h"
 
 #define PKTIME 10
 int Errorrate;
@@ -18,15 +19,12 @@ int Ntimeout = 0;
  *
  */
 
-struct pack *pklines[NPLINES];
-
 /*
  * start initial synchronization.
  */
 
 struct pack *
-pkopen(ifn, ofn)
-int ifn, ofn;
+pkopen (int ifn, int ofn)
 {
 	struct pack *pk;
 	char **bp;
@@ -88,7 +86,7 @@ int ifn, ofn;
  *
  */
 
-int pksizes[] = {
+i32 pksizes[] = {
 	1, 32, 64, 128, 256, 512, 1024, 2048, 4096, 1
 };
 
@@ -97,8 +95,8 @@ int pksizes[] = {
  * Pseudo-dma byte collection.
  */
 
-pkgetpack(ipk)
-struct pack *ipk;
+int
+pkgetpack (struct pack *ipk)
 {
 	int ret, k, tries;
 	register char *p;
@@ -145,8 +143,8 @@ struct pack *ipk;
 	p = (caddr_t) h;
 	hdchk = p[1] ^ p[2] ^ p[3] ^ p[4];
 	p += 2;
-	sum = (unsigned) *p++;
-	sum |= (unsigned) *p << 8;
+	sum = (unsigned)(unsigned char)*p++;
+	sum |= (unsigned)(unsigned char)*p << 8;
 	h->sum = sum;
 	PKDEBUG(7, "rec h->cntl %o\n", (unsigned) h->cntl);
 	k = h->ksize;
@@ -188,16 +186,13 @@ struct pack *ipk;
 	}
 	ret = pkcget(pk->p_ifn, (char *) bp, pk->p_rsize);
 	PKASSERT(ret != -1, "PKGETPKT CAN't READ %d", ret);
-	pkdata(h->cntl, h->sum, pk, (char *) bp);
+	pkdata(h->cntl, h->sum, pk, bp);
 	return;
 }
 
 
-pkdata(c, sum, pk, bp)
-char c;
-short sum;
-register struct pack *pk;
-char **bp;
+int
+pkdata (int c, int sum, register struct pack *pk, char **bp)
 {
 register x;
 int t;
@@ -232,7 +227,8 @@ slot:
 /*
  * setup input transfers
  */
-pkrstart(pk)
+int
+pkrstart (int pk)
 {}
 
 /*
@@ -242,10 +238,8 @@ pkrstart(pk)
  * in the driver (t_line==2) the transfer is
  * passed on to the driver.
  */
-pkxstart(pk, cntl, x)
-struct pack *pk;
-char cntl;
-register x;
+int
+pkxstart (struct pack *pk, int cntl, register x)
 {
 	register char *p;
 	int ret;
@@ -296,9 +290,8 @@ PKDEBUG(7, "send %o\n", (unsigned) cntl);
 }
 
 
-pkmove(p1, p2, count, flag)
-char *p1, *p2;
-int count, flag;
+int
+pkmove (char *p1, char *p2, int count, int flag)
 {
 	char *s, *d;
 	int i;
@@ -328,11 +321,13 @@ int count, flag;
  */
 
 jmp_buf Getjbuf;
-cgalarm() { longjmp(Getjbuf, 1); }
+void cgalarm(i16 sig)
+{
+	longjmp(Getjbuf, 1);
+}
 
-pkcget(fn, b, n)
-int fn, n;
-char *b;
+int
+pkcget (int fn, char *b, int n)
 {
 	int nchars, ret;
 
@@ -358,9 +353,8 @@ char *b;
 }
 
 
-generror(p, s)
-char *p;
-int s;
+int
+generror (char *p, int s)
 {
 	int r;
 	if (Errorrate != 0 && (rand() % Errorrate) == 0) {
@@ -370,5 +364,3 @@ fprintf(stderr, "gen err at %o, (%o), ", r, (unsigned) *(p + r));
 	}
 	return;
 }
-
-

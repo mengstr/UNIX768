@@ -14,6 +14,11 @@ char	*dargv[] = {
 #include <sys/ino.h>
 #include <sys/inode.h>
 #include <sys/filsys.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+struct passwd *getpwent(void);
 
 #define	ITABSZ	256
 #define	ISIZ	(BSIZE/sizeof(struct dinode))
@@ -39,12 +44,12 @@ int	fi;
 unsigned	ino;
 unsigned	nfiles;
 
-struct	passwd	*getpwent();
-char	*malloc();
-char	*copy();
+static void check(char *file); static void account_inode(struct dinode *ip);
+static void bread(unsigned bno, char *buf, int cnt);
+static i32 qcmp(const void *vp1, const void *vp2);
+static void report(void); static char *copy(char *s);
 
-main(argc, argv)
-char **argv;
+main(int argc, char **argv)
 {
 	register int n;
 	register struct passwd *lp;
@@ -54,7 +59,7 @@ char **argv;
 		du[n].uid = n;
 	while((lp=getpwent()) != 0) {
 		n = lp->pw_uid;
-		if (n>NUID)
+		if (n>=NUID)
 			continue;
 		if(du[n].name)
 			continue;
@@ -84,6 +89,7 @@ char **argv;
 	return(0);
 }
 
+static void
 check(file)
 char *file;
 {
@@ -110,17 +116,18 @@ char *file;
 		bread(i, (char *)itab, sizeof itab);
 		for (j=0; j<ITABSZ && ino<nfiles; j++) {
 			ino++;
-			acct(&itab[j]);
+			account_inode(&itab[j]);
 		}
 	}
 }
 
-acct(ip)
+static void
+account_inode(ip)
 register struct dinode *ip;
 {
 	register n;
 	register char *np;
-	static fino;
+	static int fino;
 
 	if ((ip->di_mode&IFMT) == 0)
 		return;
@@ -152,7 +159,7 @@ register struct dinode *ip;
 			fino = 0;
 			goto tryagain;
 		}
-		if (np = du[ip->di_uid].name)
+		if ((np = du[ip->di_uid].name))
 			printf("%.7s	", np);
 		else
 			printf("%d	", ip->di_uid);
@@ -167,6 +174,7 @@ register struct dinode *ip;
 	}
 }
 
+static void
 bread(bno, buf, cnt)
 unsigned bno;
 char *buf;
@@ -179,17 +187,25 @@ char *buf;
 	}
 }
 
-qcmp(p1, p2)
-register struct du *p1, *p2;
+static i32
+qcmp(const void *vp1, const void *vp2)
 {
+	register struct du *p1 = (struct du *)vp1;
+	register struct du *p2 = (struct du *)vp2;
+
 	if (p1->blocks > p2->blocks)
 		return(-1);
 	if (p1->blocks < p2->blocks)
 		return(1);
+	if (p1->name == 0)
+		return(p2->name == 0 ? 0 : 1);
+	if (p2->name == 0)
+		return(-1);
 	return(strcmp(p1->name, p2->name));
 }
 
-report()
+static void
+report(void)
 {
 	register i;
 
@@ -200,18 +216,18 @@ report()
 		for (i=0; i<TSIZE-1; i++)
 			if (sizes[i]) {
 				t += i*sizes[i];
-				printf("%d	%d	%D\n", i, sizes[i], t);
+				printf("%d	%d	%ld\n", i, sizes[i], t);
 			}
-		printf("%d	%d	%D\n", TSIZE-1, sizes[TSIZE-1], overflow+t);
+		printf("%d	%d	%ld\n", TSIZE-1, sizes[TSIZE-1], overflow+t);
 		return;
 	}
 	qsort(du, NUID, sizeof(du[0]), qcmp);
 	for (i=0; i<NUID; i++) {
 		if (du[i].blocks==0)
 			return;
-		printf("%5D\t", du[i].blocks);
+		printf("%5ld\t", du[i].blocks);
 		if (fflg)
-			printf("%5D\t", du[i].nfiles);
+			printf("%5ld\t", du[i].nfiles);
 		if (du[i].name)
 			printf("%s\n", du[i].name);
 		else
@@ -219,7 +235,7 @@ report()
 	}
 }
 
-char *
+static char *
 copy(s)
 char *s;
 {
@@ -229,7 +245,7 @@ char *s;
 	for(n=0; s[n]; n++)
 		;
 	p = malloc((unsigned)n+1);
-	for(n=0; p[n] = s[n]; n++)
+	for(n=0; (p[n] = s[n]); n++)
 		;
 	return(p);
 }

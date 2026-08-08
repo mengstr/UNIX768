@@ -1,0 +1,17 @@
+set -e
+
+sh clean
+yacc -d e.y
+mv y.tab.c e.c
+mv y.tab.h e.def
+
+for f in diacrit eqnbox font fromto funny glob integral io lex lookup
+do
+	cc -DYYSTYPE=eqn_value -I. -c $f.c
+done
+for f in mark matrix move over paren pile shift size sqrt text
+do
+	cc -DYYSTYPE=eqn_value -I. -c $f.c
+done
+cc -DYYSTYPE=eqn_value -I. -c e.c
+cc -s -o eqn *.o

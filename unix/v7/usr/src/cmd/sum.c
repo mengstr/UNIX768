@@ -3,9 +3,10 @@
  */
 
 #include <stdio.h>
+#include <unistd.h>
 
-main(argc,argv)
-char **argv;
+int
+main(int argc, char **argv)
 {
 	register unsigned sum;
 	register i, c;

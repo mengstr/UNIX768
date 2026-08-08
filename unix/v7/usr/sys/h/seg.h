@@ -1,3 +1,6 @@
+#ifndef V7_SYS_SEG_H
+#define V7_SYS_SEG_H
+
 /*
  * KT-11 addresses and bits.
  */
@@ -15,9 +18,11 @@
  * structure used to address
  * a sequence of integers.
  */
-physadr	ka6;		/* 11/40 KISA6; 11/45 KDSA6 */
+extern physadr	ka6;	/* 11/40 KISA6; 11/45 KDSA6 */
 
 /*
  * address to access 11/70 UNIBUS map
  */
 #define	UBMAP	((physadr)0170200)
+
+#endif /* V7_SYS_SEG_H */

@@ -1,13 +1,12 @@
-#
 /*
  * getty -- adapt to terminal speed on dialup, and call login
  */
 
 #include <sgtty.h>
-#include <signal.h>
+#include <unistd.h>
+#include <local.h>
 #define ERASE	'#'
 #define KILL	'@'
-
 struct sgttyb tmode;
 struct tchars tchars = { '\177', '\034', '\021', '\023', '\004', '\377' };
 
@@ -26,7 +25,7 @@ struct	tab {
 	'0', 1,
 	ANYP+RAW+NL1+CR1, ANYP+ECHO+CR1,
 	B300, B300,
-	"\n\r\033;\007login: ",
+	"\033[2J\033[H\n\r\033;\007login: ",
 
 	1, 2,
 	ANYP+RAW+NL1+CR1, ANYP+XTABS+ECHO+CRMOD+FF1,
@@ -102,9 +101,14 @@ struct	tab {
 #define	EOT	04		/* EOT char */
 
 char	name[16];
+char	*login_argv[3];
 int	crmod;
 int	upper;
 int	lower;
+
+static i32 getname(void);
+void getty_puts(char *as);
+void putchr(i32 cc);
 
 char partab[] = {
 	0001,0201,0201,0001,0201,0001,0001,0201,
@@ -125,14 +129,14 @@ char partab[] = {
 	0000,0200,0200,0000,0200,0000,0000,0201
 };
 
-main(argc, argv)
-char **argv;
+int
+main(int argc, char **argv)
 {
 	register struct tab *tabp;
 	int tname;
 
 	tname = '0';
-	if (argc > 1)
+	if (argc > 1 && argv[1][0])
 		tname = argv[1][0];
 	switch (tname) {
 
@@ -155,7 +159,7 @@ char **argv;
 		tmode.sg_ospeed = tabp->ospeed;
 		ioctl(0, TIOCSETP, &tmode);
 		ioctl(0, TIOCSETC, &tchars);
-		puts(tabp->message);
+		getty_puts(tabp->message);
 		if(getname()) {
 			tmode.sg_erase = ERASE;
 			tmode.sg_kill = KILL;
@@ -166,16 +170,20 @@ char **argv;
 				tmode.sg_flags |= LCASE;
 			if(lower)
 				tmode.sg_flags &= ~LCASE;
-			stty(0, &tmode);
+			ioctl(0, TIOCSETP, &tmode);
 			putchr('\n');
-			execl("/bin/login", "login", name, 0);
+			login_argv[0] = "login";
+			login_argv[1] = name;
+			login_argv[2] = 0;
+			execv("/bin/login", login_argv);
 			exit(1);
 		}
 		tname = tabp->nname;
 	}
 }
 
-getname()
+static i32
+getname(void)
 {
 	register char *np;
 	register c;
@@ -187,13 +195,18 @@ getname()
 	np = name;
 	for (;;) {
 		if (read(0, &cs, 1) <= 0)
-			exit(0);
+			continue;
 		if ((c = cs&0177) == 0)
-			return(0);
+		    continue;
 		if (c==EOT)
-			exit(1);
-		if (c=='\r' || c=='\n' || np >= &name[16])
+			continue;
+		if (c=='\r' || c=='\n')
 			break;
+		if (np >= &name[sizeof(name) - 1]) {
+			putchr('\r');
+			putchr('\n');
+			break;
+		}
 		putchr(cs);
 		if (c>='a' && c <='z')
 			lower++;
@@ -216,10 +229,11 @@ getname()
 	*np = 0;
 	if (c == '\r')
 		crmod++;
-	return(1);
+	return(np > name);
 }
 
-puts(as)
+void
+getty_puts(as)
 char *as;
 {
 	register char *s;
@@ -229,10 +243,18 @@ char *as;
 		putchr(*s++);
 }
 
-putchr(cc)
+void
+putchr(i32 cc)
 {
 	char c;
+
 	c = cc;
+#if 0 /* permanently disabled for modern 8N1 terminals and emulators */
+	/*
+	 * Historical getty placed software parity in bit 7.  Modern terminals
+	 * and emulators commonly treat that bit as 8-bit data instead.
+	 */
 	c |= partab[c&0177] & 0200;
-	write(1, &c, 1);
+#endif
+	write(0, &c, 1);
 }

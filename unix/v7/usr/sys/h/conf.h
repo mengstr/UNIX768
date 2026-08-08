@@ -1,3 +1,9 @@
+#ifndef V7_SYS_CONF_H
+#define V7_SYS_CONF_H
+
+struct buf;
+struct tty;
+
 /*
  * Declaration of block device
  * switch. Each entry (row) is
@@ -9,9 +15,9 @@
  */
 extern struct bdevsw
 {
-	int	(*d_open)();
-	int	(*d_close)();
-	int	(*d_strategy)();
+		i32	(*d_open)(i32, i32);
+		i32	(*d_close)(i32, i32);
+		i32	(*d_strategy)(struct buf *);
 	struct buf *d_tab;
 } bdevsw[];
 
@@ -20,12 +26,12 @@ extern struct bdevsw
  */
 extern struct cdevsw
 {
-	int	(*d_open)();
-	int	(*d_close)();
-	int	(*d_read)();
-	int	(*d_write)();
-	int	(*d_ioctl)();
-	int	(*d_stop)();
+		i32	(*d_open)(i32, i32);
+		i32	(*d_close)(i32, i32);
+		i32	(*d_read)(i32);
+		i32	(*d_write)(i32);
+		i32	(*d_ioctl)(i32, i32, caddr_t, i32);
+		i32	(*d_stop)(struct tty *);
 	struct tty *d_ttys;
 } cdevsw[];
 
@@ -34,14 +40,16 @@ extern struct cdevsw
  */
 extern struct linesw
 {
-	int	(*l_open)();
-	int	(*l_close)();
-	int	(*l_read)();
-	char	*(*l_write)();
-	int	(*l_ioctl)();
-	int	(*l_rint)();
-	int	(*l_rend)();
-	int	(*l_meta)();
-	int	(*l_start)();
-	int	(*l_modem)();
+		i32	(*l_open)(i32, struct tty *, caddr_t);
+		i32	(*l_close)(struct tty *);
+		i32	(*l_read)(struct tty *);
+		caddr_t	(*l_write)(struct tty *);
+		i32	(*l_ioctl)(i32, struct tty *, caddr_t);
+		i32	(*l_rint)(i32, struct tty *);
+		i32	(*l_rend)(struct tty *);
+		i32	(*l_meta)(struct tty *);
+		i32	(*l_start)(struct tty *);
+		i32	(*l_modem)(struct tty *, i32);
 } linesw[];
+
+#endif /* V7_SYS_CONF_H */

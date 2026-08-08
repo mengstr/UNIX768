@@ -1,5 +1,6 @@
 # include "refer..c"
 int newr[250];
+int
 chkdup ( tag )
 	char *tag;
 {
@@ -15,13 +16,14 @@ if (refnum>=NRFTBL)
 strcpy (rtp, tag);
 while (*rtp++);
 if (rtp > reftext + NRFTXT)
-	err("reftext too big (%d)", rtp-reftext);
+	err("reftext too big (%d)", (int)(rtp-reftext));
 return(0);
 }
-dumpold()
+void
+dumpold(void)
 {
 FILE *fi;
-int c, g1 0, nr 1;
+int c, g1 = 0, nr = 1;
 if (!endpush) return;
 fclose(fo);
 fo=NULL;
@@ -48,7 +50,7 @@ while ( (c = getc(fi)) >0)
 		{
 		/* make old-new ref number table */
 		char tb[20];
-		char *s tb;
+		char *s = tb;
 		while ( (c=getc(fi)) != FLAG)
 			*s++ = c;
 		*s=0;
@@ -69,6 +71,7 @@ unlink(tfile);
 fprintf(ftemp, ".]>\n");
 }
 
+void
 recopy (fnam)
 	char *fnam;
 {
@@ -86,7 +89,7 @@ while ( (c = getc(ftemp)) != EOF)
 	if (c == FLAG)
 		{
 		char tb[10];
-		char *s tb;
+		char *s = tb;
 		while ( (c = getc(ftemp)) != FLAG)
 			*s++ = c;
 		*s=0;

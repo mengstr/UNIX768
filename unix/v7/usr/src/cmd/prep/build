@@ -1,0 +1,7 @@
+set -e
+
+sh clean
+cc -I. -c prep0.c
+cc -I. -c prep1.c
+cc -I. -c prep2.c
+cc -s -o prep prep0.o prep1.o prep2.o

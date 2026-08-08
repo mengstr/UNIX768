@@ -1,0 +1,205 @@
+#!/bin/sh
+
+set -eu
+
+if test "$#" != 3
+then
+	echo "usage: package-bootstrap project-root filesystem-root build-root" >&2
+	exit 1
+fi
+
+project=$1
+root=$2
+build=$3
+packages=$build/bootstrap-packages
+archives=$build/archives
+v7tar=$build/bin/v7tar
+pack=$build/bin/host-pack
+
+test -x "$v7tar"
+test -x "$pack"
+
+rm -rf "$packages"
+mkdir -p "$packages" "$archives" "$root/dist"
+
+archive()
+{
+	name=$1
+	marker=$2
+	package=$3
+	shift 3
+	find "$package" -type f \( -name '*.o' -o -name '*.k' -o -name '*.m' \
+		-o -name a.out -o -name core \) -delete
+	rm -f "$archives/$name.tar" "$archives/$name.tar.z"
+	"$v7tar" -root "$package" -output "$archives/$name.tar" \
+		-marker "$marker" "$@"
+	"$pack" "$archives/$name.tar" >/dev/null
+	cp "$archives/$name.tar.z" "$root/dist/$name.tar.z"
+	echo "ARCHIVE $name.tar.z"
+}
+
+# Headers needed before the first target-side compilation.
+p=$packages/headers
+mkdir -p "$p/usr/sys"
+cp -R "$project/unix/v7/usr/include" "$p/usr/"
+cp -R "$project/unix/v7/usr/sys/h" "$p/usr/sys/"
+touch "$p/usr/include/.bhdr"
+archive hdrs usr/include/.bhdr "$p" usr/include usr/sys/h
+
+# Base commands and the initial shell/runtime sources.
+p=$packages/base
+mkdir -p "$p/usr/src"
+cp -R "$root/usr/src/cmd" "$p/usr/src/"
+for d in sed sh uucp eqn neqn tbl spell refer prep yacc make m4 lex awk dc
+do
+	rm -rf "$p/usr/src/cmd/$d"
+done
+rm -f "$p/usr/src/cmd/mail.c" "$p/usr/src/cmd/calendar.c"
+rm -f "$p/usr/src/cmd/size.c" "$p/usr/src/cmd/nm.c"
+rm -f "$p/usr/src/cmd/strip.c" "$p/usr/src/cmd/expr.y"
+rm -f "$p/usr/src/cmd/bc.y" "$p/usr/src/cmd/cb.c"
+rm -f "$p/usr/src/cmd/ack_ar_support.c"
+cp "$root/usr/src/build.base" "$root/usr/src/install.base" \
+	"$root/usr/src/clean.base" "$p/usr/src/"
+cp "$project/unix/v7/etc/rc" "$project/unix/v7/etc/ttys" \
+	"$project/unix/v7/etc/passwd" "$project/unix/v7/etc/group" \
+	"$project/unix/v7/etc/motd" "$project/unix/v7/etc/utmp" \
+	"$project/unix/v7/etc/termcap" "$p/usr/src/"
+archive srcbase usr/src/.src-base "$p" usr/src
+
+# yacc, lex, make, ar and the other development commands.
+p=$packages/tools
+mkdir -p "$p/usr/src/cmd" "$p/usr/src/lib/lex"
+for d in yacc make m4 lex awk dc
+do
+	cp -R "$root/usr/src/cmd/$d" "$p/usr/src/cmd/"
+done
+cp "$root/usr/src/cmd/size.c" "$root/usr/src/cmd/nm.c" \
+	"$root/usr/src/cmd/strip.c" "$root/usr/src/cmd/expr.y" \
+	"$root/usr/src/cmd/bc.y" "$root/usr/src/cmd/cb.c" "$p/usr/src/cmd/"
+cp -R "$root/usr/src/ar" "$p/usr/src/"
+cp "$root/usr/src/lib/yaccpar" "$p/usr/src/lib/"
+cp "$root/usr/src/lib/lex/ncform" "$p/usr/src/lib/lex/"
+cp "$root/usr/src/build.tools" "$root/usr/src/install.tools" \
+	"$root/usr/src/clean.tools" "$p/usr/src/"
+archive srctool usr/src/.src-tool "$p" usr/src
+
+# Remaining ordinary commands, sed, sh and xargs.
+p=$packages/cmd
+mkdir -p "$p/usr/src/cmd" "$p/usr/src/bin"
+cp -R "$root/usr/src/cmd/sed" "$root/usr/src/cmd/sh" "$p/usr/src/cmd/"
+cp "$root/usr/src/cmd/random.c" "$root/usr/src/cmd/crypt.c" \
+	"$root/usr/src/cmd/makekey.c" "$p/usr/src/cmd/"
+cp -R "$root/usr/src/ports" "$p/usr/src/"
+cp "$root/usr/src/build.cmd" "$root/usr/src/install.cmd" \
+	"$root/usr/src/clean.cmd" "$p/usr/src/"
+cp "$project/unix/v7/etc/rc.stage3" \
+	"$project/unix/v7/usr/lib/crontab.stage3" \
+	"$project/unix/v7/usr/lib/units" "$project/unix/v7/usr/adm/wtmp" \
+	"$p/usr/src/"
+cp "$project/unix/v7/bin/diff3" "$project/unix/v7/bin/lorder" \
+	"$project/unix/v7/bin/nohup" "$project/unix/v7/bin/true" \
+	"$project/unix/v7/bin/false" "$p/usr/src/bin/"
+archive srccmd usr/src/.src-cmd "$p" usr/src
+
+# Mail, calendar and UUCP.
+p=$packages/comm
+mkdir -p "$p/usr/src/cmd" "$p/usr/src/bin" "$p/usr/src/lib/uucp"
+cp "$root/usr/src/cmd/mail.c" "$root/usr/src/cmd/calendar.c" "$p/usr/src/cmd/"
+cp -R "$root/usr/src/cmd/uucp" "$p/usr/src/cmd/"
+cp "$root/usr/src/bin/calendar" "$p/usr/src/bin/"
+cp "$root/usr/src/lib/crontab" "$p/usr/src/lib/"
+cp "$project"/unix/v7/usr/lib/uucp/* "$p/usr/src/lib/uucp/"
+cp "$root/usr/src/build.comm" "$root/usr/src/install.comm" \
+	"$root/usr/src/clean.comm" "$p/usr/src/"
+archive srccomm usr/src/.src-comm "$p" usr/src
+
+# Text processing and editors.
+p=$packages/text
+mkdir -p "$p/usr/src/cmd"
+cp -R "$root/usr/src/cawf" "$root/usr/src/ee" "$p/usr/src/"
+for d in eqn neqn tbl spell refer prep
+do
+	cp -R "$root/usr/src/cmd/$d" "$p/usr/src/cmd/"
+done
+cp "$root/usr/src/cmd/man.c" "$root/usr/src/cmd/deroff.c" \
+	"$root/usr/src/cmd/checkeq.c" "$p/usr/src/cmd/"
+cp "$root/usr/src/build.text" "$root/usr/src/install.text" \
+	"$root/usr/src/clean.text" "$p/usr/src/"
+archive srctext usr/src/.src-text "$p" usr/src
+
+# Games and their data files.
+p=$packages/games
+mkdir -p "$p/usr/src"
+cp -R "$root/usr/src/games" "$p/usr/src/"
+cp "$root/usr/src/build.games" "$root/usr/src/install.games" \
+	"$root/usr/src/clean.games" "$p/usr/src/"
+archive srcgame usr/src/.src-game "$p" usr/src
+
+# ACK itself and the native Motorola assembler utilities.
+p=$packages/dev
+mkdir -p "$p/usr/src"
+cp -R "$project/toolchain/ack" "$p/usr/src/ack"
+ack=$p/usr/src/ack
+mv "$ack/Makefile" "$ack/Makefile.68k"
+mv "$ack/cc/acklevels.68kunix" "$ack/cc/acklevels.68k"
+mv "$ack/libc/stdio_cleanup.c" "$ack/libc/stdio_clean.c"
+mv "$ack/libc/stdio_endopen.c" "$ack/libc/stdio_endop.c"
+mv "$ack/libc/stdio_findiop.c" "$ack/libc/stdio_findi.c"
+mv "$ack/libc/stdio_fprintf.c" "$ack/libc/stdio_fprint.c"
+mv "$ack/libc/stdio_freopen.c" "$ack/libc/stdio_freop.c"
+mv "$ack/libc/stdio_getchar.c" "$ack/libc/stdio_getch.c"
+mv "$ack/libc/stdio_printf_fn.c" "$ack/libc/stdio_printf.c"
+mv "$ack/libc/stdio_private.h" "$ack/libc/stdio_priv.h"
+mv "$ack/libc/stdio_putchar.c" "$ack/libc/stdio_putch.c"
+mv "$ack/libc/stdio_sprintf.c" "$ack/libc/stdio_sprint.c"
+mv "$ack/libc/stdio_tmpfile.c" "$ack/libc/stdio_tmp.c"
+mv "$ack/libc/stdio_vfprintf.c" "$ack/libc/stdio_vfpr.c"
+mv "$ack/libc/stdio_vprintf.c" "$ack/libc/stdio_vpr.c"
+mv "$ack/libc/stdlib_malloc.c" "$ack/libc/stdlib_mal.c"
+mv "$ack/man+doc/ack-m68k2-address-register-local-init-bug.md" "$ack/man+doc/ack-addr.md"
+mv "$ack/man+doc/ack-m68k2-data8-static-initializer-bug.md" "$ack/man+doc/ack-data.md"
+mv "$ack/shared/includes/ack-h/em_table_lib.lua" "$ack/shared/includes/ack-h/em_table.lua"
+mv "$ack/shared/modules/src/em_code/make_codeek_h.lua" "$ack/shared/modules/src/em_code/mk_code_h.lua"
+mv "$ack/shared/modules/src/em_data/make_flag_c.lua" "$ack/shared/modules/src/em_data/mk_flag_c.lua"
+mv "$ack/shared/modules/src/em_data/make_mnem_c.lua" "$ack/shared/modules/src/em_data/mk_mnem_c.lua"
+mv "$ack/shared/modules/src/em_data/make_mnem_h.lua" "$ack/shared/modules/src/em_data/mk_mnem_h.lua"
+mv "$ack/shared/modules/src/em_data/make_pseu_c.lua" "$ack/shared/modules/src/em_data/mk_pseu_c.lua"
+mv "$ack/shared/modules/src/em_data/make_pseu_h.lua" "$ack/shared/modules/src/em_data/mk_pseu_h.lua"
+mv "$ack/shared/modules/src/em_data/make_spec_h.lua" "$ack/shared/modules/src/em_data/mk_spec_h.lua"
+mv "$ack/shared/modules/src/system/setbinarymode.c" "$ack/shared/modules/src/system/setbinmode.c"
+cp -R "$root/usr/src/68kasm" "$p/usr/src/"
+cp "$root/usr/src/build.dev" "$root/usr/src/install.dev" \
+	"$root/usr/src/clean.dev" "$root/usr/src/mksdroot" "$p/usr/src/"
+find "$p/usr/src" -type f \( -name '*.o' -o -name '*.k' -o -name '*.m' \) -delete
+archive srcdev usr/src/.src-dev "$p" usr/src
+
+# Kernel sources and scripts.
+p=$packages/kernel
+mkdir -p "$p/usr/src"
+cp -R "$root/usr/sys" "$p/usr/"
+cp "$root/usr/src/build.kernel" "$root/usr/src/install.kernel" \
+	"$root/usr/src/clean.kernel" "$p/usr/src/"
+archive srckern usr/sys/.src-kern "$p" usr/src usr/sys
+
+# Manuals are installed last by the bootstrap script.
+p=$packages/man
+mkdir -p "$p/usr/dict/papers" "$p/usr/lib"
+cp -R "$root/usr/man" "$p/usr/"
+# Refer defaults to /usr/dict/papers/Ind.  The source-form bibliography is
+# also retained as Rv7man; runinv can later replace Ind with native indexes.
+cp "$root/usr/dict/papers/Rv7man" "$p/usr/dict/papers/Rv7man"
+cp "$root/usr/dict/papers/Rv7man" "$p/usr/dict/papers/Ind"
+cp "$root/usr/lib/eign" "$p/usr/lib/eign"
+archive man usr/man/.man-ok "$p" usr/man usr/dict usr/lib/eign
+
+# Long-form UNIX papers and tutorials are optional on the small guest disk.
+p=$packages/docs
+mkdir -p "$p/usr"
+cp -R "$root/usr/doc" "$p/usr/"
+archive docs usr/doc/.doc-ok "$p" usr/doc
+
+cp "$project/unix/bootstrap/docs" "$root/dist/installdocs"
+chmod 0755 "$root/dist/installdocs"
+
+echo "bootstrap archives: complete"

@@ -1,6 +1,7 @@
  /* tf.c: save and restore fill mode around table */
 # include "t..c"
-savefill()
+void
+savefill(void)
 {
 /* remembers various things: fill mode, vs, ps in mac 35 (SF) */
 fprintf(tabout, ".de %d\n",SF);
@@ -16,11 +17,13 @@ fprintf(tabout, ".nf\n");
 fprintf(tabout, ".nr #~ 0\n");
 fprintf(tabout, ".if n .nr #~ 0.6n\n");
 }
-rstofill()
+void
+rstofill(void)
 {
 fprintf(tabout, ".%d\n",SF);
 }
-endoff()
+void
+endoff(void)
 {
 int i;
 	for(i=0; i<MAXHEAD; i++)
@@ -30,22 +33,26 @@ int i;
 		fprintf(tabout, ".rm %c+\n",texstr[i]);
 fprintf(tabout, "%s\n", last);
 }
-ifdivert()
+void
+ifdivert(void)
 {
 fprintf(tabout, ".ds #d .d\n");
 fprintf(tabout, ".if \\(ts\\n(.z\\(ts\\(ts .ds #d nl\n");
 }
-saveline()
+void
+saveline(void)
 {
 fprintf(tabout, ".if \\n+(b.=1 .nr d. \\n(.c-\\n(c.-1\n");
 linstart=iline;
 }
-restline()
+void
+restline(void)
 {
 fprintf(tabout,".if \\n-(b.=0 .nr c. \\n(.c-\\n(d.-%d\n", iline-linstart);
 linstart = 0;
 }
-cleanfc()
+void
+cleanfc(void)
 {
 fprintf(tabout, ".fc\n");
 }

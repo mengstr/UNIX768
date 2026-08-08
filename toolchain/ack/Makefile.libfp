@@ -1,0 +1,82 @@
+ROOT := .
+ifneq ($(filter ack ACK,$(notdir $(CURDIR))),)
+ROOT := ../..
+endif
+
+BUILD_DIR = $(ROOT)/build/toolchain/ack/68kunix
+FP_BUILD_DIR = $(BUILD_DIR)/libfp
+FP_SRC_DIR = $(ROOT)/toolchain/ack/libfp
+BIN_DIR = $(ROOT)/build/bin
+
+CPP = $(BIN_DIR)/cpp
+C1 = $(BIN_DIR)/c1
+OPT = $(BIN_DIR)/opt
+C2 = $(BIN_DIR)/ncg
+AS = $(BIN_DIR)/as
+AAL = $(BIN_DIR)/aal
+
+C1FLAGS = -L -Vw2.2i2.2p4.2f4.2s2.2l4.2d8.2x8.2
+FP_SRCS = $(sort $(wildcard $(FP_SRC_DIR)/*.c))
+FP_OBJS = $(patsubst $(FP_SRC_DIR)/%.c,$(FP_BUILD_DIR)/%.o,$(FP_SRCS))
+FP_HEADERS = $(wildcard $(FP_SRC_DIR)/*.h)
+
+.PHONY: all ack-runtime clean
+.NOTPARALLEL: ack-runtime
+.PRECIOUS: $(FP_BUILD_DIR)/%.i $(FP_BUILD_DIR)/%.k \
+	$(FP_BUILD_DIR)/%.m $(FP_BUILD_DIR)/%.raw.s $(FP_BUILD_DIR)/%.s
+
+all: ack-runtime
+
+ack-runtime: $(BUILD_DIR)/libfp.a
+
+$(BUILD_DIR)/libfp.a: $(FP_OBJS)
+	@printf '%-6s %s\n' 'AR' '$(notdir $@)'
+	@rm -f $@
+	@$(AAL) qc $@ $(FP_OBJS)
+
+$(FP_BUILD_DIR)/%.i: $(FP_SRC_DIR)/%.c $(FP_HEADERS) | $(FP_BUILD_DIR)
+	@printf '%-6s %s\n' 'CPP' '$(notdir $<)'
+	@$(CPP) -I$(FP_SRC_DIR) -I$(ROOT)/unix/v7/usr/include $< > $@
+
+$(FP_BUILD_DIR)/%.k: $(FP_BUILD_DIR)/%.i
+	@printf '%-6s %s\n' 'C1' '$*.c'
+	@$(C1) $(C1FLAGS) $< $@
+
+$(FP_BUILD_DIR)/%.m: $(FP_BUILD_DIR)/%.k
+	@printf '%-6s %s\n' 'OPT' '$*.c'
+	@$(OPT) $< > $@
+
+$(FP_BUILD_DIR)/%.raw.s: $(FP_BUILD_DIR)/%.m
+	@printf '%-6s %s\n' 'C2' '$*.c'
+	@$(C2) $< $@
+
+$(FP_BUILD_DIR)/%.s: $(FP_BUILD_DIR)/%.raw.s $(FP_SRC_DIR)/symbols.sed
+	@printf '%-6s %s\n' 'SYM' '$*.c'
+	@sed -f $(FP_SRC_DIR)/symbols.sed $< > $@
+
+# C libm calls these primitives through the normal C ABI.  Add an identical
+# entry label while retaining the historical dot names used by generated EM.
+$(FP_BUILD_DIR)/fef8.s: $(FP_BUILD_DIR)/fef8.raw.s $(FP_SRC_DIR)/symbols.sed
+	@printf '%-6s %s\n' 'SYM' 'fef8.c'
+	@sed -f $(FP_SRC_DIR)/symbols.sed $< | awk '\
+		/^\.extern \.fef8$$/ { print; print ".extern _fef8"; next } \
+		/^\.fef8:$$/ { print "_fef8:" } \
+		{ print }' > $@
+
+$(FP_BUILD_DIR)/fif8.s: $(FP_BUILD_DIR)/fif8.raw.s $(FP_SRC_DIR)/symbols.sed
+	@printf '%-6s %s\n' 'SYM' 'fif8.c'
+	@sed -f $(FP_SRC_DIR)/symbols.sed $< | awk '\
+		/^\.extern \.fif8$$/ { print; print ".extern _fif8"; next } \
+		/^\.fif8:$$/ { print "_fif8:" } \
+		{ print }' > $@
+
+$(FP_BUILD_DIR)/%.o: $(FP_BUILD_DIR)/%.s
+	@printf '%-6s %s\n' 'AS' '$*.c'
+	@$(AS) - -o $@ $<
+
+$(FP_BUILD_DIR):
+	@mkdir -p $@
+
+clean:
+	@rm -rf $(FP_BUILD_DIR)
+	@rm -f $(BUILD_DIR)/libfp.a

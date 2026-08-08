@@ -1,5 +1,10 @@
 #
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <unistd.h>
+
 /*
  *	wumpus
  *	stolen from PCC Vol 2 No 1
@@ -16,7 +21,7 @@ struct room
 	int	flag;
 } room[NROOM];
 
-char	*intro[]
+char	*intro[] =
 {
 	"\n",
 	"Welcome to 'Hunt the Wumpus.'\n",
@@ -92,11 +97,18 @@ int	loc;
 int	wloc;
 int	tchar;
 
-main()
+static i32 tunnel(i32 roomno);
+static i32 rline(void);
+static i32 rnum(i32 n);
+static i32 rin(void);
+static i32 near(struct room *ap, i32 hazard);
+static i32 icomp(const void *left, const void *right);
+int
+main(void)
 {
 	register i, j;
 	register struct room *p;
-	int k, icomp();
+	int k;
 
 	printf("Instructions? (y-n) ");
 	if(rline() == 'y')
@@ -137,7 +149,7 @@ init:
 				if(p->tunn[j] == p->tunn[k])
 					goto init;
 		}
-		qsort(&p->tunn[0], NTUNN, 2, icomp);
+		qsort(&p->tunn[0], NTUNN, sizeof(p->tunn[0]), icomp);
 		p++;
 	}
 
@@ -156,20 +168,20 @@ setup:
 	for(i=0; i<NPIT; ) {
 		p = &room[rnum(NROOM)];
 		if((p->flag&PIT) == 0) {
-			p->flag =| PIT;
+			p->flag |= PIT;
 			i++;
 		}
 	}
 	for(i=0; i<NBAT; ) {
 		p = &room[rnum(NROOM)];
 		if((p->flag&(PIT|BAT)) == 0) {
-			p->flag =| BAT;
+			p->flag |= BAT;
 			i++;
 		}
 	}
 	i = rnum(NROOM);
 	wloc = i;
-	room[i].flag =| WUMP;
+	room[i].flag |= WUMP;
 	for(;;) {
 		i = rnum(NROOM);
 		if((room[i].flag&(PIT|BAT|WUMP)) == 0) {
@@ -267,11 +279,11 @@ again:
 
 mwump:
 	p = &room[wloc];
-	p->flag =& ~WUMP;
+	p->flag &= ~WUMP;
 	i = rnum(NTUNN+1);
 	if(i != NTUNN)
 		wloc = p->tunn[i];
-	room[wloc].flag =| WUMP;
+	room[wloc].flag |= WUMP;
 	goto loop;
 
 done:
@@ -282,9 +294,11 @@ done:
 			goto setup;
 		goto init;
 	}
+	return(0);
 }
 
-tunnel(i)
+static i32
+tunnel(i32 i)
 {
 	register struct room *p;
 	register n, j;
@@ -306,33 +320,36 @@ loop:
 	goto loop;
 }
 
-rline()
+static i32
+rline(void)
 {
 	register char c, r;
 
 	while((c=getchar()) == ' ');
 	r = c;
 	while(c != '\n' && c != ' ') {
-		if(c == '\0')
-			exit();
+			if(c == '\0')
+				exit(0);
 		c = getchar();
 	}
 	tchar = c;
 	return(r);
 }
 
-rnum(n)
+static i32
+rnum(i32 n)
 {
-	static first[2];
+	static time_t first;
 
-	if(first[1] == 0) {
-		time(first);
-		srand((first[1]*first[0])^first[1]);
+	if(first == 0) {
+		time(&first);
+		srand((first >> 16) ^ first);
 	}
-	return((rand()/32768.0) * n);
+	return((rand() * n) / 32768);
 }
 
-rin()
+static i32
+rin(void)
 {
 	register n, c;
 
@@ -342,7 +359,7 @@ rin()
 		if(c<'0' || c>'9') {
 			while(c != '\n') {
 				if(c == 0)
-					exit();
+					exit(0);
 				c = getchar();
 			}
 			return(0);
@@ -353,8 +370,8 @@ rin()
 	return(n);
 }
 
-near(ap, ahaz)
-struct room *ap;
+static i32
+near(struct room *ap, i32 ahaz)
 {
 	register struct room *p;
 	register haz, i;
@@ -367,9 +384,13 @@ struct room *ap;
 	return(0);
 }
 
-icomp(p1, p2)
-int *p1, *p2;
+static i32
+icomp(const void *left, const void *right)
 {
+	const int *p1;
+	const int *p2;
 
+	p1 = (const int *)left;
+	p2 = (const int *)right;
 	return(*p1 - *p2);
 }

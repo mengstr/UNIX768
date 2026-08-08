@@ -1,0 +1,95 @@
+cd cmd
+echo CC init.c
+cc -O2 -s -o init init.c
+echo CC osh.c
+cc -O2 -s -o osh osh.c
+echo CC getty.c
+cc -O2 -s -o getty getty.c
+echo CC update.c
+cc -O2 -s -o update update.c
+echo CC glob.c
+cc -O2 -s -o glob glob.c
+echo CC login.c
+cc -O2 -s -o login login.c
+echo CC cat.c
+cc -O2 -s -o cat cat.c
+echo CC echo.c
+cc -O2 -s -o echo echo.c
+echo CC ls.c
+cc -O2 -s -o ls ls.c
+echo CC chmod.c
+cc -O2 -s -o chmod chmod.c
+echo CC mkdir.c
+cc -O2 -s -o mkdir mkdir.c
+echo CC rmdir.c
+cc -O2 -s -o rmdir rmdir.c
+echo CC mknod.c
+cc -O2 -s -o mknod mknod.c
+echo CC rm.c
+cc -O2 -s -o rm rm.c
+echo CC rx.c
+cc -O2 -s -o rx rx.c
+echo CC ln.c
+cc -O2 -s -o ln ln.c
+echo CC cp.c
+cc -O2 -s -o cp cp.c
+echo CC mv.c
+cc -O2 -s -o mv mv.c
+echo CC pwd.c
+cc -O2 -s -o pwd pwd.c
+echo CC md5.c
+cc -O2 -s -o md5 md5.c
+echo CC instar.c
+cc -O2 -s -o instar instar.c
+echo CC date.c
+cc -O2 -s -o date date.c
+echo CC sync.c
+cc -O2 -s -o sync sync.c
+echo CC dd.c
+cc -O2 -s -o dd dd.c
+echo CC df.c
+cc -O2 -s -o df df.c
+echo CC du.c
+cc -O2 -s -o du du.c
+echo CC od.c
+cc -O2 -s -o od od.c
+echo CC ps.c
+cc -O2 -s -o ps ps.c
+echo CC chown.c
+cc -O2 -s -o chown chown.c
+echo CC chgrp.c
+cc -O2 -s -o chgrp chgrp.c
+echo CC mkfs.c
+cc -O2 -s -o mkfs mkfs.c
+echo CC fsck.c
+cc -O2 -s -o fsck fsck.c
+echo CC clri.c
+cc -O2 -s -o clri clri.c
+echo CC dcheck.c
+cc -O2 -s -o dcheck dcheck.c
+echo CC icheck.c
+cc -O2 -s -o icheck icheck.c
+echo CC ncheck.c
+cc -O2 -s -o ncheck ncheck.c
+echo CC quot.c
+cc -O2 -s -o quot quot.c
+echo CC mount.c
+cc -O2 -s -o mount mount.c
+echo CC umount.c
+cc -O2 -s -o umount umount.c
+cd tar
+echo CC tar.c
+cc -O2 -s -o tar tar.c
+cd ../pack
+echo CC pack.c
+cc -O2 -s -o pack pack.c
+echo CC pcat.c
+cc -O2 -s -o pcat pcat.c
+cd ../shutdown
+echo AS shutdown.s
+as -o shutdown.o shutdown.s
+echo CC shutdown.c
+cc -O2 -c -o shutdown-main.o shutdown.c
+echo LD shutdown
+cc -s -o shutdown shutdown-main.o shutdown.o
+echo build.base: complete

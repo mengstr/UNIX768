@@ -1,4 +1,6 @@
-# include <stdio.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 /*	Through, `my' refers to the program, `your' to the player */
 
@@ -20,9 +22,30 @@ char deck[DECK];
 short nextcd;
 int proflag;
 
+static void shuffle(void);
+static i32 choose(char *cards, i32 count);
+static i32 draw(void);
+static void error(char *message);
+static i32 empty(HAND hand);
+static i32 mark(HAND hand, i32 card);
+static void deal(HAND hand, i32 count);
+static void stats(void);
+static void phand(HAND hand);
+static void instruct(void);
+static void game(void);
+static i32 move(HAND source, HAND target, i32 guess, i32 computer);
+static void madebook(i32 card);
+static void score(void);
+static i32 guess(void);
+static void start(HAND hand);
+static void hedrew(i32 card);
+static void heguessed(i32 card);
+static i32 myguess(void);
+
 /* utility and output programs */
 
-shuffle(){
+static void
+shuffle(void) {
 	/* shuffle the deck, and reset nextcd */
 	/* uses the random number generator `rand' in the C library */
 	/* assumes that `srand' has already been called */
@@ -38,7 +61,8 @@ shuffle(){
 	nextcd = 0;
 	}
 
-choose( a, n ) char a[]; {
+static i32
+choose(char a[], i32 n) {
 	/* pick and return one at random from the n choices in a */
 	/* The last one is moved to replace the one chosen */
 	register j, t;
@@ -51,18 +75,21 @@ choose( a, n ) char a[]; {
 	return(t);
 	}
 
-draw() {
+static i32
+draw(void) {
 	if( nextcd >= DECK ) return( NOMORE );
 	return( deck[nextcd++] );
 	}
 
-error( s ) char *s; {
+static void
+error(char *s) {
 	fprintf( stderr, "error: " );
 	fprintf( stderr, s );
 	exit( 1 );
 	}
 
-empty( h ) HAND h; {
+static i32
+empty(HAND h) {
 	register i;
 
 	for( i=1; i<=CTYPE; ++i ){
@@ -71,7 +98,8 @@ empty( h ) HAND h; {
 	return( i );
 	}
 
-mark( cd, hand ) HAND hand; {
+static i32
+mark(HAND hand, i32 cd) {
 	if( cd != NOMORE ){
 		++hand[cd];
 		if( hand[cd] > 4 ){
@@ -81,13 +109,14 @@ mark( cd, hand ) HAND hand; {
 	return( cd );
 	}
 
-deal( hand, n ) HAND hand; {
+static void
+deal(HAND hand, i32 n) {
 	while( n-- ){
 		if( mark( hand, draw() ) == NOMORE ) error( "deck exhausted" );
 		}
 	}
 
-char *cname[] {
+char *cname[] = {
 	"NOMORE!!!",
 	"A",
 	"2",
@@ -104,7 +133,8 @@ char *cname[] {
 	"K",
 	};
 
-stats(){
+static void
+stats(void) {
 	register i, ct, b;
 
 	if( proflag ) printf( "Pro level\n" );
@@ -127,7 +157,8 @@ stats(){
 	printf( "You ask me for: " );
 	}
 
-phand( h ) HAND h; {
+static void
+phand(HAND h) {
 	register i, j;
 
 	j = 0;
@@ -154,7 +185,8 @@ phand( h ) HAND h; {
 	printf( "\n" );
 	}
 
-main( argc, argv ) char * argv[]; { 
+int
+main(int argc, char *argv[]) {
 	/* initialize shuffling, ask for instructions, play game, die */
 	register c;
 
@@ -177,7 +209,7 @@ main( argc, argv ) char * argv[]; {
 
 /*	print instructions */
 
-char *inst[] {
+char *inst[] = {
 	"`Go Fish' is a childrens' card game.",
 	"The Object is to accumulate `books' of 4 cards",
 	"with the same face value.",
@@ -205,7 +237,8 @@ char *inst[] {
 	"",
 	};
 
-instruct(){
+static void
+instruct(void) {
 	register char **cpp;
 
 	printf( "\n" );
@@ -215,7 +248,8 @@ instruct(){
 		}
 	}
 
-game(){
+static void
+game(void) {
 
 	shuffle();
 
@@ -253,7 +287,8 @@ game(){
 
 /*	reflect the effect of a move on the hands */
 
-move( hs, ht, g, v ) HAND hs, ht; {
+static i32
+move(HAND hs, HAND ht, i32 g, i32 v) {
 	/* hand hs has made a guess, g, directed towards ht */
 	/* v on indicates that the guess was made by the machine */
 	register d;
@@ -312,11 +347,13 @@ move( hs, ht, g, v ) HAND hs, ht; {
 	return( 0 );
 	}
 
-madebook( x ){
+static void
+madebook(i32 x) {
 	printf( "Made a book of %s's\n", cname[x] );
 	}
 
-score(){
+static void
+score(void) {
 	register my, your, i;
 
 	my = your = 0;
@@ -347,7 +384,8 @@ score(){
 
 # define G(x) { if(go) goto err;  else go = x; }
 
-guess(){
+static i32
+guess(void) {
 	/* get the guess from the tty and return it... */
 	register g, go;
 
@@ -429,19 +467,23 @@ char haveguessed[CTSIZ];
 
 char hehas[CTSIZ];
 
-start( h ) HAND h; {
+static void
+start(HAND h) {
 	;
 	}
 
-hedrew( d ){
+static void
+hedrew(i32 d) {
 	++hehas[d];
 	}
 
-heguessed( d ){
+static void
+heguessed(i32 d) {
 	++hehas[d];
 	}
 
-myguess(){
+static i32
+myguess(void) {
 
 	register i, lg, t;
 
@@ -495,4 +537,3 @@ myguess(){
 	return(i);
 
 	}
-

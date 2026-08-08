@@ -1,0 +1,12 @@
+set -e
+
+cd red
+for file in redglobals red2 red3 red4 red5 red6 red7 red8 red9 red10 red11 red12 red13
+do
+	echo CC $file.c
+	cc -O2 -I. -c $file.c
+done
+echo LD red
+cc -s -o red redglobals.o red2.o red3.o red4.o red5.o red6.o red7.o \
+	red8.o red9.o red10.o red11.o red12.o red13.o
+echo build.editors: complete

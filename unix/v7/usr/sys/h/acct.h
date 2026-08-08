@@ -1,3 +1,6 @@
+#ifndef V7_SYS_ACCT_H
+#define V7_SYS_ACCT_H
+
 /*
  * Accounting structures
  */
@@ -23,3 +26,5 @@ extern	struct	inode	*acctp;		/* inode of accounting file */
 
 #define	AFORK	01		/* has executed fork, but no exec */
 #define	ASU	02		/* used super-user privileges */
+
+#endif /* V7_SYS_ACCT_H */

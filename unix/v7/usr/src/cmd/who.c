@@ -5,13 +5,14 @@
 #include <stdio.h>
 #include <utmp.h>
 #include <pwd.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
 struct utmp utmp;
 struct passwd *pw;
-struct passwd *getpwuid();
-
-char *ttyname(), *rindex(), *ctime(), *strcpy(), *index();
-main(argc, argv)
-char **argv;
+int putline(void);
+int
+main (int argc, char **argv)
 {
 	register char *tp, *s;
 	register FILE *fi;
@@ -52,11 +53,13 @@ char **argv;
 	}
 }
 
-putline()
+int
+putline (void)
 {
 	register char *cbuf;
 
 	printf("%-8.8s %-8.8s", utmp.ut_name, utmp.ut_line);
 	cbuf = ctime(&utmp.ut_time);
 	printf("%.12s\n", cbuf+4);
+	return(0);
 }

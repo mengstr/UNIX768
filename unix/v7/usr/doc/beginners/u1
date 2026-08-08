@@ -568,24 +568,3 @@ man man
 tells all about the
 .UL man
 command.
-.SH
-Computer Aided Instruction
-.PP
-Your
-.UC UNIX
-system may have available
-a program called
-.UL learn ,
-which provides computer aided instruction on
-the file system and basic commands,
-the editor,
-document preparation,
-and even C programming.
-Try typing the command
-.P1
-learn
-.P2
-If 
-.UL learn
-exists on your system,
-it will tell you what to do from there.

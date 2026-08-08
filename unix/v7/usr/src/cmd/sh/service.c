@@ -8,14 +8,18 @@
  */
 
 #include	"defs.h"
+#include	<sys/inttypes.h>
 
-
-PROC VOID	gsort();
+LOCAL STRING	execs(STRING, STRING *);
+LOCAL VOID	gsort(STRING *, STRING *);
+LOCAL INT	split(STRING);
+LOCAL STRING	*dupenv(STRING *);
+LOCAL VOID	freeenv(STRING *);
 
 #define ARGMK	01
 
-INT		errno;
-STRING		sysmsg[];
+extern i32	errno;
+extern STRING	sysmsg[];
 
 /* fault handling */
 #define ENOMEM	12
@@ -109,6 +113,41 @@ STRING	catpath(path,name)
 LOCAL STRING	xecmsg;
 LOCAL STRING	*xecenv;
 
+LOCAL STRING	*
+dupenv(ep)
+	STRING		*ep;
+{
+	REG STRING	*src;
+	REG STRING	*dst;
+	REG INT		n = 0;
+
+	src = ep;
+	WHILE *src++ DO n++ OD
+	dst = (STRING *)alloc((n + 1) * BYTESPERWORD);
+	src = ep;
+	n = 0;
+	WHILE *src
+	DO	dst[n++] = make(*src++);
+	OD
+	dst[n] = 0;
+	return(dst);
+}
+
+LOCAL VOID
+freeenv(ep)
+	STRING		*ep;
+{
+	REG STRING	*base;
+
+	base = ep;
+	IF ep
+	THEN	WHILE *ep
+		DO	free((BLKPTR)*ep++);
+		OD
+		free((BLKPTR)base);
+	FI
+}
+
 VOID	execa(at)
 	STRING		at[];
 {
@@ -118,8 +157,10 @@ VOID	execa(at)
 	IF (flags&noexec)==0
 	THEN	xecmsg=notfound; path=getpath(*t);
 		namscan(exname);
-		xecenv=setenv();
+		xecenv=dupenv(setenv());
 		WHILE path=execs(path,t) DONE
+		freeenv(xecenv);
+		xecenv = 0;
 		failed(*t,xecmsg);
 	FI
 }
@@ -247,7 +288,7 @@ VOID	await(i)
 	exitval=rc; exitset();
 }
 
-BOOL		nosubst;
+extern BOOL	nosubst;
 
 trim(at)
 	STRING		at;
@@ -274,10 +315,10 @@ STRING	mactrim(s)
 STRING	*scan(argn)
 	INT		argn;
 {
-	REG ARGPTR	argp = Rcheat(gchain)&~ARGMK;
+	REG ARGPTR	argp = (ARGPTR)(Rcheat(gchain)&~ARGMK);
 	REG STRING	*comargn, *comargm;
 
-	comargn=getstak(BYTESPERWORD*argn+BYTESPERWORD); comargm = comargn += argn; *comargn = ENDARGS;
+	comargn=(STRING *)getstak(BYTESPERWORD*argn+BYTESPERWORD); comargm = comargn += argn; *comargn = ENDARGS;
 
 	WHILE argp
 	DO	*--comargn = argp->argval;
@@ -289,7 +330,7 @@ STRING	*scan(argn)
 			comargm = comargn;
 		FI
 		/* Lcheat(argp) &= ~ARGMK; */
-		argp = Rcheat(argp)&~ARGMK;
+		argp = (ARGPTR)(Rcheat(argp)&~ARGMK);
 	OD
 	return(comargn);
 }
@@ -340,14 +381,15 @@ INT	getarg(ac)
 LOCAL INT	split(s)
 	REG STRING	s;
 {
-	REG STRING	argp;
+	REG STRING	arg;
+	REG ARGPTR	argp;
 	REG INT		c;
 	INT		count=0;
 
-	LOOP	sigchk(); argp=locstak()+BYTESPERWORD;
+	LOOP	sigchk(); arg=locstak()+BYTESPERWORD;
 		WHILE (c = *s++, !any(c,ifsnod.namval) && c)
-		DO *argp++ = c OD
-		IF argp==staktop+BYTESPERWORD
+		DO *arg++ = c OD
+		IF arg==staktop+BYTESPERWORD
 		THEN	IF c
 			THEN	continue;
 			ELSE	return(count);
@@ -355,11 +397,11 @@ LOCAL INT	split(s)
 		ELIF c==0
 		THEN	s--;
 		FI
-		IF c=expand((argp=endstak(argp))->argval,0)
+		IF c=expand((argp=(ARGPTR)endstak(arg))->argval,0)
 		THEN	count += c;
 		ELSE	/* assign(&fngnod, argp->argval); */
 			makearg(argp); count++;
 		FI
-		Lcheat(gchain) |= ARGMK;
+		gchain = (ARGPTR)(Rcheat(gchain)|ARGMK);
 	POOL
 }

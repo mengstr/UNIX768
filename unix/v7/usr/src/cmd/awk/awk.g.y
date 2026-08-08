@@ -31,6 +31,7 @@
 
 %{
 #include "awk.def"
+#include "awk.h"
 #ifndef	DEBUG	
 #	define	PUTS(x)
 #endif

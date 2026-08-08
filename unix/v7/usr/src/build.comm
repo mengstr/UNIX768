@@ -1,0 +1,12 @@
+set -e
+
+cd cmd
+
+echo CC mail.c
+cc -O2 -s -o mail mail.c
+echo CC calendar.c
+cc -O2 -s -o calendar calendar.c
+
+cd uucp
+sh build
+exit 0

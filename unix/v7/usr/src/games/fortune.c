@@ -1,13 +1,18 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
 
 char line[500];
 char bline[500];
 
-main()
+int
+main(void)
 {
 	double p;
-	register char * l;
-	long t;
+	register char *l;
+	time_t t;
 	FILE *f;
 
 	f = fopen("/usr/games/lib/fortunes", "r");
@@ -16,7 +21,7 @@ main()
 		exit(1);
 	}
 	time(&t);
-	srand(getpid() + (int)((t>>16) + t));
+	srand(getpid() + (i32)((t >> 16) + t));
 	p = 1.;
 	for(;;) {
 		l = fgets(line, 500, f);

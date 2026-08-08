@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 unsigned count = 1000;
 int	fnumber;
@@ -8,8 +10,8 @@ char	*ofil;
 FILE	*is;
 FILE	*os;
 
-main(argc, argv)
-char *argv[];
+int
+main(int argc, char *argv[])
 {
 	register i, c, f;
 	int iflg = 0;

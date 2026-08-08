@@ -3,6 +3,7 @@
  */
 
 #include <stdio.h>
+#include <unistd.h>
 
 unsigned short	word[8];
 unsigned short	lastword[8];
@@ -11,8 +12,15 @@ int	base =	010;
 int	max;
 long	addr;
 
-main(argc, argv)
-char **argv;
+static void line(long a, unsigned short *w, i32 n);
+static void putx(unsigned n, i32 c);
+static void cput(i32 c);
+static void putn(long n, i32 b, i32 c);
+static void pre(i32 n);
+static void offset(char *s);
+
+int
+main(int argc, char **argv)
 {
 	register char *p;
 	register n, f, same;
@@ -92,11 +100,14 @@ char **argv;
 	}
 	putn(addr, base, 7);
 	putchar('\n');
+	return(0);
 }
 
+static void
 line(a, w, n)
 long a;
 unsigned short *w;
+i32 n;
 {
 	register i, f, c;
 
@@ -117,8 +128,10 @@ unsigned short *w;
 	}
 }
 
+static void
 putx(n, c)
 unsigned n;
+i32 c;
 {
 
 	switch(c) {
@@ -155,7 +168,9 @@ unsigned n;
 	}
 }
 
+static void
 cput(c)
+i32 c;
 {
 	c &= 0377;
 	if(c>037 && c<0177) {
@@ -187,8 +202,11 @@ cput(c)
 	}
 }
 
+static void
 putn(n, b, c)
 long n;
+i32 b;
+i32 c;
 {
 	register d;
 
@@ -202,7 +220,9 @@ long n;
 		putchar(d+'0');
 }
 
+static void
 pre(n)
+ i32 n;
 {
 	int i;
 
@@ -210,6 +230,7 @@ pre(n)
 		putchar(' ');
 }
 
+static void
 offset(s)
 register char *s;
 {

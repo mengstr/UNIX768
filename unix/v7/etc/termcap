@@ -1,0 +1,8 @@
+# Epoch68 UART consoles are ANSI/VT100-compatible, 80 columns by 24 rows.
+vt100|vt100-am|dec-vt100|ANSI standard terminal:\
+	:am:bs:ms:pt:\
+	:co#80:li#24:\
+	:cl=\E[H\E[2J:cm=\E[%i%d;%dH:ce=\E[K:cd=\E[J:\
+	:up=\E[A:do=\E[B:nd=\E[C:le=\E[D:\
+	:ho=\E[H:so=\E[7m:se=\E[m:\
+	:ku=\E[A:kd=\E[B:kr=\E[C:kl=\E[D:

@@ -1,0 +1,59 @@
+RED for Epoch68 UNIX V7
+========================
+
+This is the active, deliberately small port of Edward K. Ream's RED screen
+editor. The untouched imported source and its documentation remain in the
+archived UNIX768 repository's source-intake tree. The imported repository was
+at upstream commit
+2905b6eafb777baf9e073b23b8ccc846b64b2980.
+
+The port keeps RED's editor core, 16-bit buffer representation, WordStar-like
+control keys, line-block operations, search and replace, and the VT100 display
+driver.  The CP/M, BDS C, Aztec C, ADM terminal, suspended-session, debugging,
+and compiler-error-file integrations are not part of this target version.
+
+Run:
+
+        red file
+
+The editor uses a 24-line, 80-column VT100-compatible terminal.  Control-C
+enters command mode.  The arrow keys move up, down, left, and right.  The
+original movement keys also work:
+
+        control-E       up
+        control-X       down
+        control-S       left
+        control-D       right
+        control-A       previous word
+        control-F       next word
+        control-Q       page up
+        control-P       page down
+
+Useful editing keys:
+
+        control-N       insert mode
+        control-T       overwrite mode
+        control-E       edit mode
+        control-H       delete left
+        DEL             delete at cursor
+        control-Y       delete the current line
+        control-U       undo the current-line edit
+        control-L       split line
+        control-O       join line
+        control-C       command mode
+
+Command-mode block operations use inclusive line numbers:
+
+        copy first last after
+        cut  first last after
+        move first last after
+        delete first last
+        extract file first last
+        inject file after
+
+For example, "copy 2 5 10" copies lines 2 through 5 after line 10.  "cut" and
+"move" are synonyms: they remove that block and paste it after the destination
+line.  Destination 0 means before the first line.
+
+Other central commands include help, find, findr, search, change, load, name,
+save, resave, tabs, wrap, nowrap, clear, and exit.

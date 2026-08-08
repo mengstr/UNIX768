@@ -1,0 +1,57 @@
+set -e
+
+if test "x$ROOT" = x
+then
+	ROOT=
+fi
+
+for dir in bin usr usr/lib usr/lib/uucp usr/spool usr/spool/uucp
+do
+	if test ! -d $ROOT/$dir
+	then
+		mkdir $ROOT/$dir
+	fi
+done
+if test ! -d $ROOT/usr/spool/uucp/.XQTDIR
+then
+	mkdir $ROOT/usr/spool/uucp/.XQTDIR
+fi
+
+for prog in uucp uux uulog
+do
+	cp $prog $ROOT/bin/$prog
+	chmod 0755 $ROOT/bin/$prog
+done
+for prog in uucico uuxqt uuclean
+do
+	cp $prog $ROOT/usr/lib/uucp/$prog
+	chmod 0755 $ROOT/usr/lib/uucp/$prog
+done
+
+for file in L-devices L-dialcodes L.sys SQFILE USERFILE
+do
+	if test ! -f $ROOT/usr/lib/uucp/$file
+	then
+		cp ../../lib/uucp/$file $ROOT/usr/lib/uucp/$file
+		chmod 0400 $ROOT/usr/lib/uucp/$file
+	fi
+done
+
+if test "x$ROOT" = x
+then
+	chown 4 /bin/uucp /bin/uux
+	chgrp 4 /bin/uucp /bin/uux
+	chmod 4111 /bin/uucp /bin/uux
+	chown 4 /usr/lib/uucp/uucico /usr/lib/uucp/uuxqt
+	chgrp 4 /usr/lib/uucp/uucico /usr/lib/uucp/uuxqt
+	chmod 4111 /usr/lib/uucp/uucico /usr/lib/uucp/uuxqt
+	chown 4 /usr/lib/uucp /usr/spool/uucp /usr/spool/uucp/.XQTDIR
+	chgrp 4 /usr/lib/uucp /usr/spool/uucp /usr/spool/uucp/.XQTDIR
+	chmod 0755 /usr/lib/uucp
+	chmod 0777 /usr/spool/uucp /usr/spool/uucp/.XQTDIR
+	for file in L-devices L-dialcodes L.sys SQFILE USERFILE
+	do
+		chown 4 /usr/lib/uucp/$file
+		chgrp 4 /usr/lib/uucp/$file
+	done
+fi

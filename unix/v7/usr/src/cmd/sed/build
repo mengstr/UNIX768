@@ -1,0 +1,8 @@
+set -e
+
+echo CC sed0.c
+cc -O2 -c sed0.c
+echo CC sed1.c
+cc -O2 -c sed1.c
+echo LD sed
+cc -s -o sed sed0.o sed1.o

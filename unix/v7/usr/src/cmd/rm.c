@@ -4,11 +4,16 @@ int	errcode;
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/dir.h>
+#include <string.h>
+#include <unistd.h>
 
-char	*sprintf();
+void	rm(char *, int, int, int, int);
+int	dotname(char *);
+int	rmdir(char *, int);
+int	yes(void);
 
-main(argc, argv)
-char *argv[];
+int
+main(int argc, char *argv[])
 {
 	register char *arg;
 	int fflg, iflg, rflg;
@@ -48,8 +53,13 @@ char *argv[];
 	exit(errcode);
 }
 
+void
 rm(arg, fflg, rflg, iflg, level)
 char arg[];
+int fflg;
+int rflg;
+int iflg;
+int level;
 {
 	struct stat buf;
 	struct direct direct;
@@ -129,8 +139,10 @@ char *s;
 
 rmdir(f, iflg)
 char *f;
+int iflg;
 {
-	int status, i;
+	i16 status;
+	int i;
 
 	if(dotname(f))
 		return(0);
@@ -145,8 +157,8 @@ char *f;
 		wait(&status);
 		return(status);
 	}
-	execl("/bin/rmdir", "rmdir", f, 0);
-	execl("/usr/bin/rmdir", "rmdir", f, 0);
+	execl("/bin/rmdir", "rmdir", f, (char *)0);
+	execl("/usr/bin/rmdir", "rmdir", f, (char *)0);
 	printf("rm: can't find rmdir\n");
 	exit(1);
 }

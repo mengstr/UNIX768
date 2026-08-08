@@ -1,0 +1,2 @@
+set -e
+rm -f prep0.o prep1.o prep2.o prep

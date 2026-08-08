@@ -1,6 +1,120 @@
 #include "stdio.h"
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+struct pack;
+struct userpath;
+
+/* Shared UUCP interfaces.  Explicit declarations are required on the
+ * 32-bit port: an implicit int return truncates pointers to 16 bits. */
+int anlwrk(char *, char **);
+int iswrk(char *, char *, char *, char *);
+int gtwvec(char *, char *, char *, char **);
+int gtwrk(char *, char *, char **, int);
+i32 compar(const void *, const void *);
+int copy(char *, char *, char *, char *);
+int chkpth(char *, char *, char *);
+int rdpth(struct userpath *);
+int callback(char *);
+int chklnk(char *);
+int chkperm(char *, char *, char *);
+int cleanup(int);
+int cntrl(int, char *);
+int rmesg(int, char *);
+int wmesg(int, char *);
+int notify(char *, char *, char *, char *, char *);
+int startup(int);
+char fptcl(char *);
+char *blptcl(char *);
+int stptcl(char *);
+int conn(char *);
+char *lastc(char *);
+int gdial(void);
+int ckdev(char *, char *, int);
+int getto(char **);
+int call(char **);
+int dialup(char *, char **);
+int clsacu(void);
+int direct(char **);
+int finds(char *, char **);
+int login(int, char **, int);
+int fixline(int, int);
+int fixmode(int);
+int expect(char *, int);
+int sendthem(char *, int);
+int genbrk(int, int, int);
+int notin(char *, char *);
+int ifdate(char *);
+int xcp(char *, char *);
+int xmv(char *, char *);
+int expfile(char *);
+int isdir(char *);
+int mkdirs(char *);
+int gename(int, char *, int, char *);
+int getseq(char *);
+int getargs(char *, char **);
+char *getprm(char *, char *);
+int split(char *, char *, char *);
+int guinfo(int, char *, char *);
+int gninfo(char *, int *, char *);
+int pkfail(void);
+int gturnon(void);
+int gturnoff(void);
+int gwrmsg(int, char *, int);
+int grdmsg(char *, int);
+int gwrdata(FILE *, int);
+int grddata(int, FILE *);
+int grdblk(char *, int, int);
+int gwrblk(char *, unsigned, int);
+int gnamef(FILE *, char *);
+int gnsys(char *, char *, int);
+int srchst(char *, char **, int);
+int gnxseq(char *);
+int cmtseq(void);
+int ulkseq(void);
+int gwd(char *);
+int imsg(char *, int);
+int omsg(int, char *, int);
+char *lastpart(char *);
+int logent(char *, char *);
+int mlogent(FILE *, char *, char *);
+int logcls(void);
+int syslog(char *);
+int pkon(int, int);
+int pkoff(int);
+int prefix(char *, char *);
+int sdmail(char *, i32);
+int mailst(char *, char *);
+int shio(char *, char *, char *, char *);
+int sysacct(long, time_t);
+int systat(char *, int, char *);
+int rmstat(char *);
+int callok(char *);
+int ulockf(char *, time_t);
+int stlock(char *);
+int rmlock(char *);
+int isalock(char *);
+int unlock(char *);
+int onelock(int, char *, char *);
+int lock(int, char *, char **);
+int delock(char *);
+int mlock(char *);
+int chkpre(char *);
+int stpre(char *);
+int appendf(FILE *, char *);
+int gtxfile(char *);
+int gotfiles(char *);
+int rmxfiles(char *);
+int mvxfiles(char *);
+int cmdok(char *, char *);
+int versys(char *);
+int xuucico(char *);
+int xuuxqt(void);
+int xuucp(char *);
 	/*  some system names  */
-#define MYNAME		"myname"
+#define MYNAME		"unix768"
 
 #define THISDIR		"/usr/lib/uucp"
 #define SQFILE		"/usr/lib/uucp/SQFILE"
@@ -105,10 +219,6 @@ int Debug;
 int Pkdebug;
 int Pkdrvon;
 int Bspeed;
-
-	/* the define geteuid should be deleted if the */
-	/* routine is available in the libc.a library. */
-#define geteuid getuid
 
 #define WKDSIZE	100	/*  size of work dir name  */
 char Wrkdir[WKDSIZE];

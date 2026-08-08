@@ -91,17 +91,6 @@ S. R. Bourne.
 An introduction to the capabilities of the command interpreter,
 the shell.
 .RE
-.IP \n+n.
-Learn \(em Computer Aided Instruction on UNIX.
-M. E. Lesk and B. W. Kernighan.
-.RS
-Describes a computer-aided instruction program that walks new users
-through the basics of
-files, 
-the editor,
-and
-document preparation software.
-.RE
 .SH
 Document Preparation
 .IP \n+n.

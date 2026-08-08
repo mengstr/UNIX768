@@ -1,6 +1,7 @@
 # include "e.h"
 
-sqrt(p2) int p2; {
+void
+eqnsqrt(int p2) {
 	yyval = p2;
 	nrwid(p2, ps, p2);
 	printf(".ds %d \\v'%du'\\e\\L'%du'\\l'\\n(%du'",

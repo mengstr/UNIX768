@@ -6,20 +6,25 @@ static char sig[NLABC];
 
 static char bflab[NFLAB];
 static char *labtab[NLABC];
-static char *lbp bflab;
+static char *lbp = bflab;
 static char labc[NLABC];
 static char stbuff[50];
 static int  prevsig;
+static void mycpy(char *, char *);
+static void mycpy2(char *, char *, int);
+static void initadd(char *, char *, char *);
 
+void
 putsig (nf, flds, nref, nstline, endline)
 	char *flds[], *nstline, *endline;
+	int nf, nref;
 {
 /* choose signal style */
 char t[100], t1[100], t2[100], format[10], *sd;
-int another 0;
+int another = 0;
 int addon;
 char *stline;
-static FILE *fhide 0;
+static FILE *fhide = 0;
 if (labels)
 	{
 	if (nf==0) /* old */
@@ -133,11 +138,13 @@ if (bare>0)
 fprintf(stderr, "sig is now %s\n",sig);
 # endif
 }
+char *
 fpar (nf, flds, out, c, seq, prepend)
 	char *flds[], *out;
+	int nf, c, seq, prepend;
 {
 char *p, *s;
-int i, fnd 0;
+int i, fnd = 0;
 for(i=0; i<nf; i++)
 	if (flds[i][1]==c && ++fnd >= seq)
 		{
@@ -167,8 +174,10 @@ for(i=0; i<nf; i++)
 		}
 return(0);
 }
+void
 putkey(nf, flds, nref, keystr)
 	char *flds[], *keystr;
+	int nf, nref;
 {
 char t1[50], *sf;
 int ctype, i, count;
@@ -194,11 +203,13 @@ else
 	fprintf(fo, "%c%d%c%c", FLAG, nref, FLAG, sep);
 	}
 }
+int
 keylet(t, nref)
 	char *t;
+	int nref;
 {
 int i;
-int x 'a'-1;
+int x = 'a'-1;
 for(i=1; i<nref;i++)
 	{
 	if (strcmp(labtab[i], t) == 0)
@@ -215,6 +226,7 @@ fprintf(stderr, "lbp up to %d of 2000\n", lbp-bflab);
 # endif
 return (labc[nref] = x+1);
 }
+static void
 mycpy(s,t)
 	char *s, *t;
 {
@@ -222,8 +234,10 @@ while (*t && *t != ',' && *t != ' ')
 	*s++ = *t++;
 *s=0;
 }
+static void
 mycpy2 (s, t, n)
 	char *s, *t;
+	int n;
 {
 int c;
 while (n-- && (c= *t++)>0)
@@ -233,10 +247,11 @@ while (n-- && (c= *t++)>0)
 	}
 *s=0;
 }
+static void
 initadd(to, from, stop)
 	char *to, *from, *stop;
 {
-	int c, nalph 1;
+	int c, nalph = 1;
 while (*to) to++;
 while (from<stop)
 	{
@@ -254,7 +269,8 @@ while (from<stop)
 *to=0;
 }
 
-static char *articles[] {"the ", "an ", "a ", 0};
+static char *articles[] = {"the ", "an ", "a ", 0};
+char *
 artskp(s)
 	char *s;
 {

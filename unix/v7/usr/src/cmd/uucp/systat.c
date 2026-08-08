@@ -12,9 +12,8 @@
  *	return codes:  none
  */
 
-systat(name, type, text)
-char *name, *text;
-int type;
+int
+systat (char *name, int type, char *text)
 {
 	char filename[MAXFULLNAME], line[S_SIZE];
 	int count;
@@ -55,8 +54,8 @@ int type;
  *	return codes:  none
  */
 
-rmstat(name)
-char *name;
+int
+rmstat (char *name)
 {
 	char filename[MAXFULLNAME];
 
@@ -71,8 +70,8 @@ char *name;
  *	return codes  0 - ok | >0 system status
  */
 
-callok(name)
-char *name;
+int
+callok (char *name)
 {
 	char filename[MAXFULLNAME], line[S_SIZE];
 	FILE *fp;

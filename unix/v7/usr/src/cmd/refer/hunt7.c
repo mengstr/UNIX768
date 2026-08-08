@@ -1,21 +1,21 @@
-# include "stdio.h"
+# include "refer.h"
 # define SAME 0
 # include "assert.h"
 # define FGCT 10
 # define FGSIZE 150
-int keepold 1; /* keep old things for fgrep search */
+int keepold = 1; /* keep old things for fgrep search */
 char fgspace[FGSIZE];
-char *fgp fgspace;
+char *fgp = fgspace;
 char *fgnames[FGCT];
-char **fgnamp fgnames;
+char **fgnamp = fgnames;
+int
 findline(in, out, outlen, indexdate)
 	long indexdate;
 	char *in, *out;
 {
-static char name[100] "";
+static char name[100] = "";
 char *p, **ftp;
-extern long gdate();
-static FILE *fa NULL;
+static FILE *fa = NULL;
 long lp, llen;
 int len, k, nofil;
 

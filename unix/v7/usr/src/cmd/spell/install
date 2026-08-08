@@ -1,0 +1,21 @@
+set -e
+
+if test "x$ROOT" = x
+then
+	ROOT=
+fi
+if test ! -d $ROOT/usr/lib
+then
+	mkdir $ROOT/usr/lib
+fi
+if test ! -d $ROOT/bin
+then
+	mkdir $ROOT/bin
+fi
+cp spell.sh $ROOT/bin/spell
+cp spell.bin $ROOT/usr/lib/spell
+cp spellin $ROOT/usr/lib/spellin
+cp spellout $ROOT/usr/lib/spellout
+chmod 0755 $ROOT/usr/lib/spell
+chmod 0755 $ROOT/usr/lib/spellin $ROOT/usr/lib/spellout
+chmod 0755 $ROOT/bin/spell

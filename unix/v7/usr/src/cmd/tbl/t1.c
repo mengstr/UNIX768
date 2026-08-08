@@ -20,11 +20,14 @@ extern FILE *_f[];
 
 # define ever (;;)
 
-main(argc,argv)
-	char *argv[];
+static void badsig(i16);
+static void setinp(int, char **);
+static int tbl(int, char **);
+
+int
+main(int argc, char **argv)
 {
 # ifdef unix
-int badsig();
 signal(SIGPIPE, badsig);
 # endif
 # ifdef gcos
@@ -34,7 +37,9 @@ exit(tbl(argc,argv));
 }
 
 
+static int
 tbl(argc,argv)
+	int argc;
 	char *argv[];
 {
 char line[512];
@@ -52,7 +57,9 @@ return(0);
 }
 int sargc;
 char **sargv;
+static void
 setinp(argc,argv)
+	int argc;
 	char **argv;
 {
 	sargc = argc;
@@ -61,7 +68,8 @@ setinp(argc,argv)
 	if (sargc>0)
 		swapin();
 }
-swapin()
+int
+swapin(void)
 {
 	while (sargc>0 && **sargv=='-')
 		{
@@ -97,9 +105,11 @@ swapin()
 	return(1);
 }
 # ifdef unix
-badsig()
+static void
+badsig(i16 sig)
 {
-signal(SIGPIPE, 1);
+	(void)sig;
+signal(SIGPIPE, SIG_IGN);
  exit(0);
 }
 # endif

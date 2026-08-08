@@ -6,10 +6,31 @@
 #include "../h/file.h"
 #include "../h/inode.h"
 
+void read(void);
+void write(void);
+void rdwr(i32 mode);
+void open(void);
+void creat(void);
+void open1(struct inode *ip, i32 mode, i32 trf);
+void close(void);
+void seek(void);
+void link(void);
+void unlink(void);
+void mknod(void);
+void saccess(void);
+i32 access(struct inode *ip, i32 mode);
+i32 suser(void);
+void openi(struct inode *ip, i32 rw);
+void prele(struct inode *ip);
+void readp(struct file *fp);
+void wdir(struct inode *ip);
+void writep(struct file *fp);
+
+
 /*
  * read system call
  */
-read()
+void read(void)
 {
 	rdwr(FREAD);
 }
@@ -17,7 +38,7 @@ read()
 /*
  * write system call
  */
-write()
+void write(void)
 {
 	rdwr(FWRITE);
 }
@@ -27,15 +48,14 @@ write()
  * check permissions, set base, count, and offset,
  * and switch out to readi, writei, or pipe code.
  */
-rdwr(mode)
-register mode;
+void rdwr(register i32 mode)
 {
 	register struct file *fp;
 	register struct inode *ip;
 	register struct a {
-		int	fdes;
+		i32	fdes;
 		char	*cbuf;
-		unsigned count;
+		u32	count;
 	} *uap;
 
 	uap = (struct a *)u.u_ap;
@@ -71,36 +91,38 @@ register mode;
 		if ((fp->f_flag&FMP) == 0)
 			fp->f_un.f_offset += uap->count-u.u_count;
 	}
-	u.u_r.r_val1 = uap->count-u.u_count;
+	u.u_r.r_reg.r_val1 = uap->count-u.u_count;
 }
 
 /*
  * open system call
  */
-open()
+void open(void)
 {
 	register struct inode *ip;
 	register struct a {
 		char	*fname;
-		int	rwmode;
+		i32	rwmode;
 	} *uap;
 
 	uap = (struct a *)u.u_ap;
 	ip = namei(uchar, 0);
-	if(ip == NULL)
+	if(ip == NULL) {
 		return;
-	open1(ip, ++uap->rwmode, 0);
+	}
+	uap->rwmode++;
+	open1(ip, uap->rwmode, 0);
 }
 
 /*
  * creat system call
  */
-creat()
+void creat(void)
 {
 	register struct inode *ip;
 	register struct a {
 		char	*fname;
-		int	fmode;
+		i32	fmode;
 	} *uap;
 
 	uap = (struct a *)u.u_ap;
@@ -121,35 +143,36 @@ creat()
  * Check permissions, allocate an open file structure,
  * and call the device open routine if any.
  */
-open1(ip, mode, trf)
-register struct inode *ip;
-register mode;
+void open1(register struct inode *ip, register i32 mode, register i32 trf)
 {
 	register struct file *fp;
-	int i;
+	i32 i;
 
 	if(trf != 2) {
 		if(mode&FREAD)
-			access(ip, IREAD);
+			(void)access(ip, IREAD);
 		if(mode&FWRITE) {
-			access(ip, IWRITE);
+			(void)access(ip, IWRITE);
 			if((ip->i_mode&IFMT) == IFDIR)
 				u.u_error = EISDIR;
 		}
 	}
-	if(u.u_error)
+	if(u.u_error) {
 		goto out;
+	}
 	if(trf == 1)
 		itrunc(ip);
 	prele(ip);
-	if ((fp = falloc()) == NULL)
+	if ((fp = falloc()) == NULL) {
 		goto out;
+	}
 	fp->f_flag = mode&(FREAD|FWRITE);
 	fp->f_inode = ip;
-	i = u.u_r.r_val1;
+	i = u.u_r.r_reg.r_val1;
 	openi(ip, mode&FWRITE);
-	if(u.u_error == 0)
+	if(u.u_error == 0) {
 		return;
+	}
 	u.u_ofile[i] = NULL;
 	fp->f_count--;
 
@@ -160,11 +183,11 @@ out:
 /*
  * close system call
  */
-close()
+void close(void)
 {
 	register struct file *fp;
 	register struct a {
-		int	fdes;
+		i32	fdes;
 	} *uap;
 
 	uap = (struct a *)u.u_ap;
@@ -178,13 +201,13 @@ close()
 /*
  * seek system call
  */
-seek()
+void seek(void)
 {
 	register struct file *fp;
 	register struct a {
-		int	fdes;
+		i32	fdes;
 		off_t	off;
-		int	sbase;
+		i32	sbase;
 	} *uap;
 
 	uap = (struct a *)u.u_ap;
@@ -206,7 +229,7 @@ seek()
 /*
  * link system call
  */
-link()
+void link(void)
 {
 	register struct inode *ip, *xp;
 	register struct a {
@@ -256,13 +279,13 @@ out:
 /*
  * mknod system call
  */
-mknod()
+void mknod(void)
 {
 	register struct inode *ip;
 	register struct a {
 		char	*fname;
-		int	fmode;
-		int	dev;
+		i32	fmode;
+		i32	dev;
 	} *uap;
 
 	uap = (struct a *)u.u_ap;
@@ -278,7 +301,13 @@ mknod()
 	ip = maknode(uap->fmode);
 	if (ip == NULL)
 		return;
-	ip->i_un.i_rdev = (dev_t)uap->dev;
+	switch (ip->i_mode & IFMT) {
+	case IFCHR:
+	case IFBLK:
+	case IFMPC:
+	case IFMPB:
+		ip->i_un.i_special.i_rdev = (dev_t)uap->dev;
+	}
 
 out:
 	iput(ip);
@@ -287,13 +316,13 @@ out:
 /*
  * access system call
  */
-saccess()
+void saccess(void)
 {
-	register svuid, svgid;
+	register i32 svuid, svgid;
 	register struct inode *ip;
 	register struct a {
 		char	*fname;
-		int	fmode;
+		i32	fmode;
 	} *uap;
 
 	uap = (struct a *)u.u_ap;
@@ -304,11 +333,11 @@ saccess()
 	ip = namei(uchar, 0);
 	if (ip != NULL) {
 		if (uap->fmode&(IREAD>>6))
-			access(ip, IREAD);
+			(void)access(ip, IREAD);
 		if (uap->fmode&(IWRITE>>6))
-			access(ip, IWRITE);
+			(void)access(ip, IWRITE);
 		if (uap->fmode&(IEXEC>>6))
-			access(ip, IEXEC);
+			(void)access(ip, IEXEC);
 		iput(ip);
 	}
 	u.u_uid = svuid;

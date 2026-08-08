@@ -12,7 +12,7 @@
 
 LOCAL INT	parent;
 
-SYSTAB		commands;
+extern SYSTAB	commands;
 
 
 
@@ -21,6 +21,7 @@ SYSTAB		commands;
 
 execute(argt, execflg, pf1, pf2)
 	TREPTR		argt;
+	INT		execflg;
 	INT		*pf1, *pf2;
 {
 	/* `stakbot' is preserved by this routine */
@@ -41,17 +42,18 @@ execute(argt, execflg, pf1, pf2)
 
 		case TCOM:
 			BEGIN
+			REG COMPTR	ct=(COMPTR)t;
 			STRING		a1;
 			INT		argn, internal;
 			ARGPTR		schain=gchain;
-			IOPTR		io=t->treio;
+			IOPTR		io=ct->comio;
 			gchain=0;
-			argn = getarg(t);
+			argn = getarg(ct);
 			com=scan(argn);
 			a1=com[1]; gchain=schain;
 
 			IF (internal=syslook(com[0],commands)) ORF argn==0
-			THEN	setlist(t->comset, 0);
+			THEN	setlist(ct->comset, 0);
 			FI
 
 			IF argn ANDF (flags&noexec)==0
@@ -175,7 +177,7 @@ execute(argt, execflg, pf1, pf2)
 						IF argc>1
 						THEN	setargs(com+argn-argc);
 						FI
-					ELIF t->comset==0
+					ELIF ct->comset==0
 					THEN	/*scan name chain and print*/
 						namscan(printnam);
 					FI
@@ -196,20 +198,20 @@ execute(argt, execflg, pf1, pf2)
 	
 				case SYSEVAL:
 					IF a1
-					THEN	execexp(a1,&com[2]);
+					THEN	execexp(a1,(int)(L_INT)&com[2]);
 					FI
 					break;
 
                                 case SYSUMASK:
                                         if (a1) {
-                                                int c, i
+                                                i16 c, i;
                                                 i = 0;
                                                 while ((c = *a1++) >= '0' &&
                                                         c <= '7')
                                                         i = (i << 3) + c - '0';
                                                 umask(i);
                                         } else {
-                                                int i, j;
+                                                i16 i, j;
                                                 umask(i = umask(0));
                                                 prc('0');
                                                 for (j = 6; j >= 0; j -= 3)
@@ -219,7 +221,7 @@ execute(argt, execflg, pf1, pf2)
                                         break;
 	
 				default:
-					internal=builtin(argn,com);
+					internal=builtin();
 	
 				ENDSW
 
@@ -228,12 +230,14 @@ execute(argt, execflg, pf1, pf2)
 					chktrap();
 					break;
 				FI
-			ELIF t->treio==0
+			ELIF ct->comio==0
 			THEN	break;
 			FI
 			END
 	
 		case TFORK:
+			BEGIN
+			REG FORKPTR	ft=(FORKPTR)t;
 			IF execflg ANDF (treeflgs&(FAMP|FPOU))==0
 			THEN	parent=0;
 			ELSE	WHILE (parent=fork()) == -1
@@ -287,66 +291,81 @@ execute(argt, execflg, pf1, pf2)
 				FI
 
 				/* io redirection */
-				initio(t->treio);
+				initio(ft->forkio);
 				IF type!=TCOM
-				THEN	execute(t->forktre,1);
+				THEN	execute(ft->forktre,1,0,0);
 				ELIF com[0]!=ENDARGS
-				THEN	setlist(t->comset,N_EXPORT);
+				THEN	setlist(((COMPTR)t)->comset,N_EXPORT);
 					execa(com);
 				FI
 				done();
 			FI
+			END
 
 		case TPAR:
+			BEGIN
+			REG PARPTR	pt=(PARPTR)t;
 			rename(dup(2),output);
-			execute(t->partre,execflg);
+			execute(pt->partre,execflg,0,0);
 			done();
+			END
 
 		case TFIL:
 			BEGIN
+			   REG LSTPTR	lt=(LSTPTR)t;
 			   INT pv[2]; chkpipe(pv);
-			   IF execute(t->lstlef, 0, pf1, pv)==0
-			   THEN	execute(t->lstrit, execflg, pv, pf2);
+			   IF execute(lt->lstlef, 0, pf1, pv)==0
+			   THEN	execute(lt->lstrit, execflg, pv, pf2);
 			   ELSE	closepipe(pv);
 			   FI
 			END
 			break;
 
 		case TLST:
-			execute(t->lstlef,0);
-			execute(t->lstrit,execflg);
+			BEGIN
+			REG LSTPTR	lt=(LSTPTR)t;
+			execute(lt->lstlef,0,0,0);
+			execute(lt->lstrit,execflg,0,0);
+			END
 			break;
 
 		case TAND:
-			IF execute(t->lstlef,0)==0
-			THEN	execute(t->lstrit,execflg);
+			BEGIN
+			REG LSTPTR	lt=(LSTPTR)t;
+			IF execute(lt->lstlef,0,0,0)==0
+			THEN	execute(lt->lstrit,execflg,0,0);
 			FI
+			END
 			break;
 
 		case TORF:
-			IF execute(t->lstlef,0)!=0
-			THEN	execute(t->lstrit,execflg);
+			BEGIN
+			REG LSTPTR	lt=(LSTPTR)t;
+			IF execute(lt->lstlef,0,0,0)!=0
+			THEN	execute(lt->lstrit,execflg,0,0);
 			FI
+			END
 			break;
 
 		case TFOR:
 			BEGIN
-			   NAMPTR	n = lookup(t->fornam);
+			   REG FORPTR	ft=(FORPTR)t;
+			   NAMPTR	n = lookup(ft->fornam);
 			   STRING	*args;
 			   DOLPTR	argsav=0;
 
-			   IF t->forlst==0
+			   IF ft->forlst==0
 			   THEN    args=dolv+1;
 				   argsav=useargs();
 			   ELSE	   ARGPTR	schain=gchain;
 				   gchain=0;
-				   trim((args=scan(getarg(t->forlst)))[0]);
+				   trim((args=scan(getarg(ft->forlst)))[0]);
 				   gchain=schain;
 			   FI
 			   loopcnt++;
 			   WHILE *args!=ENDARGS ANDF execbrk==0
 			   DO	assign(n,*args++);
-				execute(t->fortre,0);
+				execute(ft->fortre,0,0,0);
 				IF execbrk<0 THEN execbrk=0 FI
 			   OD
 			   IF breakcnt THEN breakcnt-- FI
@@ -358,11 +377,12 @@ execute(argt, execflg, pf1, pf2)
 		case TWH:
 		case TUN:
 			BEGIN
+			   REG WHPTR	wt=(WHPTR)t;
 			   INT		i=0;
 
 			   loopcnt++;
-			   WHILE execbrk==0 ANDF (execute(t->whtre,0)==0)==(type==TWH)
-			   DO i=execute(t->dotre,0);
+			   WHILE execbrk==0 ANDF (execute(wt->whtre,0,0,0)==0)==(type==TWH)
+			   DO i=execute(wt->dotre,0,0,0);
 			      IF execbrk<0 THEN execbrk=0 FI
 			   OD
 			   IF breakcnt THEN breakcnt-- FI
@@ -371,27 +391,31 @@ execute(argt, execflg, pf1, pf2)
 			break;
 
 		case TIF:
-			IF execute(t->iftre,0)==0
-			THEN	execute(t->thtre,execflg);
-			ELSE	execute(t->eltre,execflg);
+			BEGIN
+			REG IFPTR	it=(IFPTR)t;
+			IF execute(it->iftre,0,0,0)==0
+			THEN	execute(it->thtre,execflg,0,0);
+			ELSE	execute(it->eltre,execflg,0,0);
 			FI
+			END
 			break;
 
 		case TSW:
 			BEGIN
-			   REG STRING	r = mactrim(t->swarg);
-			   t=t->swlst;
-			   WHILE t
-			   DO	ARGPTR		rex=t->regptr;
+			   REG SWPTR	st=(SWPTR)t;
+			   REG STRING	r = mactrim(st->swarg);
+			   REG REGPTR	rt=st->swlst;
+			   WHILE rt
+			   DO	ARGPTR		rex=rt->regptr;
 				WHILE rex
 				DO	REG STRING	s;
 					IF gmatch(r,s=macro(rex->argval)) ORF (trim(s), eq(r,s))
-					THEN	execute(t->regcom,0);
-						t=0; break;
+					THEN	execute(rt->regcom,0,0,0);
+						rt=0; break;
 					ELSE	rex=rex->argnxt;
 					FI
 				OD
-				IF t THEN t=t->regnxt FI
+				IF rt THEN rt=rt->regnxt FI
 			   OD
 			END
 			break;
@@ -412,10 +436,10 @@ execexp(s,f)
 	FILEBLK		fb;
 	push(&fb);
 	IF s
-	THEN	estabf(s); fb.feval=f;
+	THEN	estabf(s); fb.feval=(STRING *)f;
 	ELIF f>=0
 	THEN	initf(f);
 	FI
-	execute(cmd(NL, NLFLG|MTFLG),0);
+	execute(cmd(NL, NLFLG|MTFLG),0,0,0);
 	pop();
 }

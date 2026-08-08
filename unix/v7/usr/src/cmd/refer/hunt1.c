@@ -1,37 +1,39 @@
-# include "stdio.h"
-# include "assert.h"
+# include "refer.h"
 extern char refdir[];
 extern int keepold;
 extern char *fgnames[];
 extern char **fgnamp;
-FILE *fd 0;
-int lmaster 500;
+FILE *fd = 0;
+int lmaster = 500;
 int *hfreq, hfrflg;
-int colevel 0;
-int soutlen 1000;
-int reached 0;
-int iflong 0;
-int prfreqs 0;
+int colevel = 0;
+int soutlen = 1000;
+int reached = 0;
+int iflong = 0;
+int prfreqs = 0;
 char usedir[100];
 char gfile[50];
-static int full 1000;
-static int tags 0;
+static int full = 1000;
+static int tags = 0;
 char *sinput, *soutput, *tagout;
-long indexdate 0, gdate();
+long indexdate = 0;
+static int setfrom(int);
 
-main(argc,argv)
-	char *argv[];
+int
+main(int argc, char **argv)
 {
 /* read query from stdin, expect name of indexes in argv[1] */
 static FILE *fa, *fb, *fc;
-char nma[100], nmb[100], nmc[100], *qitem[100], *rprog 0;
+char nma[100], nmb[100], nmc[100], *qitem[100], *rprog = 0;
 char nmd[100], grepquery[256];
 static char oldname[30] ;
-static int was 0;
+static int was = 0;
 /* these pointers are unions of pointer to int and pointer to long */
 long *hpt;
-unsigned *master 0;
-int falseflg, nhash, nitem, nfound, frtbl, kk;
+	union ptr master;
+	int falseflg = 0, nhash, nitem, nfound, frtbl, kk;
+
+	master.a = NULL;
 
 	/* special wart for refpart: default is tags only */
 
@@ -59,9 +61,9 @@ while (argv[1][0] == '-')
 		case 'o':
 			argc--; argv++;
 			soutput = argv[1];
-			if (argv[2]<16000)
+			if ((long)argv[2] < 16000L)
 				{
-				soutlen = argv[2];
+				soutlen = (int)(long)argv[2];
 				argc--; argv++;
 				}
 			break;
@@ -117,19 +119,19 @@ if (was == 0 || strcmp (oldname, nma) !=0)
 	fd = fopen(nmd, "r");
 	}
 fseek (fa, 0L, 0);
-fread (&nhash, sizeof(nhash), 1, fa);
-fread (&iflong, sizeof(iflong), 1, fa);
-if(master==0)
-master = calloc (lmaster, iflong? 4: 2);
-hpt = calloc(nhash, sizeof(*hpt));
-kk=fread( hpt, sizeof(*hpt), nhash, fa);
+	fread((char *)&nhash, sizeof(nhash), 1, fa);
+	fread((char *)&iflong, sizeof(iflong), 1, fa);
+	if(master.a == NULL)
+		master.a = calloc(lmaster, iflong ? sizeof(long) : sizeof(int));
+	hpt = calloc(nhash, sizeof(*hpt));
+	kk=fread((char *)hpt, sizeof(*hpt), nhash, fa);
 # if D1
 fprintf(stderr,"read %d hashes, iflong %d, nhash %d\n", kk, iflong, nhash);
 # endif
 _assert (kk==nhash);
 hfreq = calloc(nhash, sizeof(*hfreq));
 _assert (hfreq != NULL);
-frtbl = fread(hfreq, sizeof(*hfreq), nhash, fa);
+	frtbl = fread((char *)hfreq, sizeof(*hfreq), nhash, fa);
 hfrflg = (frtbl == nhash);
 # if D1
 fprintf(stderr, "read freqs %d\n", frtbl);
@@ -184,16 +186,18 @@ while (1)
 			if (full)
 				{
 				char bout[1000];
-				findline(tagout, bout, 1000);
+					findline(tagout, bout, 1000, indexdate);
 				fputs(bout,stdout);
 				}
 			}
 		}
-	if (tags)
-		result (master, nfound >tags ? tags: nfound, fc);
-	}
+		if (tags)
+			result (master, nfound >tags ? tags: nfound, fc);
+		}
+return(0);
 }
 
+char *
 todir(t)
 	char *t;
 {
@@ -208,7 +212,9 @@ chdir (t);
 strcpy (usedir,t);
 return(s);
 }
+static int
 setfrom(c)
+	int c;
 {
 switch(c)
 	{

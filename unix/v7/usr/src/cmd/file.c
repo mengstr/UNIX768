@@ -4,8 +4,13 @@
 
 #include <sys/param.h>
 #include <sys/stat.h>
+#include <a.out.h>
+#include <ar.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 int in;
 int i  = 0;
 char buf[512];
@@ -17,11 +22,19 @@ char *asc[] = {
 char *c[] = {
 	"int","char","float","double","struct","extern",0};
 char *as[] = {
-	"globl","byte","even","text","data","bss","comm",0};
+	"globl","byte","even","text","data","bss","comm","sect",0};
 int	ifile;
 
-main(argc, argv)
-char **argv;
+static void type(char *file); static int lookup(char *tab[]); static int ccom(void);
+static int ascom(void); static int english(char *bp, int n);
+static u16 ackget2(unsigned char *p);
+static u32 ackget4(unsigned char *p);
+
+#define ACK_MAGIC 0x0202
+#define ACK_HEADER_SIZE 20
+#define ACK_SECTION_SIZE 20
+
+main(int argc, char **argv)
 {
 	FILE *fl;
 	register char *p;
@@ -51,14 +64,19 @@ char **argv;
 		if (ifile >= 0)
 			close(ifile);
 	}
+	return 0;
 }
 
+static void
 type(file)
 char *file;
 {
 	int j,nl;
 	char ch;
 	struct stat mbuf;
+	struct exec execbuf;
+	u16 ackmagic;
+	int acklinked, acknsect;
 
 	ifile = -1;
 	if(stat(file, &mbuf) < 0) {
@@ -92,6 +110,44 @@ spcl:
 	if(in == 0){
 		printf("empty\n");
 		return;
+	}
+	if (in >= ACK_HEADER_SIZE) {
+		ackmagic = ackget2((unsigned char *)buf);
+		if (ackmagic == ACK_MAGIC) {
+			acklinked = 0;
+			acknsect = ackget2((unsigned char *)buf + 6);
+			for (j = 0; j < acknsect &&
+			    ACK_HEADER_SIZE + j * ACK_SECTION_SIZE + 4 <= in; j++)
+				if (ackget4((unsigned char *)buf +
+				    ACK_HEADER_SIZE + j * ACK_SECTION_SIZE) != 0)
+					acklinked = 1;
+			if (acklinked)
+				printf("ACK linked object\n");
+			else
+				printf("ACK relocatable object\n");
+			goto out;
+		}
+	}
+	if (in >= 2) {
+		ackmagic = ackget2((unsigned char *)buf);
+		if (ackmagic == AALMAG || ackmagic == ARMAG) {
+			printf("ACK archive\n");
+			goto out;
+		}
+	}
+	if (in >= sizeof(execbuf)) {
+		memcpy((char *)&execbuf, buf, sizeof(execbuf));
+		if (A_GETMID(execbuf) == A_MID_SUN010 &&
+		    (A_GETMAGIC(execbuf) == A_MAGIC1 ||
+		    A_GETMAGIC(execbuf) == A_MAGIC2 ||
+		    A_GETMAGIC(execbuf) == A_MAGIC3 ||
+		    A_GETMAGIC(execbuf) == A_MAGIC5)) {
+			printf("executable");
+			if (execbuf.a_syms != 0)
+				printf(" not stripped");
+			printf("\n");
+			goto out;
+		}
 	}
 	switch(*(int *)buf) {
 
@@ -235,10 +291,24 @@ outa:
 					printf(" with garbage\n");
 					goto out;
 				}
-		/*.... */
+		*/
 	printf("\n");
 out:;
 }
+
+static u16
+ackget2(unsigned char *p)
+{
+	return((u16)((u32)p[0] | ((u32)p[1] << 8)));
+}
+
+static u32
+ackget4(unsigned char *p)
+{
+	return((u32)ackget2(p) | ((u32)ackget2(p + 2) << 16));
+}
+
+static int
 lookup(tab)
 char *tab[];
 {
@@ -257,7 +327,8 @@ char *tab[];
 	}
 	return(0);
 }
-ccom(){
+static int
+ccom(void){
 	char cc;
 	while((cc = buf[i]) == ' ' || cc == '\t' || cc == '\n')if(i++ >= in)return(0);
 	if(buf[i] == '/' && buf[i+1] == '*'){
@@ -272,7 +343,8 @@ ccom(){
 	if(buf[i] == '\n')if(ccom() == 0)return(0);
 	return(1);
 }
-ascom(){
+static int
+ascom(void){
 	while(buf[i] == '/'){
 		i++;
 		while(buf[i++] != '\n')if(i >= in)return(0);
@@ -281,6 +353,7 @@ ascom(){
 	return(1);
 }
 
+static int
 english (bp, n)
 char *bp;
 {

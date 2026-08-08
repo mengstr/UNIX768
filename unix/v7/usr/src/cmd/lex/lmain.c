@@ -1,15 +1,26 @@
 # include "ldefs.c"
 # include "once.c"
+# ifdef DEBUG
+# include <signal.h>
+# endif
 
 	/* lex [-[drcyvntf]] [file] ... [file] */
 
 	/* Copyright 1976, Bell Telephone Laboratories, Inc.,
 	    written by Eric Schmidt, August 27, 1976   */
 
-main(argc,argv)
-  int argc;
-  char **argv; {
+static void get1core(void);
+static void free1core(void);
+static void get2core(void);
+static void free2core(void);
+static void get3core(void);
+# ifdef DEBUG
+static void free3core(void);
+# endif
+
+int main(int argc, char **argv) {
 	register int i;
+	errorf = stderr;
 # ifdef DEBUG
 	signal(10,buserr);
 	signal(11,segviol);
@@ -62,9 +73,9 @@ main(argc,argv)
 		/* may be gotten: name, left, right, nullstr, parent */
 	scopy("INITIAL",sp);
 	sname[0] = sp;
-	sp =+ slength("INITIAL") + 1;
+	sp += slength("INITIAL") + 1;
 	sname[1] = 0;
-	if(yyparse(0)) exit(1);	/* error return code */
+	if(yyparse()) exit(1);	/* error return code */
 		/* may be disposed of: def, subs, dchar */
 	free1core();
 		/* may be gotten: tmpstat, foll, positions, gotof, nexts, nchar, state, atable, sfall, cpackflg */
@@ -114,7 +125,7 @@ main(argc,argv)
 	fclose(stderr);
 	exit(0);	/* success return code */
 	}
-get1core(){
+static void get1core(void){
 	register int i, val;
 	register char *p;
 ccptr =	ccl = myalloc(CCLSIZE,sizeof(*ccl));
@@ -127,12 +138,12 @@ sp = 	schar = myalloc(STARTCHAR,sizeof(*schar));
 	if(ccl == 0 || def == 0 || subs == 0 || dchar == 0 || sname == 0 || schar == 0)
 		error("Too little core to begin");
 	}
-free1core(){
+static void free1core(void){
 	cfree(def,DEFSIZE,sizeof(*def));
 	cfree(subs,DEFSIZE,sizeof(*subs));
 	cfree(dchar,DEFCHAR,sizeof(*dchar));
 	}
-get2core(){
+static void get2core(void){
 	register int i, val;
 	register char *p;
 	gotof = myalloc(nstates,sizeof(*gotof));
@@ -150,7 +161,7 @@ nxtpos = positions = myalloc(maxpos,sizeof(*positions));
 		error("Too little core for state generation");
 	for(i=0;i<=tptr;i++)foll[i] = 0;
 	}
-free2core(){
+static void free2core(void){
 	cfree(positions,maxpos,sizeof(*positions));
 	cfree(tmpstat,tptr+1,sizeof(*tmpstat));
 	cfree(foll,tptr+1,sizeof(*foll));
@@ -164,7 +175,7 @@ free2core(){
 	cfree(schar,STARTCHAR,sizeof(*schar));
 	cfree(ccl,CCLSIZE,sizeof(*ccl));
 	}
-get3core(){
+static void get3core(void){
 	register int i, val;
 	register char *p;
 	verify = myalloc(outsize,sizeof(*verify));
@@ -174,7 +185,7 @@ get3core(){
 		error("Too little core for final packing");
 	}
 # ifdef DEBUG
-free3core(){
+static void free3core(void){
 	cfree(advance,outsize,sizeof(*advance));
 	cfree(verify,outsize,sizeof(*verify));
 	cfree(stoff,stnum+1,sizeof(*stoff));
@@ -186,13 +197,12 @@ free3core(){
 	cfree(cpackflg,nstates,sizeof(*cpackflg));
 	}
 # endif
-char *myalloc(a,b)
-  int a,b; {
-	register int i;
+void *myalloc(int a, int b) {
+	register void *i;
 	i = calloc(a, b);
 	if(i==0)
 		warning("OOPS - calloc returns a 0");
-	else if(i == -1){
+	else if(i == (void *)-1){
 # ifdef DEBUG
 		warning("calloc returns a -1");
 # endif
@@ -201,7 +211,8 @@ char *myalloc(a,b)
 	return(i);
 	}
 # ifdef DEBUG
-buserr(){
+void buserr(i16 sig){
+	(void)sig;
 	fflush(errorf);
 	fflush(fout);
 	fflush(stdout);
@@ -209,7 +220,8 @@ buserr(){
 	if(report == 1)statistics();
 	fflush(errorf);
 	}
-segviol(){
+void segviol(i16 sig){
+	(void)sig;
 	fflush(errorf);
 	fflush(fout);
 	fflush(stdout);
@@ -219,8 +231,7 @@ segviol(){
 	}
 # endif
 
-yyerror(s)
-char *s;
-{
+int yyerror(char *s) {
 	fprintf(stderr, "%s\n", s);
+	return(0);
 }

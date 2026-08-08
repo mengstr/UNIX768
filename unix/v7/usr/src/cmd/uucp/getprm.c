@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 
 #define LQUOTE	'('
 #define RQUOTE ')'
@@ -14,8 +15,7 @@
  */
 
 char *
-getprm(s, prm)
-char *s, *prm;
+getprm (char *s, char *prm)
 {
 	char *c;
 
@@ -63,8 +63,8 @@ char *s, *prm;
  *		HASSYSPART
  */
 
-split(name, sys, rest)
-char *name, *sys, *rest;
+int
+split (char *name, char *sys, char *rest)
 {
 	char *c;
 	int i;

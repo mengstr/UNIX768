@@ -1,12 +1,18 @@
 # include <stdio.h>
 extern struct {int *yyaa, *yybb; int *yystops;} *yylstate [], **yylsp, **yyolsp;
-yyreject ()
-{
 extern FILE *yyout, *yyin;
-extern int yyprevious , *yyfnd;
+extern int yyprevious, *yyfnd;
 extern char yyextra[];
 extern char yytext[];
 extern int yyleng;
+extern int yyinput(void);
+extern void yyunput(int);
+extern void yyoutput(int);
+extern int yyback(int *, int);
+static int yyracc(int);
+
+int yyreject(void)
+{
 for( ; yylsp < yyolsp; yylsp++)
 	yytext[yyleng++] = yyinput();
 if (*yyfnd > 0)
@@ -24,7 +30,7 @@ yyoutput(yyprevious = yyinput());
 yyleng=0;
 return(-1);
 }
-yyracc(m)
+static int yyracc(int m)
 {
 yyolsp = yylsp;
 if (yyextra[m])

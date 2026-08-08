@@ -62,7 +62,7 @@ box	: box OVER box	{ boverb($1, $3); }
 	| size box	%prec SIZE	{ size($1, $2); }
 	| font box	%prec FONT	{ font($1, $2); }
 	| FAT box	{ fatbox($2); }
-	| SQRT box	{ sqrt($2); }
+	| SQRT box	{ eqnsqrt($2); }
 	| lpile '{' list '}'	{ lpile('L', $1, ct); ct = $1; }
 	| cpile '{' list '}'	{ lpile('C', $1, ct); ct = $1; }
 	| rpile '{' list '}'	{ lpile('R', $1, ct); ct = $1; }
@@ -105,12 +105,12 @@ diacrit	: HAT	{ $$ = HAT; }
 	;
 
 from	: FROM	{ $$=ps; ps -= 3; fromflg = 1;
-		if(dbg)printf(".\tfrom: old ps %d, new ps %d, fflg %d\n", $$, ps, fromflg);
+		if(dbg)printf(".\tfrom: old ps %d, new ps %d, fflg %d\n", (int)$$, ps, fromflg);
 		}
 	;
 
 to	: TO	{ $$=ps; if(fromflg==0)ps -= 3; 
-			if(dbg)printf(".\tto: old ps %d, new ps %d\n", $$, ps);
+			if(dbg)printf(".\tto: old ps %d, new ps %d\n", (int)$$, ps);
 		}
 	;
 

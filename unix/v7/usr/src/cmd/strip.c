@@ -1,15 +1,20 @@
 #include <a.out.h>
 #include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 char	*tname;
-char	*mktemp();
+char	*mktemp(char *template);
 struct exec head;
-int 	a_magic[] = {A_MAGIC1, A_MAGIC2, A_MAGIC3, A_MAGIC4, 0};
 int	status;
 int	tf;
 
-main(argc, argv)
-char *argv[];
+static void strip(char *name);
+static int copy(char *name, int fr, int to, long size);
+
+int
+main (int argc, char *argv[])
 {
 	register i;
 
@@ -33,12 +38,11 @@ char *argv[];
 	exit(status);
 }
 
-strip(name)
-char *name;
+static void
+strip (char *name)
 {
 	register f;
 	long size;
-	int i;
 
 	f = open(name, 0);
 	if(f < 0) {
@@ -47,28 +51,26 @@ char *name;
 		goto out;
 	}
 	read(f, (char *)&head, sizeof(head));
-	for(i=0;a_magic[i];i++)
-		if(a_magic[i] == head.a_magic) break;
-	if(a_magic[i] == 0) {
+	if(A_GETMID(head) != A_MID_SUN010 || A_GETMAGIC(head) != A_MAGIC5) {
 		printf("%s not in a.out format\n", name);
 		status = 1;
 		goto out;
 	}
-	if(head.a_syms == 0 && (head.a_flag&1) != 0) {
+	if(head.a_syms == 0) {
 		printf("%s already stripped\n", name);
 		goto out;
 	}
 	size = (long)head.a_text + head.a_data;
 	head.a_syms = 0;
-	head.a_flag |= 1;
+	head.a_unused = 0;
+	head.a_flag = 0;
 
 	lseek(tf, (long)0, 0);
 	write(tf, (char *)&head, sizeof(head));
-	if(copy(name, f, tf, size)) {
+	if(copy(name, f, tf, size - sizeof(head))) {
 		status = 1;
 		goto out;
 	}
-	size += sizeof(head);
 	close(f);
 	f = creat(name, 0666);
 	if(f < 0) {
@@ -84,9 +86,8 @@ out:
 	close(f);
 }
 
-copy(name, fr, to, size)
-char *name;
-long size;
+static int
+copy (char *name, int fr, int to, long size)
 {
 	register s, n;
 	char buf[512];

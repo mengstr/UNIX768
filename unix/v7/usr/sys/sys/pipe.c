@@ -2,9 +2,16 @@
 #include "../h/systm.h"
 #include "../h/dir.h"
 #include "../h/user.h"
+#include "../h/proc.h"
 #include "../h/inode.h"
 #include "../h/file.h"
 #include "../h/reg.h"
+
+void prele(struct inode *ip);
+void pipe(void);
+void readp(struct file *fp);
+void writep(struct file *fp);
+void plock(struct inode *ip);
 
 /*
  * Max allowable buffering per pipe.
@@ -22,11 +29,11 @@
  * Allocate 2 file structures.
  * Put it all together with flags.
  */
-pipe()
+void pipe()
 {
 	register struct inode *ip;
 	register struct file *rf, *wf;
-	int r;
+	i32 r;
 
 	ip = ialloc(pipedev);
 	if(ip == NULL)
@@ -36,7 +43,7 @@ pipe()
 		iput(ip);
 		return;
 	}
-	r = u.u_r.r_val1;
+	r = u.u_r.r_reg.r_val1;
 	wf = falloc();
 	if(wf == NULL) {
 		rf->f_count = 0;
@@ -44,8 +51,8 @@ pipe()
 		iput(ip);
 		return;
 	}
-	u.u_r.r_val2 = u.u_r.r_val1;
-	u.u_r.r_val1 = r;
+	u.u_r.r_reg.r_val2 = u.u_r.r_reg.r_val1;
+	u.u_r.r_reg.r_val1 = r;
 	wf->f_flag = FWRITE|FPIPE;
 	wf->f_inode = ip;
 	rf->f_flag = FREAD|FPIPE;
@@ -58,10 +65,11 @@ pipe()
 /*
  * Read call directed to a pipe.
  */
-readp(fp)
+void readp(fp)
 register struct file *fp;
 {
 	register struct inode *ip;
+	i32 s;
 
 	ip = fp->f_inode;
 
@@ -80,11 +88,15 @@ loop:
 		 * writer active, return without
 		 * satisfying read.
 		 */
-		prele(ip);
-		if(ip->i_count < 2)
+		if(ip->i_count < 2) {
+			prele(ip);
 			return;
+		}
+		s = spl6();
 		ip->i_mode |= IREAD;
+		prele(ip);
 		sleep((caddr_t)ip+2, PPIPE);
+		splx(s);
 		goto loop;
 	}
 
@@ -113,11 +125,12 @@ loop:
 /*
  * Write call directed to a pipe.
  */
-writep(fp)
+void writep(fp)
 register struct file *fp;
 {
 	register c;
 	register struct inode *ip;
+	i32 s;
 
 	ip = fp->f_inode;
 	c = u.u_count;
@@ -155,9 +168,11 @@ loop:
 	 */
 
 	if(ip->i_size >= PIPSIZ) {
+		s = spl6();
 		ip->i_mode |= IWRITE;
 		prele(ip);
 		sleep((caddr_t)ip+1, PPIPE);
+		splx(s);
 		goto loop;
 	}
 
@@ -186,7 +201,7 @@ loop:
  * If its already locked,
  * set the WANT bit and sleep.
  */
-plock(ip)
+void plock(ip)
 register struct inode *ip;
 {
 
@@ -204,7 +219,7 @@ register struct inode *ip;
  * This routine is also used
  * to unlock inodes in general.
  */
-prele(ip)
+void prele(ip)
 register struct inode *ip;
 {
 

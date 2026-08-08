@@ -1,0 +1,230 @@
+echo 'bootstrap: send hdrs.tar.z'
+cd /dist
+rx /dist/hdrs.tar.z
+cd /
+/local/bin/pcat /dist/hdrs.tar.z > /tmp/hdrs.tar
+rm /dist/hdrs.tar.z
+tar xf /tmp/hdrs.tar
+rm /usr/include/.bhdr
+rm /tmp/hdrs.tar
+sync
+
+echo 'bootstrap: send srcbase.tar.z'
+cd /dist
+rx /dist/srcbase.tar.z
+cd /
+/local/bin/pcat /dist/srcbase.tar.z > /tmp/srcbase.tar
+rm /dist/srcbase.tar.z
+tar xf /tmp/srcbase.tar
+ls /usr/src/.src-base
+rm /usr/src/.src-base
+rm /tmp/srcbase.tar
+sync
+cd /usr/src
+/bin/osh -e build.base
+/bin/osh -e install.base
+chmod 4755 /bin/mkdir /bin/rmdir /bin/mv
+chmod 2755 /bin/ps
+/bin/chgrp 1 /dev/mem
+/bin/chgrp 1 /dev/kmem
+/bin/chgrp 1 /bin/ps
+/bin/chown 4 /dev/tty3
+/bin/chgrp 4 /dev/tty3
+chmod 0600 /dev/tty3
+/bin/chown 7 /usr/dmr /usr/dmr/.profile
+/bin/chgrp 3 /usr/dmr /usr/dmr/.profile
+/bin/osh -e clean.base
+
+echo 'bootstrap: send srctool.tar.z'
+cd /dist
+rx /dist/srctool.tar.z
+cd /
+/local/bin/pcat /dist/srctool.tar.z > /tmp/srctool.tar
+rm /dist/srctool.tar.z
+tar xf /tmp/srctool.tar
+ls /usr/src/.src-tool
+rm /usr/src/.src-tool
+rm /tmp/srctool.tar
+sync
+cd /usr/src
+/bin/cp /usr/src/lib/yaccpar /usr/lib/yaccpar
+/bin/chmod 0644 /usr/lib/yaccpar
+/bin/cp /usr/src/lib/lex/ncform /usr/lib/lex/ncform
+/bin/chmod 0644 /usr/lib/lex/ncform
+/bin/sh build.tools
+/bin/osh -e install.tools
+ls /bin/ar
+ls /bin/ranlib
+/bin/sh clean.tools
+
+echo 'bootstrap: send srccmd.tar.z'
+cd /dist
+rx /dist/srccmd.tar.z
+cd /
+/local/bin/pcat /dist/srccmd.tar.z > /tmp/srccmd.tar
+rm /dist/srccmd.tar.z
+tar xf /tmp/srccmd.tar
+ls /usr/src/.src-cmd
+rm /usr/src/.src-cmd
+rm /tmp/srccmd.tar
+sync
+cd /usr/src
+/bin/sh build.cmd
+/bin/osh -e install.cmd
+ls /bin/random
+ls /bin/crypt
+ls /usr/lib/makekey
+/bin/sh clean.cmd
+
+echo 'bootstrap: send srccomm.tar.z'
+cd /dist
+rx /dist/srccomm.tar.z
+cd /
+/local/bin/pcat /dist/srccomm.tar.z > /tmp/srccomm.tar
+rm /dist/srccomm.tar.z
+tar xf /tmp/srccomm.tar
+ls /usr/src/.src-comm
+rm /usr/src/.src-comm
+rm /tmp/srccomm.tar
+sync
+cd /usr/src
+/bin/sh build.comm
+/bin/osh -e install.comm
+chmod 4755 /bin/mail
+chmod 4111 /bin/uucp /bin/uux
+chmod 4111 /usr/lib/uucp/uucico /usr/lib/uucp/uuxqt
+/bin/chown 4 /bin/uucp
+/bin/chgrp 4 /bin/uucp
+/bin/chown 4 /bin/uux
+/bin/chgrp 4 /bin/uux
+/bin/chown 4 /usr/lib/uucp/uucico
+/bin/chgrp 4 /usr/lib/uucp/uucico
+/bin/chown 4 /usr/lib/uucp/uuxqt
+/bin/chgrp 4 /usr/lib/uucp/uuxqt
+/bin/chown 4 /usr/lib/uucp
+/bin/chgrp 4 /usr/lib/uucp
+/bin/chown 4 /usr/spool/uucp
+/bin/chgrp 4 /usr/spool/uucp
+/bin/chown 4 /usr/spool/uucp/.XQTDIR
+/bin/chgrp 4 /usr/spool/uucp/.XQTDIR
+chmod 0755 /usr/lib/uucp
+chmod 0777 /usr/spool/uucp /usr/spool/uucp/.XQTDIR
+/bin/chown 4 /usr/lib/uucp/L-devices
+/bin/chgrp 4 /usr/lib/uucp/L-devices
+/bin/chown 4 /usr/lib/uucp/L-dialcodes
+/bin/chgrp 4 /usr/lib/uucp/L-dialcodes
+/bin/chown 4 /usr/lib/uucp/L.sys
+/bin/chgrp 4 /usr/lib/uucp/L.sys
+/bin/chown 4 /usr/lib/uucp/SQFILE
+/bin/chgrp 4 /usr/lib/uucp/SQFILE
+/bin/chown 4 /usr/lib/uucp/USERFILE
+/bin/chgrp 4 /usr/lib/uucp/USERFILE
+/bin/sh clean.comm
+
+echo 'bootstrap: send srctext.tar.z'
+cd /dist
+rx /dist/srctext.tar.z
+cd /
+/local/bin/pcat /dist/srctext.tar.z > /tmp/srctext.tar
+rm /dist/srctext.tar.z
+tar xf /tmp/srctext.tar
+ls /usr/src/.src-text
+rm /usr/src/.src-text
+rm /tmp/srctext.tar
+sync
+cd /usr/src
+/bin/sh build.text
+/bin/osh -e install.text
+ls /bin/eqn
+ls /bin/neqn
+ls /bin/tbl
+/bin/sh clean.text
+
+echo 'bootstrap: send srcgame.tar.z'
+cd /dist
+rx /dist/srcgame.tar.z
+cd /
+/local/bin/pcat /dist/srcgame.tar.z > /tmp/srcgame.tar
+rm /dist/srcgame.tar.z
+tar xf /tmp/srcgame.tar
+ls /usr/src/.src-game
+rm /usr/src/.src-game
+rm /tmp/srcgame.tar
+sync
+cd /usr/src
+/bin/sh build.games
+/bin/osh -e install.games
+ls /usr/games/quiz
+ls /usr/games/wump
+ls /usr/games/backgammon
+ls /usr/games/fish
+ls /usr/games/hangman
+ls /usr/games/fortune
+ls /usr/games/arithmetic
+ls /usr/games/banner
+ls /usr/games/moo
+ls /usr/games/maze
+/bin/sh clean.games
+
+echo 'bootstrap: send srcdev.tar.z'
+cd /dist
+rx /dist/srcdev.tar.z
+cd /
+/local/bin/pcat /dist/srcdev.tar.z > /tmp/srcdev.tar
+rm /dist/srcdev.tar.z
+tar xf /tmp/srcdev.tar
+ls /usr/src/.src-dev
+rm /usr/src/.src-dev
+rm /tmp/srcdev.tar
+sync
+cd /usr/src
+/bin/osh -e build.dev
+/bin/osh -e install.dev
+ls /usr/bin/68kasm
+ls /usr/bin/srec2aout
+ls /etc/mksdroot
+/bin/osh -e clean.dev
+
+echo 'bootstrap: send srckern.tar.z'
+cd /dist
+rx /dist/srckern.tar.z
+cd /
+/local/bin/pcat /dist/srckern.tar.z > /tmp/srckern.tar
+rm /dist/srckern.tar.z
+tar xf /tmp/srckern.tar
+ls /usr/sys/.src-kern
+rm /usr/sys/.src-kern
+rm /tmp/srckern.tar
+sync
+cd /usr/src
+/bin/osh -e build.kernel
+/bin/osh -e install.kernel
+/bin/osh -e clean.kernel
+
+echo 'bootstrap: send man.tar.z'
+cd /dist
+rx /dist/man.tar.z
+cd /
+/local/bin/pcat /dist/man.tar.z > /tmp/man.tar
+rm /dist/man.tar.z
+tar xf /tmp/man.tar
+ls /usr/man/.man-ok
+rm /usr/man/.man-ok
+rm /tmp/man.tar
+sync
+
+cd /usr/dict/papers
+rx /usr/dict/papers/runinv
+chmod 0755 /usr/dict/papers/runinv
+cd /local/bin
+rx /local/bin/red
+chmod 0755 /local/bin/red
+cd /
+
+echo 'bootstrap: send optional docs installer'
+cd /dist
+rx /dist/installdocs
+chmod 0755 /dist/installdocs
+cd /
+
+echo 'bootstrap: complete'

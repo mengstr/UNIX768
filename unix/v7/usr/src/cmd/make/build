@@ -1,0 +1,14 @@
+set -e
+
+YACC=${YACC-../yacc/yacc}
+echo YACC gram.y
+$YACC gram.y
+mv y.tab.c gram.c
+
+for file in ident main doname misc files dosys gram
+do
+	echo CC $file.c
+	cc -O2 -Dunix -I. -c $file.c
+done
+echo LD make
+cc -s -o make ident.o main.o doname.o misc.o files.o dosys.o gram.o

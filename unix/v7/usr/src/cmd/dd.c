@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <signal.h>
+#include <unistd.h>
 
 #define	BIG	32767
 #define	LCASE	01
@@ -18,7 +19,6 @@ char	*ifile;
 char	*ofile;
 char	*ibuf;
 char	*obuf;
-char	*sbrk();
 int	ibs	= 512;
 int	obs	= 512;
 int	bs;
@@ -139,15 +139,23 @@ char	atoibm[] =
 	0356,0357,0372,0373,0374,0375,0376,0377,
 };
 
+static void flsh(void);
+static i32 match(char *s);
+static i32 number(i32 big);
+static void cnull(i32 cc);
+static void null(i32 c);
+static void ascii(i32 cc);
+static void ebcdic(i32 cc);
+static void ibm(i32 cc);
+static void term(void);
+static void stats(void);
 
-main(argc, argv)
-int	argc;
-char	**argv;
+int
+main(int argc, char **argv)
 {
-	int (*conv)();
+	void (*conv)(i32);
 	register char *ip;
 	register c;
-	int ebcdic(), ibm(), ascii(), null(), cnull(), term();
 	int a;
 
 	conv = null;
@@ -278,7 +286,7 @@ char	**argv;
 	op = obuf;
 
 	if (signal(SIGINT, SIG_IGN) != SIG_IGN)
-		signal(SIGINT, term);
+		signal(SIGINT, (sighandler_t)term);
 	while(skip) {
 		read(ibf, ibuf, ibs);
 		skip--;
@@ -342,6 +350,7 @@ loop:
 	goto loop;
 }
 
+static void
 flsh()
 {
 	register c;
@@ -359,6 +368,7 @@ flsh()
 	}
 }
 
+static i32
 match(s)
 char *s;
 {
@@ -377,7 +387,9 @@ true:
 	return(1);
 }
 
+static i32
 number(big)
+i32 big;
 {
 	register char *cs;
 	long n;
@@ -416,7 +428,9 @@ number(big)
 	/* never gets here */
 }
 
+static void
 cnull(cc)
+i32 cc;
 {
 	register c;
 
@@ -428,7 +442,9 @@ cnull(cc)
 	null(c);
 }
 
+static void
 null(c)
+i32 c;
 {
 
 	*op = c;
@@ -439,7 +455,9 @@ null(c)
 	}
 }
 
+static void
 ascii(cc)
+i32 cc;
 {
 	register c;
 
@@ -466,7 +484,9 @@ out:
 	}
 }
 
+static void
 ebcdic(cc)
+i32 cc;
 {
 	register c;
 
@@ -495,7 +515,9 @@ ebcdic(cc)
 		null(c);
 }
 
+static void
 ibm(cc)
+i32 cc;
 {
 	register c;
 
@@ -524,6 +546,7 @@ ibm(cc)
 		null(c);
 }
 
+static void
 term()
 {
 
@@ -531,6 +554,7 @@ term()
 	exit(0);
 }
 
+static void
 stats()
 {
 

@@ -1,4 +1,6 @@
 #include	<stdio.h>
+#include	<unistd.h>
+#define SED_EXTERN
 #include "sed.h"
 
 char	*trans[040]  = {
@@ -36,8 +38,8 @@ char	*trans[040]  = {
 };
 char	rub[] = {"\177"};
 
-execute(file)
-char *file;
+int
+execute (char *file)
 {
 	register char *p1, *p2;
 	register union reptr	*ipc;
@@ -67,7 +69,7 @@ char *file;
 		}
 		spend = execp;
 
-		for(ipc = ptrspace; ipc->command; ) {
+		for(ipc = ptrspace; ipc->r1.command; ) {
 
 			p1 = ipc->ad1;
 			p2 = ipc->ad2;
@@ -155,8 +157,8 @@ char *file;
 
 	}
 }
-match(expbuf, gf)
-char	*expbuf;
+int
+match (char *expbuf, int gf)
 {
 	register char	*p1, *p2, c;
 
@@ -202,15 +204,15 @@ char	*expbuf;
 	} while(*p1++);
 	return(0);
 }
-advance(alp, aep)
-char	*alp, *aep;
+int
+advance (char *alp, char *aep)
 {
 	register char *lp, *ep, *curlp;
 	char	c;
 	char *bbeg;
 	int	ct;
 
-/*fprintf(stderr, "*lp = %c, %o\n*ep = %c, %o\n", *lp, *lp, *ep, *ep);	/*DEBUG*/
+/* debug trace disabled */
 
 	lp = alp;
 	ep = aep;
@@ -333,8 +335,8 @@ char	*alp, *aep;
 		fprintf(stderr, "RE botch, %o\n", *--ep);
 	}
 }
-substitute(ipc)
-union reptr	*ipc;
+int
+substitute (union reptr *ipc)
 {
 	if(match(ipc->re1, 0) == 0)	return(0);
 
@@ -350,8 +352,8 @@ union reptr	*ipc;
 	return(1);
 }
 
-dosub(rhsbuf)
-char	*rhsbuf;
+int
+dosub (char *rhsbuf)
 {
 	register char *lp, *sp, *rp;
 	int c;
@@ -384,8 +386,8 @@ char	*rhsbuf;
 	while (*lp++ = *sp++);
 	spend = lp-1;
 }
-char	*place(asp, al1, al2)
-char	*asp, *al1, *al2;
+char *
+place (char *asp, char *al1, char *al2)
 {
 	register char *sp, *l1, *l2;
 
@@ -400,15 +402,15 @@ char	*asp, *al1, *al2;
 	return(sp);
 }
 
-command(ipc)
-union reptr	*ipc;
+int
+command (union reptr *ipc)
 {
 	register int	i;
 	register char	*p1, *p2, *p3;
 	char	*execp;
 
 
-	switch(ipc->command) {
+	switch(ipc->r1.command) {
 
 		case ACOM:
 			*aptr++ = ipc;
@@ -604,7 +606,7 @@ union reptr	*ipc;
 				}
 				else
 					goto cpcom;
-			if(i && ipc->fcode)
+			if(i && ipc->r1.fcode)
 				goto wcom;
 			break;
 
@@ -616,7 +618,7 @@ union reptr	*ipc;
 
 		wcom:
 		case WCOM:
-			fprintf(ipc->fcode, "%s\n", linebuf);
+			fprintf(ipc->r1.fcode, "%s\n", linebuf);
 			break;
 		case XCOM:
 			p1 = linebuf;
@@ -641,9 +643,8 @@ union reptr	*ipc;
 
 }
 
-char	*
-gline(addr)
-char	*addr;
+char *
+gline (char *addr)
 {
 	register char	*p1, *p2;
 	register	c;
@@ -680,15 +681,16 @@ char	*addr;
 
 	return(p1);
 }
-ecmp(a, b, count)
-char	*a, *b;
+int
+ecmp (char *a, char *b, int count)
 {
 	while(count--)
 		if(*a++ != *b++)	return(0);
 	return(1);
 }
 
-arout()
+int
+arout (void)
 {
 	register char	*p1;
 	FILE	*fi;
@@ -697,7 +699,7 @@ arout()
 
 	aptr = abuf - 1;
 	while(*++aptr) {
-		if((*aptr)->command == ACOM) {
+		if((*aptr)->r1.command == ACOM) {
 			for(p1 = (*aptr)->re1; *p1; )
 				putc(*p1++, stdout);
 			putc('\n', stdout);
@@ -714,4 +716,3 @@ arout()
 	aptr = abuf;
 	*aptr = 0;
 }
-

@@ -88,31 +88,28 @@ yet been waited for by the parent is marked <defunct>.
 .I Ps
 makes an educated guess as to the file name
 and arguments given when the process was created
-by examining core memory or the swap area.
+by examining process memory.
 The method is inherently somewhat unreliable and in any event
 a process is entitled to destroy this information,
 so the names cannot be counted on too much.
 .PP
-If the
+On Epoch68 the active process page is examined through
+.IR /dev/mem ;
+swapped process images and PDP-11 postmortem core files do not apply.
+The historical
 .B k
-option is specified,
-the file
-.I /usr/sys/core
-is used in place of
-.IR /dev/mem .
-This is used for
-postmortem system debugging.
+option is consequently not supported.
 If a second argument is given,
-it is taken to be the file containing the system's namelist.
+it is taken to be the file containing the Epoch68 kernel symbol list.
 .SH FILES
-.ta \w'/usr/sys/core 'u
-/unix		system namelist
+.ta \w'/etc/ksyms 'u
+/etc/ksyms	kernel symbol list
+.br
+/dev/kmem	kernel process and user tables
 .br
 /dev/mem	core memory
 .br
-/usr/sys/core	alternate core file
-.br
-/dev		searched to find swap device and tty names
+/dev		searched to find tty names
 .SH "SEE ALSO"
 kill(1)
 .SH BUGS

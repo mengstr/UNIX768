@@ -1,5 +1,9 @@
+# include "refer.h"
+void
 shell (n, comp, exch)
-	int (*comp)(), (*exch)();
+	int n;
+	int (*comp)(int, int);
+	void (*exch)(int, int);
 /* SORTS UP.  IF THERE ARE NO EXCHANGES (IEX=0) ON A SWEEP
   THE COMPARISON GAP (IGAP) IS HALVED FOR THE NEXT SWEEP */
 {

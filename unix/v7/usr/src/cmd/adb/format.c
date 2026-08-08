@@ -240,7 +240,7 @@ unox()
 	WHILE lastc!=EOR DO rdc(); OD
 	IF (unixpid=fork())==0
 	THEN	signal(SIGINT,sigint); signal(SIGQUIT,sigqit);
-		*lp=0; execl("/bin/sh", "sh", "-c", argp, 0);
+		*lp=0; execl("/bin/sh", "sh", "-c", argp, (char *)0);
 		exit(16);
 	ELIF unixpid == -1
 	THEN	error(NOFORK);

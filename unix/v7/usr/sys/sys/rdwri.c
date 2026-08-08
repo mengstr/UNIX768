@@ -6,6 +6,11 @@
 #include "../h/buf.h"
 #include "../h/conf.h"
 
+void readi(struct inode *ip);
+void writei(struct inode *ip);
+void iomove(caddr_t cp, i32 n, i32 flag);
+
+
 /*
  * Read the file corresponding to
  * the inode pointed at by the argument.
@@ -16,15 +21,15 @@
  *	u_count		number of bytes to read
  *	u_segflg	read to kernel/user/user I
  */
-readi(ip)
+void readi(ip)
 register struct inode *ip;
 {
 	struct buf *bp;
 	dev_t dev;
 	daddr_t lbn, bn;
 	off_t diff;
-	register on, n;
-	register type;
+	register i32 on, n;
+	register i32 type;
 
 	if(u.u_count == 0)
 		return;
@@ -33,16 +38,17 @@ register struct inode *ip;
 		return;
 	}
 	ip->i_flag |= IACC;
-	dev = (dev_t)ip->i_un.i_rdev;
+	dev = (dev_t)ip->i_un.i_special.i_rdev;
 	type = ip->i_mode&IFMT;
 	if (type==IFCHR || type==IFMPC) {
-		return((*cdevsw[major(dev)].d_read)(dev));
+		(*cdevsw[major(dev)].d_read)(dev); 
+		return;
 	}
 
 	do {
 		lbn = bn = u.u_offset >> BSHIFT;
 		on = u.u_offset & BMASK;
-		n = min((unsigned)(BSIZE-on), u.u_count);
+		n = (i32)min((u32)(BSIZE-on), (u32)u.u_count);
 		if (type!=IFBLK && type!=IFMPB) {
 			diff = ip->i_size - u.u_offset;
 			if(diff <= 0)
@@ -58,12 +64,12 @@ register struct inode *ip;
 		if ((long)bn<0) {
 			bp = geteblk();
 			clrbuf(bp);
-		} else if (ip->i_un.i_lastr+1==lbn)
+		} else if (ip->i_un.i_file.i_lastr+1==lbn)
 			bp = breada(dev, bn, rablock);
 		else
 			bp = bread(dev, bn);
-		ip->i_un.i_lastr = lbn;
-		n = min((unsigned)n, BSIZE-bp->b_resid);
+		ip->i_un.i_file.i_lastr = lbn;
+		n = (i32)min((u32)n, (u32)(BSIZE-bp->b_resid));
 		if (n!=0)
 			iomove(bp->b_un.b_addr+on, n, B_READ);
 		brelse(bp);
@@ -80,20 +86,20 @@ register struct inode *ip;
  *	u_count		number of bytes to write
  *	u_segflg	write to kernel/user/user I
  */
-writei(ip)
+void writei(ip)
 register struct inode *ip;
 {
 	struct buf *bp;
 	dev_t dev;
 	daddr_t bn;
-	register n, on;
-	register type;
+	register i32 n, on;
+	register i32 type;
 
 	if(u.u_offset < 0) {
 		u.u_error = EINVAL;
 		return;
 	}
-	dev = (dev_t)ip->i_un.i_rdev;
+	dev = (dev_t)ip->i_un.i_special.i_rdev;
 	type = ip->i_mode&IFMT;
 	if (type==IFCHR || type==IFMPC) {
 		ip->i_flag |= IUPD|ICHG;
@@ -106,7 +112,7 @@ register struct inode *ip;
 	do {
 		bn = u.u_offset >> BSHIFT;
 		on = u.u_offset & BMASK;
-		n = min((unsigned)(BSIZE-on), u.u_count);
+		n = (i32)min((u32)(BSIZE-on), (u32)u.u_count);
 		if (type!=IFBLK && type!=IFMPB) {
 			bn = bmap(ip, bn, B_WRITE);
 			if((long)bn<0)
@@ -133,8 +139,8 @@ register struct inode *ip;
  * Return the logical maximum
  * of the 2 arguments.
  */
-max(a, b)
-unsigned a, b;
+u32 max(a, b)
+u32 a, b;
 {
 
 	if(a > b)
@@ -146,8 +152,8 @@ unsigned a, b;
  * Return the logical minimum
  * of the 2 arguments.
  */
-min(a, b)
-unsigned a, b;
+u32 min(a, b)
+u32 a, b;
 {
 
 	if(a < b)
@@ -170,18 +176,19 @@ unsigned a, b;
  * If not, its done byte-by-byte with
  * cpass and passc.
  */
-iomove(cp, n, flag)
+void iomove(cp, n, flag)
 register caddr_t cp;
-register n;
+i32 n;
+i32 flag;
 {
-	register t;
+	register i32 t;
 
 	if (n==0)
 		return;
 	if(u.u_segflg != 1 &&
 	  (n&(NBPW-1)) == 0 &&
-	  ((int)cp&(NBPW-1)) == 0 &&
-	  ((int)u.u_base&(NBPW-1)) == 0) {
+	  ((u32)cp&(NBPW-1)) == 0 &&
+	  ((u32)u.u_base&(NBPW-1)) == 0) {
 		if (flag==B_WRITE)
 			if (u.u_segflg==0)
 				t = copyin(u.u_base, (caddr_t)cp, n);

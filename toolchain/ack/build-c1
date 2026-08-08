@@ -1,0 +1,30 @@
+build=$1
+ack=$2
+inc=$3
+cpp=$4
+c1=$5
+opt=$6
+ncg=$7
+as=$8
+cc=$9
+includes="-I$ack/shared/generated/h -I$ack/shared/generated/em_data -I$ack/shared/includes/ack-h -I$ack/shared/includes/modules-h -I$ack/shared/includes/read_em -I$ack/shared/modules/src/alloc -I$ack/shared/modules/src/data -I$ack/shared/modules/src/em_code -I$ack/shared/modules/src/em_data -I$ack/shared/modules/src/flt_arith -I$ack/shared/modules/src/idf -I$ack/shared/modules/src/input -I$ack/shared/modules/src/read_em -I$ack/shared/modules/src/string -I$ack/shared/modules/src/system -I$ack/c1 -I$ack/c1/generated"
+flags="-DNORETURN= -DUNREACHABLE_CODE= -DACK_TARGET_NO_LONG_LONG -DACK_EM_CODE_FILE_BACKED -DACK_TARGET_C1_BUFFERED_INPUT -DACK_TARGET_C1_SMALL_MEMORY -DBIGMACHINE=1"
+
+test -d "$build" || mkdir "$build" || exit 1
+test -d "$build/c1-build" || mkdir "$build/c1-build" || exit 1
+cd "$build/c1-build" || exit 1
+
+exec < "$ack/c1.list"
+while read f
+do
+	o=`basename "$f" .c`.o
+	echo CC "$o"
+	$cpp -I$inc $flags $includes "$ack/$f" > c1.i || exit 1
+	$c1 -L -Vw2.2i2.2p4.2f4.2s2.2l4.2d8.2x8.2 c1.i c1.k || exit 1
+	$opt c1.k > c1.m || exit 1
+	$ncg c1.m c1.s || exit 1
+	$as - -o "$o" c1.s || exit 1
+done
+
+echo LD c1
+$cc -o "$build/c1" *.o

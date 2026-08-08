@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <sys/types.h>
 
 
 /*******
@@ -12,8 +13,7 @@
  */
 
 char *
-index(str, c)
-char c, *str;
+index (char *str, i32 c)
 {
 	for (; *str != '\0'; str++) {
 		if (*str == c)

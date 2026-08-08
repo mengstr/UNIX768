@@ -5,9 +5,14 @@
  *
  */
 #include <stdio.h>
+#include <stdlib.h>
 #include <ctype.h>
+#include <sys/inttypes.h>
+#include <sys/types.h>
 #include <time.h>
 #include <signal.h>
+#include <string.h>
+#include <unistd.h>
 
 #define HOUR 100
 #define HALFDAY	(12*HOUR)
@@ -44,7 +49,7 @@ struct monstr {
 };
 
 char	fname[100];
-int	utime;  /* requested time in grains */
+int	at_utime;  /* requested time in grains */
 int	now;	/* when is it */
 int	uday; /* day of year to be done */
 int	uyear; /* year */
@@ -52,13 +57,16 @@ int	today; /* day of year today */
 FILE	*file;
 FILE	*ifile;
 char	**environ;
-char	*prefix();
-FILE	*popen();
+struct tm *localtime(time_t *);
+static void filename(char *dir, int y, int d, int t);
+static int makeuday(int argc, char **argv);
+static void makeutime(char *pp);
+static void onintr(void);
+static char *prefix(char *begin, char *full);
 
-main(argc, argv)
-char **argv;
+int
+main(int argc, char **argv)
 {
-	extern onintr();
 	register c;
 	char pwbuf[100];
 	FILE *pwfil;
@@ -74,14 +82,14 @@ char **argv;
 	}
 	makeutime(argv[1]);
 	larg = makeuday(argc,argv)+1;
-	if (uday==today && larg<=2 && utime<=now)
+	if (uday==today && larg<=2 && at_utime<=now)
 		uday++;
 	c = uyear%4==0? 366: 365;
 	if (uday >= c) {
 		uday -= c;
 		uyear++;
 	}
-	filename(THISDAY, uyear, uday, utime);
+	filename(THISDAY, uyear, uday, at_utime);
 	ifile = stdin;
 	if (argc > larg)
 		ifile = fopen(argv[larg], "r");
@@ -90,7 +98,7 @@ char **argv;
 		exit(1);
 	}
 	if (signal(SIGINT, SIG_IGN) != SIG_IGN)
-		signal(SIGINT, onintr);
+		signal(SIGINT, (sighandler_t)onintr);
 	file = fopen(fname, "a");
 	chmod(fname, 0644);
 	if (file == NULL) {
@@ -115,8 +123,8 @@ char **argv;
 	exit(0);
 }
 
-makeutime(pp)
-char *pp; 
+static void
+makeutime(char *pp)
 {
 	register val;
 	register char *p;
@@ -194,12 +202,12 @@ char *pp;
 		fprintf(stderr, "at: illegal minute field\n");
 		exit(1);
 	}
-	utime = val;
+	at_utime = val;
 }
 
 
-makeuday(argc,argv)
-char **argv;
+static int
+makeuday(int argc, char **argv)
 {
 	/* the presumption is that argv[2], argv[3] are either
 	   month day OR weekday [week].  Returns either 2 or 3 as last
@@ -208,7 +216,7 @@ char **argv;
 	long tm;
 	int found = -1;
 	char **ps;
-	struct tm *detail, *localtime();
+	struct tm *detail;
 	struct monstr *pt;
 
 	time(&tm);
@@ -269,9 +277,8 @@ char **argv;
 	return(2);
 }
 
-char *
-prefix(begin, full)
-char *begin, *full;
+static char *
+prefix(char *begin, char *full)
 {
 	int c;
 	while (c = *begin++) {
@@ -285,20 +292,21 @@ char *begin, *full;
 	return(full);
 }
 
-filename(dir, y, d, t)
-char *dir;
+static void
+filename(char *dir, int y, int d, int t)
 {
 	register i;
 
 	for (i=0; ; i += 53) {
-		sprintf(fname, "%s/%02d.%03d.%04d.%02d", dir, y, d, t,
+		sprintf(fname, "%s/%02d.%03d.%04d.%02d", dir, y%100, d, t,
 		   (getpid()+i)%100);
 		if (access(fname, 0) == -1)
 			return;
 	}
 }
 
-onintr()
+static void
+onintr(void)
 {
 	unlink(fname);
 	exit(1);

@@ -5,10 +5,10 @@
    if no hash table is given, create one from scratch
 */
 
-main(argc,argv)
-char **argv;
+int
+main(int argc, char **argv)
 {
-	register i, j;
+	register int i, j;
 	long h;
 	register long *lp;
 	char word[NW];

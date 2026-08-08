@@ -1,0 +1,16 @@
+set -e
+
+if test "x$ROOT" = x
+then
+	ROOT=
+fi
+for dir in bin lib usr usr/lib usr/lib/lex
+do
+	test -d $ROOT/$dir || mkdir $ROOT/$dir
+done
+cp lex $ROOT/bin/lex
+chmod 0755 $ROOT/bin/lex
+cp libln.a $ROOT/lib/libln.a
+chmod 0644 $ROOT/lib/libln.a
+cp ../../lib/lex/ncform $ROOT/usr/lib/lex/ncform
+chmod 0644 $ROOT/usr/lib/lex/ncform

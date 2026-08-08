@@ -1,4 +1,6 @@
 # include <stdio.h>
+# include <stdlib.h>
+# include <string.h>
 
 # define PL 256
 # define ESC '\033'
@@ -16,10 +18,10 @@ int cp, lp;
 int ll, llh, mustwr;
 int pcp = 0;
 char *pgmname;
-char *strcpy();
+static void outc(int c); static void store(int lno); static void fetch(int lno);
+static void emit(char *s, int lineno); static void incr(void); static void decr(void);
 
-main (argc, argv)
-	int argc; char **argv;
+main (int argc, char **argv)
 {
 	int i;
 	int greek;
@@ -159,8 +161,9 @@ main (argc, argv)
 	return 0;
 }
 
+static void
 outc (c)
-	register char c;
+int c;
 {
 	if (lp > cp) {
 		line = lbuff;
@@ -205,9 +208,9 @@ outc (c)
 	}
 }
 
+static void
 store (lno)
 {
-	char *malloc();
 
 	lno %= PL;
 	if (page[lno] != 0)
@@ -220,6 +223,7 @@ store (lno)
 	strcpy (page[lno],lbuff);
 }
 
+static void
 fetch(lno)
 {
 	register char *p;
@@ -233,6 +237,7 @@ fetch(lno)
 	if (page[lno])
 		strcpy (line, page[lno]);
 }
+static void
 emit (s, lineno)
 	char *s;
 	int lineno;
@@ -291,7 +296,8 @@ emit (s, lineno)
 	}
 }
 
-incr()
+static void
+incr(void)
 {
 	store (ll++);
 	if (ll > llh)
@@ -305,7 +311,8 @@ incr()
 	fetch (ll);
 }
 
-decr()
+static void
+decr(void)
 {
 	if (ll > mustwr - PL) {
 		store (ll--);

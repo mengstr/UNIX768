@@ -1,4 +1,5 @@
 # include <stdio.h>
+# include <stdlib.h>
 # include "prep.h"
 # define SKIP 0
 # define COLLECT 1
@@ -6,22 +7,28 @@
 
 int	tlno = 1;
 
+static int conf(long, int, char *);
+static int hyp1(void);
+static int hyp2(void);
+static int bsp1(void);
+
+int
 coll()
 {
 	cs = COLLECT;
 	temp[t1].beg = &line[l];
-	return;
+	return(0);
 }
 
+int
 save()
 {
-	extern	only;
 	char	*pt1,*pt2,cbuf[30];
 	int	val;
 
 	if(cs != COLLECT) {
 		cs = SKIP;
-		return;
+		return(0);
 	}
 	cs = SKIP;
 	line[l] = '\0';
@@ -30,7 +37,7 @@ save()
 	pt2 = cbuf-1;
 
 	wdnum++;
-	while(*++pt2 = *++pt1)
+	while((*++pt2 = *++pt1) != '\0')
 		if(*pt2 >= 'A' && *pt2 <= 'Z')
 			*pt2 |= 040;
 
@@ -39,14 +46,15 @@ save()
 		if(!val == !only) goto yes;
 
 		line[l] = c;
-		return;
+		return(0);
 	}
 yes:
 	temp[t1++].wdno = wdnum;
 	line[l] = c;
-	return;
+	return(0);
 }
 
+int
 ctout()
 {
 	register int	ct;
@@ -70,7 +78,6 @@ ctout()
 		}
 		ct = temp[t1].ct;
 		t2 = temp[t1].beg - 1;
-/*		fprintf(stderr, "out: %s	%d\n", temp[t1].beg, ct);	/*DEBUG*/
 		while(ct--)
 			if(*++t2 >= 'A' && *t2 <= 'Z')
 				*t2 |= 040;
@@ -87,9 +94,10 @@ ctout()
 	lno += tlno;
 	tlno = 1;
 	cs = SKIP;
-	return;
+	return(0);
 }
 
+static int
 conf(n,width,buf) 
 	long n;
 	char	*buf;
@@ -110,16 +118,16 @@ conf(n,width,buf)
 	return(++width);
 }
 
+int
 hyphen()
 {
-/*	fprintf(stderr, "hyphen\n");	/*DEBUG*/
 	flag[++fl] = hyp1;
 	return(1);
 }
 
+static int
 hyp1()
 {
-/*	fprintf(stderr, "hyp1 c = %o\n",c);	/*DEBUG*/
 	if(c !=  '\n') {
 		fl--;
 		l--;
@@ -135,10 +143,9 @@ hyp1()
 	}
 }
 
+static int
 hyp2()
 {
-	extern	(*acts[])();
-/*	fprintf(stderr, "hyp2 c = %o l = %d\n",c,l);	/*DEBUG*/
 	if(hsw && (tab[2][c] == 0)) {
 		l--;
 		if(c == '\n')	tlno++;
@@ -151,13 +158,14 @@ hyp2()
 	}
 	if(tab[cs][c]) {
 		line[l] = '\n';
-		(*acts[OUT])();
+		ctout();
 		fl--;
 		return(0);
 	}
 	return(1);
 }
 
+int
 gobble2()
 {
 	static	ct2;
@@ -176,6 +184,7 @@ gobble2()
 	return(1);
 }
 
+int
 bslash()
 {
 	if(cs == COLLECT)	save();
@@ -183,12 +192,14 @@ bslash()
 	return(1);
 }
 
+int
 bsp()
 {
 	flag[++fl] = bsp1;
 	return(1);
 }
 
+static int
 bsp1()
 {
 	fl--;
@@ -198,6 +209,7 @@ bsp1()
 	return(0);
 }
 
+int
 punc()
 {
 
@@ -208,8 +220,10 @@ punc()
 		temp[t1].ct = 1;
 		temp[t1++].wdno = 0;
 	}
+	return(0);
 }
 
+int
 search(symbol,length,params,install)
 	char	*symbol;
 	int	length;
@@ -233,7 +247,6 @@ search(symbol,length,params,install)
 	}
 
 	symbol[length] = '\0';
-/*fprintf(stderr, "ssiz = %d; nsym = %d; %s\n", ssiz, nsym, symbol);/*DEBUG*/
 	sp = symbol;
 
 	i = length;
@@ -247,8 +260,6 @@ search(symbol,length,params,install)
 		h = h<0?(-h)%hsiz:h%hsiz;
 	}
 	if(h == 0)	h++;
-/*		fprintf(stderr, "%s %d\n",symbol,h);	/*DEBUG*/
-
 	while((p = &symt[hptr[h]]) > symt) {
 		j = length + 2;
 		sp = symbol;

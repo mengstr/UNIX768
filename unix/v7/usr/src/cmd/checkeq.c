@@ -1,11 +1,16 @@
 #include <stdio.h>
-FILE	*fin;
-int	delim	= 0;
+#include <stdlib.h>
+
+static FILE	*fin;
+static int	delim	= 0;
 /* today's version assumes no delimiters;
 they must be explicitly set
 */
 
-main(argc, argv) char **argv; {
+static void check(FILE *f);
+
+int
+main(int argc, char **argv) {
 
 	while (argc > 1 && argv[1][0] == '-') {
 		switch (argv[1][1]) {
@@ -28,10 +33,11 @@ main(argc, argv) char **argv; {
 			check(fin);
 			fclose(fin);
 		}
+	return(0);
 }
 
-check(f)
-FILE	*f;
+static void
+check(FILE *f)
 {
 	int start, line, eq, ndel, totdel;
 	char in[600], *p;

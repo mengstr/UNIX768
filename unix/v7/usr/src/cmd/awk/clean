@@ -1,0 +1,3 @@
+set -e
+
+rm -f awk *.o awk.g.c awk.lx.c awk.h proctab.c awkproc

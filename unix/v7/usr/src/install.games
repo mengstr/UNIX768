@@ -1,0 +1,43 @@
+cp games/quiz games/wump games/backgammon $1/usr/games
+cp games/fish games/hangman games/fortune $1/usr/games
+cp games/arithmetic games/banner games/moo games/maze $1/usr/games
+chmod 0755 $1/usr/games/quiz $1/usr/games/wump
+chmod 0755 $1/usr/games/backgammon $1/usr/games/fish
+chmod 0755 $1/usr/games/hangman $1/usr/games/fortune
+chmod 0755 $1/usr/games/arithmetic $1/usr/games/banner
+chmod 0755 $1/usr/games/moo $1/usr/games/maze
+cp games/data/lib/fortunes $1/usr/games/lib/fortunes
+chmod 0644 $1/usr/games/lib/fortunes
+cp games/data/quiz.k/africa games/data/quiz.k/america $1/usr/games/quiz.k
+cp games/data/quiz.k/areas games/data/quiz.k/arith $1/usr/games/quiz.k
+cp games/data/quiz.k/asia games/data/quiz.k/babies $1/usr/games/quiz.k
+cp games/data/quiz.k/bard games/data/quiz.k/chinese $1/usr/games/quiz.k
+cp games/data/quiz.k/collectives games/data/quiz.k/ed $1/usr/games/quiz.k
+cp games/data/quiz.k/elements games/data/quiz.k/europe $1/usr/games/quiz.k
+cp games/data/quiz.k/greek games/data/quiz.k/inca $1/usr/games/quiz.k
+cp games/data/quiz.k/index games/data/quiz.k/latin $1/usr/games/quiz.k
+cp games/data/quiz.k/locomotive games/data/quiz.k/midearth $1/usr/games/quiz.k
+cp games/data/quiz.k/morse games/data/quiz.k/murders $1/usr/games/quiz.k
+cp games/data/quiz.k/poetry games/data/quiz.k/posneg $1/usr/games/quiz.k
+cp games/data/quiz.k/pres games/data/quiz.k/province $1/usr/games/quiz.k
+cp games/data/quiz.k/seq-easy games/data/quiz.k/seq-hard $1/usr/games/quiz.k
+cp games/data/quiz.k/sexes games/data/quiz.k/sov $1/usr/games/quiz.k
+cp games/data/quiz.k/spell games/data/quiz.k/state $1/usr/games/quiz.k
+cp games/data/quiz.k/trek games/data/quiz.k/ucc $1/usr/games/quiz.k
+chmod 0644 $1/usr/games/quiz.k/africa $1/usr/games/quiz.k/america
+chmod 0644 $1/usr/games/quiz.k/areas $1/usr/games/quiz.k/arith
+chmod 0644 $1/usr/games/quiz.k/asia $1/usr/games/quiz.k/babies
+chmod 0644 $1/usr/games/quiz.k/bard $1/usr/games/quiz.k/chinese
+chmod 0644 $1/usr/games/quiz.k/collectives $1/usr/games/quiz.k/ed
+chmod 0644 $1/usr/games/quiz.k/elements $1/usr/games/quiz.k/europe
+chmod 0644 $1/usr/games/quiz.k/greek $1/usr/games/quiz.k/inca
+chmod 0644 $1/usr/games/quiz.k/index $1/usr/games/quiz.k/latin
+chmod 0644 $1/usr/games/quiz.k/locomotive $1/usr/games/quiz.k/midearth
+chmod 0644 $1/usr/games/quiz.k/morse $1/usr/games/quiz.k/murders
+chmod 0644 $1/usr/games/quiz.k/poetry $1/usr/games/quiz.k/posneg
+chmod 0644 $1/usr/games/quiz.k/pres $1/usr/games/quiz.k/province
+chmod 0644 $1/usr/games/quiz.k/seq-easy $1/usr/games/quiz.k/seq-hard
+chmod 0644 $1/usr/games/quiz.k/sexes $1/usr/games/quiz.k/sov
+chmod 0644 $1/usr/games/quiz.k/spell $1/usr/games/quiz.k/state
+chmod 0644 $1/usr/games/quiz.k/trek $1/usr/games/quiz.k/ucc
+echo install.games: complete

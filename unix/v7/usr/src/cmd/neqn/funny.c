@@ -1,8 +1,9 @@
 # include "e.h"
 # include "e.def"
 
-funny(n) int n; {
-	char *f;
+void
+funny(int n) {
+	char *f = "";
 
 	yyval = oalloc();
 	switch(n) {
@@ -17,10 +18,10 @@ funny(n) int n; {
 	default:
 		error(FATAL, "funny type %d in funny", n);
 	}
-	printf(".ds %d %s\n", yyval, f);
+	printf(".ds %d %s\n", YV, f);
 	eht[yyval] = VERT(2);
 	ebase[yyval] = 0;
 	if(dbg)printf(".\tfunny: S%d <- %s; h=%d b=%d\n", 
-		yyval, f, eht[yyval], ebase[yyval]);
+		YV, f, eht[yyval], ebase[yyval]);
 	lfont[yyval] = rfont[yyval] = ROM;
 }

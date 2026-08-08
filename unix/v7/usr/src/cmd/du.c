@@ -2,6 +2,8 @@
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/dir.h>
+#include <string.h>
+#include <unistd.h>
 #define EQ(x,y)	(strcmp(x,y)==0)
 #define ML	1000
 
@@ -14,12 +16,10 @@ struct {
 	int	dev,
 		ino;
 } ml[ML];
-long	descend();
-char	*rindex();
-char	*strcpy();
+long	descend(char *np, char *fname);
 
-main(argc, argv)
-char **argv;
+int
+main(int argc, char **argv)
 {
 	register	i = 1;
 	long	blocks = 0;

@@ -1,19 +1,23 @@
 /*
- * You send it 10 bytes.
- * It sends you 13 bytes.
- * The transformation is expensive to perform
- * (a significant part of a second).
+ * Read the ten-byte key/salt input used by crypt(1) and ed(1), then emit
+ * the thirteen-byte result of the V7 crypt(3) routine.
  */
 
-char	*crypt();
+#include <unistd.h>
 
-main()
+extern char *crypt(char *pw, char *salt);
+
+i32
+main(void)
 {
-	char key[8];
-	char salt[2];
-	
-	read(0, key, 8);
-	read(0, salt, 2);
-	write(1, crypt(key, salt), 13);
+	char key[9];
+	char salt[3];
+
+	if (read(0, key, 8) != 8 || read(0, salt, 2) != 2)
+		return(1);
+	key[8] = '\0';
+	salt[2] = '\0';
+	if (write(1, crypt(key, salt), 13) != 13)
+		return(1);
 	return(0);
 }

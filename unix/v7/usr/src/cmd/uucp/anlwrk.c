@@ -15,8 +15,8 @@
  *		positive number  -  number of arguments
  */
 
-anlwrk(file, wvec)
-char *file, **wvec;
+int
+anlwrk (char *file, char **wvec)
 {
 	static char str[BUFSIZ];
 	static FILE *fp = NULL;
@@ -56,8 +56,8 @@ char *file, **wvec;
  *		1  -  there is work
  */
 
-iswrk(file, reqst, dir, pre)
-char *file, *reqst, *dir, *pre;
+int
+iswrk (char *file, char *reqst, char *dir, char *pre)
 {
 	static char **listp, *list[LLEN];
 
@@ -92,8 +92,8 @@ char *file, *reqst, *dir, *pre;
  *		0 -  no arguments - fail
  */
 
-gtwvec(file, dir, wkpre, wrkvec)
-char *file, *dir, *wkpre, **wrkvec;
+int
+gtwvec (char *file, char *dir, char *wkpre, char **wrkvec)
 {
 	int nargs;
 
@@ -121,16 +121,13 @@ char *file, *dir, *wkpre, **wrkvec;
  *	return codes:  0  |  FAIL
  */
 
-gtwrk(dir, pre, list, llen)
-char *dir, *pre, **list;
-int llen;
+int
+gtwrk (char *dir, char *pre, char **list, int llen)
 {
 	struct stat s;
 	char filename[NAMESIZE], *p;
 	char **first, **last;
 	FILE *pdir;
-	extern int compar();
-	extern char *calloc();
 
 	first = last = list;
 	if ((pdir = fopen(dir, "r")) == NULL)
@@ -164,8 +161,10 @@ int llen;
  *
  */
 
-compar(p1, p2)
-char **p1, **p2;
+i32
+compar (const void *v1, const void *v2)
 {
+	char *const *p1 = v1;
+	char *const *p2 = v2;
 	return(strcmp(*p1, *p2));
 }

@@ -1,0 +1,22 @@
+cp cmd/mail $1/bin/mail
+chmod 0755 $1/bin/mail
+rm -f $1/bin/rmail
+ln $1/bin/mail $1/bin/rmail
+cp cmd/calendar $1/usr/lib/calendar
+rm -f $1/usr/bin/calendar
+cp bin/calendar $1/bin/calendar
+chmod 0755 $1/usr/lib/calendar $1/bin/calendar
+cp lib/crontab $1/usr/lib/crontab
+chmod 0644 $1/usr/lib/crontab
+cp cmd/uucp/uucp cmd/uucp/uux cmd/uucp/uulog $1/bin
+chmod 0755 $1/bin/uucp $1/bin/uux $1/bin/uulog
+cp cmd/uucp/uucico cmd/uucp/uuxqt $1/usr/lib/uucp
+cp cmd/uucp/uuclean $1/usr/lib/uucp/uuclean
+chmod 0755 $1/usr/lib/uucp/uucico $1/usr/lib/uucp/uuxqt
+chmod 0755 $1/usr/lib/uucp/uuclean
+cp lib/uucp/L-devices lib/uucp/L-dialcodes $1/usr/lib/uucp
+cp lib/uucp/L.sys lib/uucp/SQFILE lib/uucp/USERFILE $1/usr/lib/uucp
+chmod 0400 $1/usr/lib/uucp/L-devices $1/usr/lib/uucp/L-dialcodes
+chmod 0400 $1/usr/lib/uucp/L.sys $1/usr/lib/uucp/SQFILE
+chmod 0400 $1/usr/lib/uucp/USERFILE
+echo install.comm: complete

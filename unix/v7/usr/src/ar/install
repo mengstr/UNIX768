@@ -1,0 +1,10 @@
+set -e
+
+if test "x$ROOT" = x
+then
+	ROOT=
+fi
+test -d $ROOT/bin || mkdir $ROOT/bin
+cp ar $ROOT/bin/ar
+cp ar $ROOT/bin/ranlib
+chmod 0755 $ROOT/bin/ar $ROOT/bin/ranlib

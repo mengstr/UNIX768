@@ -24,7 +24,7 @@
  *
  */
 
-PROC VOID	addg();
+LOCAL VOID	addg(STRING, STRING, STRING);
 
 
 INT	expand(as,rflg)
@@ -77,7 +77,7 @@ INT	expand(as,rflg)
 		REP	IF *rs=='/' THEN rescan=rs; *rs=0; gchain=0 FI
 		PER	*rs++ DONE
 
-		WHILE read(dirf, &entry, 16) == 16 ANDF (trapnote&SIGSET) == 0
+		WHILE read(dirf, (char *)&entry, 16) == 16 ANDF (trapnote&SIGSET) == 0
 		DO	IF entry.d_ino==0 ORF
 			    (*entry.d_name=='.' ANDF *cs!='.')
 			THEN	continue;
@@ -178,13 +178,12 @@ LOCAL VOID	addg(as1,as2,as3)
 	THEN	*s2++='/';
 		WHILE *s2++ = *++s1 DONE
 	FI
-	makearg(endstak(s2));
+	makearg((ARGPTR)endstak(s2));
 }
 
 makearg(args)
-	REG STRING	args;
+	REG ARGPTR	args;
 {
 	args->argnxt=gchain;
 	gchain=args;
 }
-

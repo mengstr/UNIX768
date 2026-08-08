@@ -1,0 +1,8 @@
+Rv7man is the source bibliography used by refer(1).  Ind.ia, Ind.ib, and
+Ind.ic are the original PDP-11 V7 inverted indexes and are installed under
+pdp11/ for archival inspection only.
+
+The PDP-11 index files are not usable by the 68000 refer tools because their
+binary integer representation is machine-dependent.  The active Ind database
+installed by Stage 5 remains the portable source-form fallback.  Run runinv
+on the target to create native Ind.ia, Ind.ib, and Ind.ic files if desired.

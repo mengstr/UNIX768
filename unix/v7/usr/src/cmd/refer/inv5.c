@@ -1,40 +1,47 @@
-# include "stdio.h"
+# include "refer.h"
 
-recopy (ft, fb, fa, nhash)
+static long getshort(FILE *);
+int recopy(FILE *, FILE *, FILE *);
+
+static long
+getshort(f)
+	FILE *f;
+{
+return((long)ref_getw(f));
+}
+
+int
+recopy (ft, fb, fa)
 	FILE *ft, *fb, *fa;
 {
 /* copy fb (old hash items/pointers) to ft (new ones) */
 int n, i, iflong;
-long getl();
-int getw();
 int *hpt_s;
-int (*getfun)();
+long (*getfun)(FILE *);
 long *hpt_l;
 long k, lp;
 if (fa==NULL)
 	{
-	err("No old pointers",0);
-	return;
-	}
-fread(&n, sizeof(n), 1, fa);
-fread(&iflong, sizeof(iflong), 1, fa);
+		err("No old pointers",0);
+		return(0);
+		}
+	fread((char *)&n, sizeof(n), 1, fa);
+	fread((char *)&iflong, sizeof(iflong), 1, fa);
 if (iflong)
 	{
-	hpt_l =  calloc(sizeof(*hpt_l), n+1);
-	n =fread(hpt_l, sizeof(*hpt_l), n, fa);
+	hpt_l = calloc(n+1, sizeof(*hpt_l));
+	n = fread((char *)hpt_l, sizeof(*hpt_l), n, fa);
 	}
 else
 	{
-	hpt_s =  calloc(sizeof(*hpt_s), n+1);
-	n =fread(hpt_s, sizeof(*hpt_s), n, fa);
+	hpt_s = calloc(n+1, sizeof(*hpt_s));
+	n = fread((char *)hpt_s, sizeof(*hpt_s), n, fa);
 	}
-if (n!= nhash)
-	fprintf(stderr, "Changing hash value to old %d\n",n);
 fclose(fa);
 if (iflong)
 	getfun = &getl;
 else
-	getfun = &getw;
+	getfun = getshort;
 for(i=0; i<n; i++)
 	{
 	if (iflong)

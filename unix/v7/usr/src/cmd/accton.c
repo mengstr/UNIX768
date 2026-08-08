@@ -1,7 +1,12 @@
-main(argc, argv)
-char **argv;
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+int
+main(int argc, char **argv)
 {
-	extern errno;
+	errno = 0;
 	if (argc > 1)
 		acct(argv[1]);
 	else

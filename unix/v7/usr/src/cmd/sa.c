@@ -2,6 +2,8 @@
 #include <sys/types.h>
 #include <sys/acct.h>
 #include <signal.h>
+#include <pwd.h>
+#include <stdlib.h>
 
 /* interpret command time accounting */
 
@@ -38,22 +40,33 @@ struct	tab {
 	float	syst;
 } tab[size];
 
+static void printmoney(void);
+static void column(double, double, double, double);
+static void col(double, double, double);
+static void doacct(char *);
+static i32 ncmp(const void *, const void *);
+static i32 bcostcmp(const void *, const void *);
+static i32 tcmp(const void *, const void *);
+static float sum(const struct tab *);
+static void init(void);
+static int enter(char *);
+static void strip(void);
+static time_t expand(unsigned);
+
 float	treal;
 float	tcpu;
 float	tsys;
 int	junkp = -1;
 char	*sname;
 float	ncom;
-time_t	expand();
 
-main(argc, argv)
-char **argv;
+int
+main(int argc, char **argv)
 {
 	FILE *ff;
 	int i, j, k;
-	extern tcmp(), ncmp(), bcmp();
-	extern float sum();
 	float ft;
+	qsort_cmp_t compare;
 
 	if (argc>1)
 	if (argv[1][0]=='-') {
@@ -140,7 +153,7 @@ char **argv;
 	else while (--argc)
 		doacct(*++argv);
 	if (uflg) {
-		return;
+		return(0);
 	}
 
 /*
@@ -199,7 +212,13 @@ char **argv;
 		printmoney();
 		exit(0);
 	}
-	qsort(tab, k, sizeof(tab[0]), nflg? ncmp: (bflg?bcmp:tcmp));
+	if (nflg)
+		compare = ncmp;
+	else if (bflg)
+		compare = bcostcmp;
+	else
+		compare = tcmp;
+	qsort(tab, k, sizeof(tab[0]), compare);
 	column(ncom, treal, tcpu, tsys);
 	printf("\n");
 	for (i=0; i<k; i++)
@@ -208,11 +227,13 @@ char **argv;
 		column(ft, tab[i].realt, tab[i].cput, tab[i].syst);
 		printf("   %.10s\n", tab[i].name);
 	}
+	return(0);
 }
 
-printmoney()
+static void
+printmoney(void)
 {
-	register i;
+	register int i;
 	char buf[128];
 	register char *cp;
 
@@ -233,6 +254,7 @@ printmoney()
 	}
 }
 
+static void
 column(n, a, b, c)
 double n, a, b, c;
 {
@@ -255,6 +277,7 @@ double n, a, b, c;
 		printf("%6.1f", a/(b+c));
 }
 
+static void
 col(n, a, m)
 double n, a, m;
 {
@@ -269,6 +292,7 @@ double n, a, m;
 	}
 }
 
+static void
 doacct(f)
 char *f;
 {
@@ -331,22 +355,27 @@ char *f;
 	fclose(ff);
 }
 
-ncmp(p1, p2)
-struct tab *p1, *p2;
+static i32
+ncmp(v1, v2)
+const void *v1, *v2;
 {
+	const struct tab *p1 = v1;
+	const struct tab *p2 = v2;
 
 	if(p1->count == p2->count)
-		return(tcmp(p1, p2));
+		return(tcmp(v1, v2));
 	if(rflg)
 		return(p1->count - p2->count);
 	return(p2->count - p1->count);
 }
 
-bcmp(p1, p2)
-struct tab *p1, *p2;
+static i32
+bcostcmp(v1, v2)
+const void *v1, *v2;
 {
+	const struct tab *p1 = v1;
+	const struct tab *p2 = v2;
 	float f1, f2;
-	float sum();
 
 	f1 = sum(p1)/p1->count;
 	f2 = sum(p2)/p2->count;
@@ -362,10 +391,12 @@ struct tab *p1, *p2;
 	}
 	return(0);
 }
-tcmp(p1, p2)
-struct tab *p1, *p2;
+static i32
+tcmp(v1, v2)
+const void *v1, *v2;
 {
-	extern float sum();
+	const struct tab *p1 = v1;
+	const struct tab *p2 = v2;
 	float f1, f2;
 
 	f1 = sum(p1);
@@ -383,8 +414,9 @@ struct tab *p1, *p2;
 	return(0);
 }
 
-float sum(p)
-struct tab *p;
+static float
+sum(p)
+const struct tab *p;
 {
 
 	if(p->name[0] == 0)
@@ -394,7 +426,8 @@ struct tab *p;
 		p->syst);
 }
 
-init()
+static void
+init(void)
 {
 	struct tab tbuf;
 	int i;
@@ -421,6 +454,7 @@ init()
 	fclose(f);
 }
 
+static int
 enter(np)
 char *np;
 {
@@ -450,7 +484,8 @@ yes:
 	return(i);
 }
 
-strip()
+static void
+strip(void)
 {
 	int i, j, c;
 
@@ -471,7 +506,7 @@ strip()
 	}
 }
 
-time_t
+static time_t
 expand(t)
 unsigned t;
 {

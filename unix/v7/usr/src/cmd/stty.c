@@ -4,6 +4,9 @@
 
 #include <stdio.h>
 #include <sgtty.h>
+#include <unistd.h>
+
+#define EPOCH68_MINIMAL_STTY 1
 
 struct
 {
@@ -176,13 +179,81 @@ struct
 
 char	*arg;
 struct sgttyb mode;
+struct tchars tchar;
 
-main(argc, argv)
-char	*argv[];
+int eq(char *string);
+int charval(char *s);
+void prmodes(void);
+void delay(int m, char *s);
+void prspeed(char *c, int s);
+
+#if EPOCH68_MINIMAL_STTY
+static int
+strlen_local (char *s)
+{
+	register n;
+
+	n = 0;
+	while(*s++) n++;
+	return(n);
+}
+
+static void
+ewrite (char *s)
+{
+	write(2, s, strlen_local(s));
+}
+
+static void
+eputc (int c)
+{
+	char b;
+
+	b = c;
+	write(2, &b, 1);
+}
+
+static void
+edec (int n)
+{
+	char buf[12];
+	register i;
+
+	if(n == 0) {
+		eputc('0');
+		return;
+	}
+	i = sizeof(buf);
+	while(n > 0 && i > 0) {
+		buf[--i] = '0' + (n % 10);
+		n /= 10;
+	}
+	write(2, &buf[i], sizeof(buf) - i);
+}
+#endif
+
+int
+main (int argc, char *argv[])
 {
 	int i;
 
+#if EPOCH68_MINIMAL_STTY
+	if(ioctl(1, TIOCGETP, &mode) < 0) {
+		ewrite("stty: not a tty\n");
+		exit(1);
+	}
+	ewrite("@stty:getp ok\n");
+#else
 	gtty(1, &mode);
+#endif
+	if(ioctl(1, TIOCGETC, &tchar) < 0) {
+#if EPOCH68_MINIMAL_STTY
+		ewrite("stty: cannot get special characters\n");
+#else
+		fprintf(stderr, "stty: cannot get special characters\n");
+#endif
+		exit(1);
+	}
 	if(argc == 1) {
 		prmodes();
 		exit(0);
@@ -190,22 +261,23 @@ char	*argv[];
 	while(--argc > 0) {
 
 		arg = *++argv;
+		ewrite("@stty:arg ");
+		ewrite(arg);
+		ewrite("\n");
 		if (eq("ek")){
 			mode.sg_erase = '#';
 			mode.sg_kill = '@';
 		}
 		if (eq("erase")) {
-			if (**++argv == '^')
-				mode.sg_erase = (*argv)[1] & 037;
-			else
-				mode.sg_erase = **argv;
+			mode.sg_erase = charval(*++argv);
 			argc--;
 		}
 		if (eq("kill")) {
-			if (**++argv == '^')
-				mode.sg_kill = (*argv)[1] & 037;
-			else
-				mode.sg_kill = **argv;
+			mode.sg_kill = charval(*++argv);
+			argc--;
+		}
+		if (eq("intr")) {
+			tchar.t_intrc = charval(*++argv);
 			argc--;
 		}
 		if (eq("gspeed")) {
@@ -224,13 +296,39 @@ char	*argv[];
 				mode.sg_flags |= modes[i].set;
 			}
 		if(arg)
+#if EPOCH68_MINIMAL_STTY
+		{
+			ewrite("unknown mode: ");
+			ewrite(arg);
+			ewrite("\n");
+		}
+#else
 			fprintf(stderr,"unknown mode: %s\n", arg);
+#endif
 	}
+#if EPOCH68_MINIMAL_STTY
+	ewrite("@stty:setn enter\n");
+	ioctl(1, TIOCSETN, &mode);
+	ewrite("@stty:setn done\n");
+#else
 	stty(1,&mode);
+#endif
+	ioctl(1, TIOCSETC, &tchar);
 }
 
-eq(string)
-char *string;
+int
+charval(char *s)
+{
+	if(s[0] == '^') {
+		if(s[1] == '?')
+			return(0177);
+		return(s[1] & 037);
+	}
+	return(s[0] & 0377);
+}
+
+int
+eq (char *string)
 {
 	int i;
 
@@ -246,7 +344,8 @@ loop:
 	return(1);
 }
 
-prmodes()
+void
+prmodes (void)
 {
 	register m;
 
@@ -256,14 +355,56 @@ prmodes()
 	} else
 		prspeed("speed ", mode.sg_ispeed);
 	if (mode.sg_erase < ' ')
+#if EPOCH68_MINIMAL_STTY
+	{
+		ewrite("erase = '^");
+		eputc('@' + mode.sg_erase);
+		ewrite("'; ");
+	}
+#else
 		fprintf(stderr, "erase = '^%c'; ", '@' + mode.sg_erase);
+#endif
 	else
+#if EPOCH68_MINIMAL_STTY
+	{
+		ewrite("erase = '");
+		eputc(mode.sg_erase);
+		ewrite("'; ");
+	}
+#else
 		fprintf(stderr, "erase = '%c'; ", mode.sg_erase);
+#endif
 	if (mode.sg_kill < ' ')
+#if EPOCH68_MINIMAL_STTY
+	{
+		ewrite("kill = '^");
+		eputc('@' + mode.sg_kill);
+		ewrite("'\n");
+	}
+#else
 		fprintf(stderr, "kill = '^%c'\n", '@' + mode.sg_kill);
+#endif
 	else
+#if EPOCH68_MINIMAL_STTY
+	{
+		ewrite("kill = '");
+		eputc(mode.sg_kill);
+		ewrite("'\n");
+	}
+#else
 		fprintf(stderr, "kill = '%c'\n", mode.sg_kill);
+#endif
 	m = mode.sg_flags;
+#if EPOCH68_MINIMAL_STTY
+	if(m & EVENP)	ewrite("even ");
+	if(m & ODDP)	ewrite("odd ");
+	if(m & RAW)	ewrite("raw ");
+	if(m & CRMOD)	ewrite("-nl ");
+	if(m & ECHO)	ewrite("echo ");
+	if(m & LCASE)	ewrite("lcase ");
+	if((m & XTABS)==XTABS)	ewrite("-tabs ");
+	if (m & CBREAK)	ewrite("cbreak ");
+#else
 	if(m & EVENP)	fprintf(stderr,"even ");
 	if(m & ODDP)	fprintf(stderr,"odd ");
 	if(m & RAW)	fprintf(stderr,"raw ");
@@ -272,30 +413,49 @@ prmodes()
 	if(m & LCASE)	fprintf(stderr,"lcase ");
 	if((m & XTABS)==XTABS)	fprintf(stderr,"-tabs ");
 	if (m & CBREAK)	fprintf(stderr,"cbreak ");
+#endif
 	delay((m&NLDELAY)/NL1,	"nl");
 	if ((m&TBDELAY)!=XTABS)
 		delay((m&TBDELAY)/TAB1,	"tab");
 	delay((m&CRDELAY)/CR1,	"cr");
 	delay((m&VTDELAY)/FF1,	"ff");
 	delay((m&BSDELAY)/BS1,	"bs");
+#if EPOCH68_MINIMAL_STTY
+	ewrite("\n");
+#else
 	fprintf(stderr,"\n");
+#endif
 }
 
-delay(m, s)
-char *s;
+void
+delay (int m, char *s)
 {
 
 	if(m)
+#if EPOCH68_MINIMAL_STTY
+	{
+		ewrite(s);
+		edec(m);
+		ewrite(" ");
+	}
+#else
 		fprintf(stderr,"%s%d ", s, m);
+#endif
 }
 
 int	speed[] = {
 	0,50,75,110,134,150,200,300,600,1200,1800,2400,4800,9600,0,0
 };
 
-prspeed(c, s)
-char *c;
+void
+prspeed (char *c, int s)
 {
 
+#if EPOCH68_MINIMAL_STTY
+	ewrite(c);
+	edec(speed[s]);
+	ewrite(" baud\n");
+#else
 	fprintf(stderr,"%s%d baud\n", c, speed[s]);
+#endif
 }

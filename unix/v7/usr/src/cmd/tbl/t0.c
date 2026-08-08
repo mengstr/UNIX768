@@ -13,7 +13,7 @@ int evenup[MAXCOL], evenflg;
 int F1 = 0;
 int F2 = 0;
 int allflg = 0;
-int leftover = 0;
+char *leftover = 0;
 int textflg = 0;
 int left1flg = 0;
 int rightl = 0;

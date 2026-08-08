@@ -23,7 +23,7 @@ VOID	fault(sig)
 
 	signal(sig,fault);
 	IF sig==MEMF
-	THEN	IF setbrk(brkincr) == -1
+	THEN	IF (L_INT)setbrk(brkincr) == -1
 		THEN	error(nospace);
 		FI
 	ELIF sig==ALARM
@@ -82,7 +82,7 @@ oldsigs()
 clrsig(i)
 	INT		i;
 {
-	free(trapcom[i]); trapcom[i]=0;
+	free((BLKPTR)trapcom[i]); trapcom[i]=0;
 	IF trapflg[i]&SIGMOD
 	THEN	signal(i,fault);
 		trapflg[i] &= ~SIGMOD;

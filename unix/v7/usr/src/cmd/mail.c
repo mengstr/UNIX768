@@ -6,6 +6,10 @@
 #include <sys/stat.h>
 #include <setjmp.h>
 #include <whoami.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
 
 /*copylet flags */
 	/*remote mail, add rmtmsg */
@@ -26,7 +30,7 @@ struct let {
 } let[MAXLET];
 int	nlet	= 0;
 char	lfil[50];
-long	iop, time();
+time_t	iop;
 char	lettmp[] = "/tmp/maXXXXX";
 char	maildir[] = "/usr/spool/mail/";
 char	mailfile[] = "/usr/spool/mail/xxxxxxxxxxxxxxxxxxxxxxx";
@@ -38,23 +42,34 @@ int	lockerror;
 FILE	*tmpf;
 FILE	*malf;
 char	*my_name;
-char	*getlogin();
-struct	passwd	*getpwuid();
 int	error;
 int	locked;
 int	changed;
 int	forward;
 char	from[] = "From ";
-long	ftell();
-int	delete();
-char	*ctime();
 int	flgf;
 int	flgp;
 int	delflg = 1;
 jmp_buf	sjbuf;
 
-main(argc, argv)
-char **argv;
+static void setsig(i16 i, sighandler_t f);
+static void printmail(int argc, char **argv);
+static void copyback(void);
+static void copymt(FILE *f1, FILE *f2);
+static void copylet(int n, FILE *f, int type);
+static int isfrom(char *lp);
+static void sendmail(int argc, char **argv);
+static int sendrmt(int n, char *name);
+static int send(int n, char *name);
+static void delete(i16 i);
+static void done(void);
+static void lock(char *file);
+static void unlock(void);
+static void cat(char *to, char *from1, char *from2);
+static char *getarg(char *s, char *p);
+
+int
+main(int argc, char **argv)
 {
 	register i;
 	char sobuf[BUFSIZ];
@@ -87,19 +102,18 @@ char **argv;
 	done();
 }
 
-setsig(i, f)
-int i;
-int (*f)();
+static void
+setsig(i16 i, sighandler_t f)
 {
 	if(signal(i, SIG_IGN)!=SIG_IGN)
 		signal(i, f);
 }
 
-printmail(argc, argv)
-char **argv;
+static void
+printmail(int argc, char **argv)
 {
 	int flg, i, j, print;
-	char *p, *getarg();
+	char *p;
 
 	setuid(getuid());
 	cat(mailfile, maildir, my_name);
@@ -263,7 +277,8 @@ char **argv;
 		copyback();
 }
 
-copyback()	/* copy temp or whatever back to /usr/spool/mail */
+static void
+copyback(void)	/* copy temp or whatever back to /usr/spool/mail */
 {
 	register i, n, c;
 	int new = 0;
@@ -309,8 +324,8 @@ copyback()	/* copy temp or whatever back to /usr/spool/mail */
 	unlock();
 }
 
-copymt(f1, f2)	/* copy mail (f1) to temp (f2) */
-FILE *f1, *f2;
+static void
+copymt(FILE *f1, FILE *f2)	/* copy mail (f1) to temp (f2) */
 {
 	long nextadr;
 
@@ -325,7 +340,8 @@ FILE *f1, *f2;
 	let[nlet].adr = nextadr;	/* last plus 1 */
 }
 
-copylet(n, f, type) FILE *f;
+static void
+copylet(int n, FILE *f, int type)
 {	int ch, k;
 	fseek(tmpf, let[n].adr, 0);
 	k = let[n+1].adr - let[n].adr;
@@ -343,8 +359,8 @@ copylet(n, f, type) FILE *f;
 		fputc(fgetc(tmpf), f);
 }
 
-isfrom(lp)
-register char *lp;
+static int
+isfrom(register char *lp)
 {
 	register char *p;
 
@@ -354,8 +370,8 @@ register char *lp;
 	return(1);
 }
 
-sendmail(argc, argv)
-char **argv;
+static void
+sendmail(int argc, char **argv)
 {
 
 	time(&iop);
@@ -400,14 +416,14 @@ char **argv;
 	fclose(tmpf);
 }
 
-sendrmt(n, name)
-char *name;
+static int
+sendrmt(int n, char *name)
 {
-	FILE *rmf, *popen();
+	FILE *rmf;
 	register char *p;
 	char rsys[64], cmd[64];
 	register local, pid;
-	int sts;
+	i16 sts;
 
 	local = 0;
 	if (*name=='!')
@@ -449,14 +465,13 @@ char *name;
 	exit(0);
 }
 
-send(n, name)	/* send letter n to name */
-int n;
-char *name;
+static int
+send(int n, char *name)	/* send letter n to name */
 {
 	char file[50];
 	register char *p;
 	register mask;
-	struct passwd *pw, *getpwnam();
+	struct passwd *pw;
 
 	for(p=name; *p!='!' &&*p!='\0'; p++)
 		;
@@ -482,7 +497,8 @@ char *name;
 	return(1);
 }
 
-delete(i)
+static void
+delete(i16 i)
 {
 	setsig(i, delete);
 	fprintf(stderr, "\n");
@@ -491,7 +507,8 @@ delete(i)
 	done();
 }
 
-done()
+static void
+done(void)
 {
 	if(!lockerror)
 		unlock();
@@ -499,8 +516,8 @@ done()
 	exit(error+lockerror);
 }
 
-lock(file)
-char *file;
+static void
+lock(char *file)
 {
 	struct stat stbuf;
 
@@ -520,15 +537,16 @@ char *file;
 	chmod(file, stbuf.st_mode|01);
 }
 
-unlock()
+static void
+unlock(void)
 {
 	if (locked)
 		chmod(curlock, locked);
 	locked = 0;
 }
 
-cat(to, from1, from2)
-char *to, *from1, *from2;
+static void
+cat(char *to, char *from1, char *from2)
 {
 	int i, j;
 
@@ -540,8 +558,8 @@ char *to, *from1, *from2;
 	to[j] = 0;
 }
 
-char *getarg(s, p)	/* copy p... into s, update p */
-register char *s, *p;
+static char *
+getarg(register char *s, register char *p)	/* copy p... into s, update p */
 {
 	while (*p == ' ' || *p == '\t')
 		p++;

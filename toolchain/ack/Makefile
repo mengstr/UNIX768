@@ -1,73 +1,36 @@
-# ======================================================================= #
-#                          ACK CONFIGURATION                              #
-#                      (Edit this before building)                        #
-# ======================================================================= #
+# Host-side ACK cross-toolchain and 68kunix runtime.
 
-# What platform to build for by default?
+ACK_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+PROJECT_DIR := $(abspath $(ACK_DIR)/../..)
+BIN_DIR ?= $(PROJECT_DIR)/build/bin
+RUNTIME_DIR ?= $(PROJECT_DIR)/build/toolchain/ack/68kunix
+V7_INCLUDE_DIR ?= $(PROJECT_DIR)/unix/v7/usr/include
 
-DEFAULT_PLATFORM ?= pc86
+.DEFAULT_GOAL := all
 
-# Which architectures should get built?
+.PHONY: all clean clean-compiler clean-runtime
 
-$(if $(PLATS), $(error Don't set PLATS on the command line, because reasons. Edit the Makefile instead.))
-PLATS = all
-# PLATS = linux386 linuxppc linuxmips
+all:
+	@$(MAKE) --no-print-directory -f Makefile.clang
+	@mkdir -p "$(BIN_DIR)"
+	@clang -std=c89 -Wno-deprecated-declarations \
+		-DCC_TOOL_DIR='"$(BIN_DIR)"' \
+		-DCC_RUNTIME_DIR='"$(RUNTIME_DIR)"' \
+		-DCC_INCLUDE_DIR='"$(V7_INCLUDE_DIR)"' \
+		-DCC_CRT_OBJECT='"libc_crt0.o"' -DCC_END_OBJECT='"libc_end.o"' \
+		-DCC_MAXARG=2048 -DCC_WAIT_STATUS=int \
+		-o "$(BIN_DIR)/cc" cc/ccdriver.c
+	@cp -f cc/acklevels "$(BIN_DIR)/acklevels"
+	@chmod 0755 "$(BIN_DIR)/cc" "$(BIN_DIR)/acklevels"
+	@$(MAKE) --no-print-directory -f Makefile.libc
+	@$(MAKE) --no-print-directory -f Makefile.libfp
 
-# Where should the ACK put its temporary files?
+clean-compiler:
+	@$(MAKE) --no-print-directory -f Makefile.clang clean
+	@rm -f "$(BIN_DIR)/cc" "$(BIN_DIR)/acklevels"
 
-ifeq ($(TMPDIR),)
-ACK_TEMP_DIR ?= /tmp
-else
-ACK_TEMP_DIR ?= $(TMPDIR)
-endif
+clean-runtime:
+	@$(MAKE) --no-print-directory -f Makefile.libc clean
+	@$(MAKE) --no-print-directory -f Makefile.libfp clean
 
-INSDIR = $(OBJ)/staging
-
-# Where is the ACK going to be installed, eventually? If you don't want to
-# install it and just want to run the ACK from the build directory
-# ($(TMPDIR)/ack-build/staging, by default), leave this as $(INSDIR).
-
-ifeq ($(OS),Windows_NT)
-PREFIX ?= c:/ack
-else
-PREFIX ?= /opt/pkg/ack
-#PREFIX = $(INSDIR)
-endif
-
-# What build flags do you want to use for native code?
-
-CFLAGS ?= -g -Os \
-	-Werror=return-type \
-	-Werror=implicit-function-declaration \
-	-Werror=strict-prototypes \
-	-DUNREACHABLE_CODE='__builtin_unreachable()' \
-	-DNORETURN=_Noreturn
-
-HOSTCFLAGS = $(CFLAGS)
-ACKCFLAGS = -O
-
-LDFLAGS ?= -g
-ACKLDFLAGS =
-
-# Various commands.
-
-LUA ?= lua
-
-.PHONY: all
-all: +all
-
-# Custom rule to build the installer.
-
-ack-setup.exe: etc/windows-installer.nsi all
-	makensis -dBUILDDIR="$$(realpath $(INSDIR))" -dOUTFILE="$$(realpath $@)" $<
-
-install: all
-	@mkdir -p $(PREFIX)
-	tar cf - -C $(INSDIR) . | tar xvf - -C $(PREFIX)
-
-PLATIND = $(INSDIR)/share/ack
-PLATDEP = $(INSDIR)/lib/ack
-export PLATS
-
-AB_ENABLE_PROGRESS_INFO = false
-include build/ab.mk
+clean: clean-compiler clean-runtime

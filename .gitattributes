@@ -1,0 +1,8 @@
+# Preserve whitespace byte-for-byte in imported historical and third-party
+# material while keeping Git's normal whitespace checks for project-owned code.
+/docs/history/** whitespace=-blank-at-eol,-blank-at-eof,-space-before-tab
+/docs/development/upstream-prs/** whitespace=-blank-at-eol,-blank-at-eof,-space-before-tab
+/third_party/** whitespace=-blank-at-eol,-blank-at-eof,-space-before-tab
+/toolchain/ack/** whitespace=-blank-at-eol,-blank-at-eof,-space-before-tab
+/unix/ports/** whitespace=-blank-at-eol,-blank-at-eof,-space-before-tab
+/unix/v7/** whitespace=-blank-at-eol,-blank-at-eof,-space-before-tab

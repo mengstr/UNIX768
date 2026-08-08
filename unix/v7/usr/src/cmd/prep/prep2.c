@@ -1,16 +1,18 @@
+# include <stdio.h>
+# include <unistd.h>
+# include "prep.h"
+
 int	optr;
 
 char	obuf[512];
 
 int	nflush;
 
-put(string,n)
-	char	*string;
+int
+put(char *string, int n)
 {
 	int	i;
 	char	*o;
-
-/*printf("%c %d\n",*string,n);/*DEBUG*/
 
 	string--;
 
@@ -33,7 +35,8 @@ put(string,n)
 	return(0);
 }
 
-flsh()
+int
+flsh(void)
 {
 
 	if(optr <= 0)	return(optr);
@@ -44,4 +47,3 @@ flsh()
 	optr = 0;
 	return(0);
 }
-

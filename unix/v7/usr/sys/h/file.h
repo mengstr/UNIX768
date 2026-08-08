@@ -1,3 +1,6 @@
+#ifndef V7_SYS_FILE_H
+#define V7_SYS_FILE_H
+
 /*
  * One file structure is allocated
  * for each open/creat/pipe call.
@@ -26,3 +29,5 @@ extern struct file file[];	/* The file table itself */
 #define	FMPY	020
 #define	FMP	030
 #define	FKERNEL	040
+
+#endif /* V7_SYS_FILE_H */

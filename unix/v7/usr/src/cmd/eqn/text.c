@@ -1,18 +1,23 @@
 # include "e.h"
 # include "e.def"
 
-int	csp;
-int	psp;
+static int	csp;
+static int	psp;
 #define	CSSIZE	400
-char	cs[420];
+static char	cs[420];
 
-int	lf, rf;	/* temporary spots for left and right fonts */
+static int	lf, rf;	/* temporary spots for left and right fonts */
 
-text(t,p1) int t; char *p1; {
+static int trans(int, char *);
+static void shim(void);
+static void roman(int);
+static void name4(int, int);
+
+void
+text(int t, char *p1) {
 	int c;
 	char *p;
-	tbl *tp, *lookup();
-	extern tbl *restbl;
+	tbl *tp;
 
 	yyval = oalloc();
 	ebase[yyval] = 0;
@@ -26,7 +31,7 @@ text(t,p1) int t; char *p1; {
 		p = "\\|";
 	else if ( t == TAB )
 		p = "\\t";
-	else if ((tp = lookup(&restbl, p1, NULL)) != NULL)
+	else if ((tp = lookup(restbl, p1, NULL)) != NULL)
 		p = tp->defn;
 	else {
 		lf = rf = 0;
@@ -43,11 +48,12 @@ text(t,p1) int t; char *p1; {
 		rfont[yyval] = rf;
 	}
 	if(dbg)printf(".\t%dtext: S%d <- %s; b=%d,h=%d,lf=%c,rf=%c\n",
-		t, yyval, p, ebase[yyval], eht[yyval], lfont[yyval], rfont[yyval]);
-	printf(".ds %d \"%s\n", yyval, p);
+		t, YV, p, ebase[yyval], eht[yyval], lfont[yyval], rfont[yyval]);
+	printf(".ds %d \"%s\n", YV, p);
 }
 
-trans(c,p1) int c; char *p1; {
+static int
+trans(int c, char *p1) {
 	int f;
 	f = ROM;
 	switch( c) {
@@ -152,17 +158,20 @@ trans(c,p1) int c; char *p1; {
 	return(f);
 }
 
-shim() {
+static void
+shim(void) {
 	cs[csp++] = '\\'; cs[csp++] = '|';
 }
 
-roman(c) int c; {
+static void
+roman(int c) {
 	cs[csp++] = '\\'; cs[csp++] = 'f'; cs[csp++] = ROM;
 	cs[csp++] = c;
 	cs[csp++] = '\\'; cs[csp++] = 'f'; cs[csp++] = 'P';
 }
 
-name4(c1,c2) int c1,c2; {
+static void
+name4(int c1, int c2) {
 	cs[csp++] = '\\';
 	cs[csp++] = '(';
 	cs[csp++] = c1;

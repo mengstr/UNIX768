@@ -1,0 +1,6 @@
+set -e
+
+test -d $1/local/bin || mkdir $1/local/bin
+cp red/red $1/local/bin/red
+chmod 0755 $1/local/bin/red
+echo install.editors: complete

@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
 
 #ifndef unix
 #define SHIFT	5
@@ -42,7 +44,8 @@ long	p[] = {
 
 long	pow2[NP][NW];
 
-prime(argc, argv) register char **argv;
+static int
+prime(int argc, char **argv)
 {
 	int i, j;
 	long h;

@@ -1,3 +1,4 @@
+# include "refer.h"
 getargs(s, arps)
 	char *s, *arps[];
 {

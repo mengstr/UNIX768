@@ -1,7 +1,8 @@
 # include "e.h"
 #include "e.def"
 
-bshiftb(p1, dir, p2) int p1, dir, p2; {
+void
+bshiftb(int p1, int dir, int p2) {
 	int shval, d1, h1, b1, h2, b2;
 	yyval = p1;
 	h1 = eht[p1];
@@ -24,25 +25,27 @@ bshiftb(p1, dir, p2) int p1, dir, p2; {
 		eht[yyval] = h1 + max(0, h2 - VERT(1));
 	}
 	if(dbg)printf(".\tb:b shift b: S%d <- S%d vert %d S%d vert %d; b=%d, h=%d\n", 
-		yyval, p1, shval, p2, -shval, ebase[yyval], eht[yyval]);
+		YV, p1, shval, p2, -shval, ebase[yyval], eht[yyval]);
 	printf(".as %d \\v'%du'\\*(%d\\v'%du'\n", 
-		yyval, shval, p2, -shval);
+		YV, shval, p2, -shval);
 	ofree(p2);
 }
 
-shift(p1) int p1; {
+void
+shift(int p1) {
 	ps -= deltaps;
 	yyval = p1;
-	if(dbg)printf(".\tshift: %d;ps=%d\n", yyval, ps);
+	if(dbg)printf(".\tshift: %d;ps=%d\n", YV, ps);
 }
 
-shift2(p1, p2, p3) int p1, p2, p3; {
+void
+shift2(int p1, int p2, int p3) {
 	int effps, h1, h2, h3, b1, b2, b3, subsh, d1, d2, supsh;
 	int treg;
 
 	treg = oalloc();
 	yyval = p1;
-	if(dbg)printf(".\tshift2 s%d <- %d %d %d\n", yyval, p1, p2, p3);
+	if(dbg)printf(".\tshift2 s%d <- %d %d %d\n", YV, p1, p2, p3);
 	effps = EFFPS(ps+deltaps);
 	h1 = eht[p1]; b1 = ebase[p1];
 	h2 = eht[p2]; b2 = ebase[p2];

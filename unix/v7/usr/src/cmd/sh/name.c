@@ -8,8 +8,11 @@
  */
 
 #include	"defs.h"
+#include	<sys/inttypes.h>
 
-PROC BOOL	chkid();
+LOCAL BOOL	chkid(STRING);
+LOCAL VOID	namwalk(NAMPTR);
+LOCAL STRING	staknam(NAMPTR);
 
 
 NAMNOD	ps2nod	= {	NIL,		NIL,		ps2name},
@@ -85,10 +88,10 @@ VOID	setname(argi, xp)
 }
 
 replace(a, v)
-	REG STRING	*a;
-	STRING		v;
+		REG STRING	*a;
+		STRING		v;
 {
-	free(*a); *a=make(v);
+	free((BLKPTR)*a); *a=make(v);
 }
 
 dfault(n,v)
@@ -118,7 +121,7 @@ INT	readvar(names)
 	REG CHAR	c;
 	REG INT		rc=0;
 	NAMPTR		n=lookup(*names++); /* done now to avoid storage mess */
-	STKPTR		rel=relstak();
+	INT		rel=relstak();
 
 	push(f); initf(dup(0));
 	IF lseek(0,0L,1)==-1
@@ -151,10 +154,11 @@ INT	readvar(names)
 }
 
 assnum(p, i)
-	STRING		*p;
-	INT		i;
+		STRING		*p;
+		INT		i;
 {
-	itos(i); replace(p,numbuf);
+	itos(i);
+	replace(p,numbuf);
 }
 
 STRING	make(v)
@@ -191,7 +195,7 @@ NAMPTR		lookup(nam)
 	OD
 
 	/* add name node */
-	nscan=alloc(sizeof *nscan);
+	nscan=(NAMPTR)alloc(sizeof *nscan);
 	nscan->namlft=nscan->namrgt=NIL;
 	nscan->namid=make(nam);
 	nscan->namval=0; nscan->namflg=N_DEFAULT; nscan->namenv=0;
@@ -214,9 +218,10 @@ LOCAL BOOL	chkid(nam)
 	return(TRUE);
 }
 
-LOCAL VOID (*namfn)();
+LOCAL VOID (*namfn)(NAMPTR);
+int
 namscan(fn)
-	VOID		(*fn)();
+	VOID		(*fn)(NAMPTR);
 {
 	namfn=fn;
 	namwalk(namep);
@@ -253,16 +258,16 @@ LOCAL STRING	staknam(n)
 	p=movstr(n->namid,staktop);
 	p=movstr("=",p);
 	p=movstr(n->namval,p);
-	return(getstak(p+1-ADR(stakbot)));
+	return(getstak((i32)(p+1-ADR(stakbot))));
 }
 
 VOID	exname(n)
 	REG NAMPTR	n;
 {
 	IF n->namflg&N_EXPORT
-	THEN	free(n->namenv);
+	THEN	free((BLKPTR)n->namenv);
 		n->namenv = make(n->namval);
-	ELSE	free(n->namval);
+	ELSE	free((BLKPTR)n->namval);
 		n->namval = make(n->namenv);
 	FI
 }
@@ -313,7 +318,7 @@ STRING	*setenv()
 
 	namec=0;
 	namscan(countnam);
-	argnam = er = getstak(namec*BYTESPERWORD+BYTESPERWORD);
+	argnam = er = (STRING *)getstak(namec*BYTESPERWORD+BYTESPERWORD);
 	namscan(pushnam);
 	*argnam++ = 0;
 	return(er);

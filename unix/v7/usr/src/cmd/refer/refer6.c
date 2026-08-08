@@ -1,10 +1,14 @@
 # include "refer..c"
+static char *class(int, char **);
+static int hastype(int, char **, int);
+void
 putref (n, tvec)
 	char *tvec[];
+	int n;
 {
 char *s, *tx;
 char buf1[LLINE], buf2[50];
-int nauth 0, i, lastype 0, cch, macro 0, la;
+int nauth = 0, i, lastype = 0, cch, macro = 0, la;
 int lauth =0, ltitle =0, lother =0;
 
 fprintf(fo, ".]-%c", sep);
@@ -107,11 +111,12 @@ fprintf(fo, ".nr [A %d%c", lauth, sep);
 fprintf(fo, ".nr [O %d%c", lother, sep);
 fprintf (fo, ".][ %s%c", class(n, tvec), '\n');
 }
+int
 tabs (sv, line)
 	char *sv[], *line;
 {
 char *p;
-int n 0;
+int n = 0;
 sv[n++] = line;
 for( p= line; *p; p++)
 	{
@@ -123,8 +128,10 @@ for( p= line; *p; p++)
 	}
 return(n-1);
 }
+static char *
 class (nt, tv)
 	char *tv[];
+	int nt;
 {
 if (hastype (nt, tv, 'J'))
 	return("1 journal-article");
@@ -140,8 +147,10 @@ if (hastype (nt, tv,'M'))
 	return ("5 bell-tm");
 return("0 other");
 }
+static int
 hastype (nt, tv, c)
 	char *tv[];
+	int nt, c;
 {
 int i;
 for(i=0; i<nt; i++)
@@ -149,6 +158,7 @@ for(i=0; i<nt; i++)
 		return(1);
 return(0);
 }
+char *
 caps(a, b)
 	char *a, *b;
 {
@@ -188,6 +198,7 @@ if (alph>1)
 *b=0;
 return (p);
 }
+char *
 revauth(s, b)
 	char *s, *b;
 {
@@ -216,6 +227,7 @@ while(*jr)
 *b++ = 0;
 return(bcop);
 }
+int
 last(s)
 	char *s;
 {

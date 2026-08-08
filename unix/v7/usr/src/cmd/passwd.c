@@ -6,22 +6,25 @@
 #include <stdio.h>
 #include <signal.h>
 #include <pwd.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <time.h>
 
 char	passwd[] = "/etc/passwd";
 char	temp[]	 = "/etc/ptmp";
 struct	passwd *pwd;
-struct	passwd *getpwent();
-int	endpwent();
-char	*strcpy();
-char	*crypt();
-char	*getpass();
-char	*getlogin();
+struct passwd *getpwent(void);
+int endpwent(void);
+char *crypt(char *key, char *salt);
+char *getpass(char *prompt);
+char *getlogin(void);
 char	*pw;
 char	pwbuf[10];
 char	buf[512];
 
-main(argc, argv)
-char *argv[];
+int
+main (int argc, char *argv[])
 {
 	char *p;
 	int i;

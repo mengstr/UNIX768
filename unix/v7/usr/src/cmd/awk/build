@@ -1,0 +1,41 @@
+set -e
+
+YACC=${YACC-../yacc/yacc}
+LEX=${LEX-../lex/lex}
+
+echo YACC awk.g.y
+$YACC -d awk.g.y
+mv y.tab.c awk.g.c
+mv y.tab.h awk.h
+echo LEX awk.lx.l
+$LEX awk.lx.l
+mv lex.yy.c awk.lx.c
+
+if test "x$PROCGEN" = x
+then
+	echo CC proc.c
+	cc -O2 -I. -c -o procgen.o proc.c
+	echo CC token.c
+	cc -O2 -I. -c -o proctok.o token.c
+	cc -o awkproc procgen.o proctok.o
+	PROCGEN=./awkproc
+fi
+echo GEN proctab.c
+$PROCGEN > proctab.c
+
+for file in b lib main parse run token tran
+do
+	echo CC $file.c
+	cc -O2 -I. -c $file.c
+done
+for file in awk.g awk.lx
+do
+	echo CC $file.c
+	cc -O2 -w -DYYSTYPE=long -I. -c $file.c
+done
+echo CC proctab.c
+cc -O2 -I. -c proctab.c
+
+LIBM=${LIBM-/lib/libm.a}
+echo LD awk
+cc -s -o awk b.o lib.o main.o parse.o run.o token.o tran.o awk.g.o awk.lx.o proctab.o $LIBM

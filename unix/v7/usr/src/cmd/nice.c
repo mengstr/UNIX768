@@ -1,13 +1,14 @@
 /* nice */
 
 #include <stdio.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <unistd.h>
 
-main(argc, argv)
-int argc;
-char *argv[];
+int
+main(int argc, char *argv[])
 {
 	int nicarg = 10;
-	extern errno;
 	extern char *sys_errlist[];
 
 	if(argc > 1 && argv[1][0] == '-') {

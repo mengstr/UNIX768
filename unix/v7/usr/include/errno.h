@@ -2,6 +2,11 @@
  * Error codes
  */
 
+#include "sys/inttypes.h"
+
+extern i32 errno;
+char *strerror(i32);
+
 #define	EPERM	1
 #define	ENOENT	2
 #define	ESRCH	3

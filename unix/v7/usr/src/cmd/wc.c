@@ -1,9 +1,12 @@
 /* wc line and word count */
 
 #include <stdio.h>
+#include <unistd.h>
 
-main(argc, argv)
-char **argv;
+static void wcp(register char *wd, long charct, long wordct, long linect);
+
+int
+main(int argc, char **argv)
 {
 	int i, token;
 	register FILE *fp;
@@ -66,6 +69,7 @@ char **argv;
 	exit(0);
 }
 
+static void
 wcp(wd, charct, wordct, linect)
 register char *wd;
 long charct; long wordct; long linect;

@@ -1,0 +1,73 @@
+ACK host tool flags in cc/build/clang
+
+cpp
+-I dir   add include search path
+-Dname or -Dname=text   define macros
+-Uname   undefine macros
+-C       keep comments
+-P       suppress line directives
+-d, -A, -i, -m   dependency output modes
+
+Examples:
+-DDEBUG
+-DVERSION=2
+-D NAME=VALUE
+
+c1
+-L   skip EM line/file tracking
+-n   do not generate EM register messages
+-p   add procedure entry/exit calls
+-R   treat input as restricted K&R C
+-V...   set target sizes and alignments
+-w, -s, -a, -o   relax warning/strictness levels
+
+opt
+-L   emit library-module format
+-n   disable peephole optimization but keep translation
+-mN  replace constant multiplies with shifts/adds
+-mlN same as -mN, but for long multiplies too
+
+opt2
+Same command-line flags as opt.
+It is the stronger optimizer build used for the more aggressive stage.
+
+ncg
+-pN  set code generation search depth
+-wN  rebalance size-vs-speed weights
+-d   enable debug tracing when built with NDEBUG off
+-u/U  table-debug hooks when compiled with TABLEDEBUG
+
+as
+-o file   set output object name
+-dNNN     set listing/debug level
+-sNNN     set symbol listing level
+-r        keep relocation for relinkable output
+-b        force branch optimization mode
+-u        treat bare inputs as untyped when ASLD is off
+
+led
+-o file   name the linker output
+-r        keep relocation for a relinkable output
+-c        emit relocatable output with commons resolved
+-n        keep section-relative values in the namelist
+-s        strip names and relocation
+-u sym    force an undefined symbol to pull archive members
+-a/-b     set section alignment and base addresses
+
+wrapper cc
+-s        request a stripped final executable by passing -s to led
+
+cv
+-u   accept unresolved references when converting ACK a.out
+
+Dead-code note
+The optimizer removes unreachable instructions within procedures.
+The linker can omit unused archive members, but it does not do
+modern whole-program function elimination inside a single object file.
+For best pruning, keep runtime pieces split into separate .o files.
+
+Example:
+If `foo.o` contains both `foo()` and `helper()` and only `foo()`
+is referenced, both functions stay.
+If `foo.o` and `helper.o` are separate archive members, and only
+`foo.o` is needed, the linker can skip `helper.o` entirely.

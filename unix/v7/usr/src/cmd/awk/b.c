@@ -1,9 +1,15 @@
 #include "awk.def"
-#include "stdio.h"
 #include "awk.h"
 
-extern node *op2();
-extern struct fa *cgotofn();
+static void penter(node *);
+static void freetr(node *);
+static void overflo(void);
+static void cfoll(node *);
+static int first(node *);
+static void follow(node *);
+static int notin(int **, int, int *);
+static int *add(int);
+static struct fa *cgotofn(void);
 #define MAXLIN 256
 #define NCHARS 128
 #define NSTATES 256
@@ -57,12 +63,12 @@ node *p;
 	return(fap);
 }
 
-penter(p)	/* set up parent pointers and leaf indices */
+static void penter(p)	/* set up parent pointers and leaf indices */
 node *p;
 {
 	switch(type(p)) {
 		LEAF
-			left(p) = (node *) line;
+			left(p) = (node *) (long) line;
 			point[line++] = p;
 			break;
 		UNARY
@@ -82,12 +88,12 @@ node *p;
 	}
 }
 
-freetr(p)	/* free parse tree and follow sets */
+static void freetr(p)	/* free parse tree and follow sets */
 node *p;
 {
 	switch(type(p)) {
 		LEAF
-			xfree(foll[(int) left(p)]);
+			xfree(foll[(long) left(p)]);
 			xfree(p);
 			break;
 		UNARY
@@ -136,17 +142,16 @@ register char *p;
 	return(tostring(chars));
 }
 
-overflo()
+static void overflo(void)
 {
 	error(FATAL, "regular expression too long\n");
 }
 
-cfoll(v)		/* enter follow set of each leaf of vertex v into foll[leaf] */
+static void cfoll(v)		/* enter follow set of each leaf of vertex v into foll[leaf] */
 register node *v;
 {
 	register i;
 	int prev;
-	int *add();
 
 	switch(type(v)) {
 		LEAF
@@ -154,11 +159,11 @@ register node *v;
 			for (i=1; i<=line; i++)
 				setvec[i] = 0;
 			follow(v);
-			if (notin(foll, ( (int) left(v))-1, &prev)) {
-				foll[(int) left(v)] = add(setcnt);
+			if (notin(foll, ((long) left(v))-1, &prev)) {
+				foll[(long) left(v)] = add(setcnt);
 			}
 			else
-				foll[ (int) left(v)] = foll[prev];
+				foll[(long) left(v)] = foll[prev];
 			break;
 		UNARY
 			cfoll(left(v));
@@ -173,15 +178,15 @@ register node *v;
 	}
 }
 
-first(p)			/* collects initially active leaves of p into setvec */
+static first(p)			/* collects initially active leaves of p into setvec */
 register node *p;		/* returns 0 or 1 depending on whether p matches empty string */
 {
 	register b;
 
 	switch(type(p)) {
 		LEAF
-			if (setvec[(int) left(p)] != 1) {
-				setvec[(int) left(p)] = 1;
+			if (setvec[(long) left(p)] != 1) {
+				setvec[(long) left(p)] = 1;
 				setcnt++;
 			}
 			if (type(p) == CCL && (*(char *) right(p)) == '\0')
@@ -207,7 +212,7 @@ register node *p;		/* returns 0 or 1 depending on whether p matches empty string
 	return(-1);
 }
 
-follow(v)
+static void follow(v)
 node *v;		/* collects leaves that can follow v into setvec */
 {
 	node *p;
@@ -251,7 +256,7 @@ register char c, *s;
 	return(0);
 }
 
-notin(array, n, prev)		/* is setvec in array[0] thru array[n]? */
+static notin(array, n, prev)		/* is setvec in array[0] thru array[n]? */
 int **array;
 int *prev; {
 	register i, j;
@@ -269,7 +274,7 @@ int *prev; {
 	return(1);
 }
 
-int *add(n) {		/* remember setvec */
+static int *add(n) {		/* remember setvec */
 	int *ptr, *p;
 	register i;
 	if ((p = ptr = (int *) malloc((n+1)*sizeof(int))) == NULL)
@@ -285,7 +290,7 @@ int *add(n) {		/* remember setvec */
 	return(p);
 }
 
-struct fa *cgotofn()
+static struct fa *cgotofn(void)
 {
 	register i, k;
 	register int *ptr;
@@ -297,7 +302,7 @@ struct fa *cgotofn()
 	int curpos, num, prev;
 	struct fa *where[NSTATES];
 
-	int fatab[257];
+	long fatab[257];
 	struct fa *pfa;
 
 	char index[MAXLIN];
@@ -325,7 +330,7 @@ struct fa *cgotofn()
 		dprintf("i = %d, spinit = %d, curpos = %d\n", i, spinit, curpos);
 		switch (type(cp)) {
 			case CHAR:
-				k = (int) right(cp);
+				k = (long) right(cp);
 				if (isyms[k] != 1) {
 					isyms[k] = 1;
 					ssyms[ssmax++] = k;
@@ -386,7 +391,7 @@ struct fa *cgotofn()
 			cp = point[curpos];
 			switch (type(cp)) {
 				case CHAR:
-					k = (int) right(cp);
+					k = (long) right(cp);
 					if (isyms[k] == 0 && symbol[k] == 0) {
 						symbol[k] = 1;
 						ssyms[ssmax++] = k;
@@ -432,7 +437,7 @@ struct fa *cgotofn()
 				index[sposns[i]] = 0;
 				cp = point[sposns[i]];
 				if ((k = type(cp)) != FINAL)
-					if (k == CHAR && c == (int) right(cp)
+					if (k == CHAR && c == (long) right(cp)
 					 || k == DOT
 					 || k == CCL && member(c, (char *) right(cp))
 					 || k == NCCL && !member(c, (char *) right(cp))) {
@@ -490,7 +495,7 @@ struct fa *cgotofn()
 		dprintf("state %d: (%o)\n", i, pfa, NULL);
 		dprintf("	numtrans = %d,	default = %o\n", pfa->cch, pfa->st, NULL);
 		for (k=1; k<=pfa->cch; k++) {
-			(pfa+k)->st = where[ (int) (pfa+k)->st];
+			(pfa+k)->st = where[(long) (pfa+k)->st];
 			dprintf("	char = %o,	nextstate = %o\n",(pfa+k)->cch, (pfa+k)->st, NULL);
 		}
 	}

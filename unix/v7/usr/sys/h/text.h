@@ -1,3 +1,6 @@
+#ifndef V7_SYS_TEXT_H
+#define V7_SYS_TEXT_H
+
 /*
  * Text structure.
  * One allocated per pure
@@ -22,3 +25,5 @@ extern struct text text[];
 #define	XLOAD	04		/* Currently being read from file */
 #define	XLOCK	010		/* Being swapped in or out */
 #define	XWANT	020		/* Wanted for swapping */
+
+#endif /* V7_SYS_TEXT_H */

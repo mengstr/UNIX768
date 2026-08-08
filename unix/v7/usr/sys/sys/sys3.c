@@ -12,14 +12,28 @@
 #include "../h/conf.h"
 #include "../h/stat.h"
 
+void fstat(void);
+void stat(void);
+void stat1(struct inode *ip, struct stat *ub, off_t pipeadj);
+void dup(void);
+void smount(void);
+void sumount(void);
+dev_t getmdev(void);
+void iupdat(struct inode *ip, time_t *ta, time_t *tm);
+void prele(struct inode *ip);
+void update(void);
+void xumount(i32 dev);
+i32 ufalloc(void);
+
 /*
  * the fstat system call.
  */
-fstat()
+void
+fstat(void)
 {
 	register struct file *fp;
 	register struct a {
-		int	fdes;
+		i32	fdes;
 		struct stat *sb;
 	} *uap;
 
@@ -33,7 +47,8 @@ fstat()
 /*
  * the stat system call.
  */
-stat()
+void
+stat(void)
 {
 	register struct inode *ip;
 	register struct a {
@@ -53,10 +68,8 @@ stat()
  * The basic routine for fstat and stat:
  * get the inode and pass appropriate parts back.
  */
-stat1(ip, ub, pipeadj)
-register struct inode *ip;
-struct stat *ub;
-off_t pipeadj;
+void
+stat1(register struct inode *ip, struct stat *ub, off_t pipeadj)
 {
 	register struct dinode *dp;
 	register struct buf *bp;
@@ -72,7 +85,7 @@ off_t pipeadj;
 	ds.st_nlink = ip->i_nlink;
 	ds.st_uid = ip->i_uid;
 	ds.st_gid = ip->i_gid;
-	ds.st_rdev = (dev_t)ip->i_un.i_rdev;
+	ds.st_rdev = (dev_t)ip->i_un.i_special.i_rdev;
 	ds.st_size = ip->i_size - pipeadj;
 	/*
 	 * next the dates in the disk
@@ -91,14 +104,15 @@ off_t pipeadj;
 /*
  * the dup system call.
  */
-dup()
+void
+dup(void)
 {
 	register struct file *fp;
 	register struct a {
-		int	fdes;
-		int	fdes2;
+		i32	fdes;
+		i32	fdes2;
 	} *uap;
-	register i, m;
+	register i32 i, m;
 
 	uap = (struct a *)u.u_ap;
 	m = uap->fdes & ~077;
@@ -115,7 +129,7 @@ dup()
 			u.u_error = EBADF;
 			return;
 		}
-		u.u_r.r_val1 = i;
+		u.u_r.r_reg.r_val1 = i;
 	}
 	if (i!=uap->fdes) {
 		if (u.u_ofile[i]!=NULL)
@@ -128,7 +142,8 @@ dup()
 /*
  * the mount system call.
  */
-smount()
+void
+smount(void)
 {
 	dev_t dev;
 	register struct inode *ip;
@@ -139,7 +154,7 @@ smount()
 	register struct a {
 		char	*fspec;
 		char	*freg;
-		int	ronly;
+		i32	ronly;
 	} *uap;
 
 	uap = (struct a *)u.u_ap;
@@ -194,15 +209,13 @@ out1:
 /*
  * the umount system call.
  */
-sumount()
+void
+sumount(void)
 {
 	dev_t dev;
 	register struct inode *ip;
 	register struct mount *mp;
 	struct buf *bp;
-	register struct a {
-		char	*fspec;
-	};
 
 	dev = getmdev();
 	if(u.u_error)
@@ -237,7 +250,7 @@ found:
  * thing on which to mount, and return the device number if so.
  */
 dev_t
-getmdev()
+getmdev(void)
 {
 	dev_t dev;
 	register struct inode *ip;
@@ -247,7 +260,7 @@ getmdev()
 		return(NODEV);
 	if((ip->i_mode&IFMT) != IFBLK)
 		u.u_error = ENOTBLK;
-	dev = (dev_t)ip->i_un.i_rdev;
+	dev = (dev_t)ip->i_un.i_special.i_rdev;
 	if(major(dev) >= nblkdev)
 		u.u_error = ENXIO;
 	iput(ip);

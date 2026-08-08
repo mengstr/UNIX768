@@ -42,18 +42,18 @@ char *prompt	= "";	/* other systems -- pick what you want */
 char junkname[20];
 char funny[128];
 
-main(argc,argv)
-int argc;
-char *argv[];
+int
+main (int argc, char *argv[])
 {
 register struct nameblock *p;
 int i, j;
 int descset, nfargs;
 TIMETYPE tjunk;
+sighandler_t oldhandler;
 char c, *s;
 static char onechar[2] = "X";
 #ifdef unix
-int intrupt();
+void intrupt(i16 signo);
 
 
 
@@ -158,8 +158,10 @@ if(p=srchname(".SUFFIXES")) sufflist = p->linep;
 if( !sufflist ) fprintf(stderr,"No suffix list.\n");
 
 #ifdef unix
-sigivalue = (int) signal(SIGINT, SIG_IGN) & 01;
-sigqvalue = (int) signal(SIGQUIT, SIG_IGN) & 01;
+oldhandler = signal(SIGINT, SIG_IGN);
+sigivalue = oldhandler != SIG_IGN;
+oldhandler = signal(SIGQUIT, SIG_IGN);
+sigqvalue = oldhandler != SIG_IGN;
 enbint(intrupt);
 #endif
 
@@ -196,11 +198,12 @@ exit(0);
 
 
 #ifdef unix
-intrupt()
+void
+intrupt (i16 signo)
 {
-struct varblock *varptr();
+struct varblock *varptr(char *v);
 char *p;
-TIMETYPE exists();
+TIMETYPE exists(char *filename);
 
 if(okdel && !noexflag && !touchflag &&
 	(p = varptr("@")->varval) && exists(p)>0 && !isprecious(p) )
@@ -218,8 +221,8 @@ exit(2);
 
 
 
-isprecious(p)
-char *p;
+int
+isprecious (char *p)
 {
 register struct lineblock *lp;
 register struct depblock *dp;
@@ -235,8 +238,8 @@ return(NO);
 }
 
 
-enbint(k)
-int (*k)();
+void
+enbint (sighandler_t k)
 {
 if(sigivalue == 0)
 	signal(SIGINT,k);
@@ -251,13 +254,13 @@ char **linesptr	= builtin;
 
 FILE * fin;
 int firstrd	= 0;
-
-
-rddescf(descfile)
-char *descfile;
-{
 extern int yylineno;
 extern char *zznextc;
+
+
+int
+rddescf (char *descfile)
+{
 FILE * k;
 
 /* read and parse description */
@@ -275,7 +278,7 @@ if( !firstrd++ )
 			rdd1(k);
 		else if ( (k=fopen( concat(nlog,"/Makecomm",s), "r")) != NULL)
 			rdd1(k);
-	
+
 		if ( (k=fopen("makecomm", "r")) != NULL)
 			rdd1(k);
 		else if ( (k=fopen("Makecomm", "r")) != NULL)
@@ -296,8 +299,8 @@ return(1);
 
 
 
-rdd1(k)
-FILE * k;
+int
+rdd1 (FILE *k)
 {
 fin = k;
 yylineno = 0;
@@ -312,8 +315,8 @@ if(fin != NULL)
 return(0);
 }
 
-printdesc(prntflag)
-int prntflag;
+int
+printdesc (int prntflag)
 {
 struct nameblock *p;
 struct depblock *dp;
@@ -350,7 +353,7 @@ for(p = firstname; p; p = p->nxtnameblock)
 				if(dp->depname != 0)
 					printf(" %s ", dp->depname->namep);
 			}
-	
+
 		if(sp = lp->shp)
 			{
 			printf("\n commands:\n");

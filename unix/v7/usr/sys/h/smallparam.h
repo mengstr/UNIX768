@@ -2,6 +2,8 @@
  * tunable variables
  */
 
+#include "inttypes.h"
+
 #define	NBUF	8		/* size of buffer cache */
 #define	NINODE	75		/* number of in core inodes */
 #define	NFILE	75		/* number of in core file structures */
@@ -15,13 +17,13 @@
 #define	CMAPSIZ	50		/* size of core allocation area */
 #define	SMAPSIZ	50		/* size of swap allocation area */
 #define	NCALL	20		/* max simultaneous time callouts */
-#define	NPROC	50		/* max number of processes */
+#define	NPROC	63		/* max number of processes */
 #define	NTEXT	25		/* max number of pure texts */
 #define	NCLIST	100		/* max total clist size */
 #define	HZ	60		/* Ticks/second of the clock */
 #define	TIMEZONE (5*60)		/* Minutes westward from Greenwich */
 #define	DSTFLAG	1		/* Daylight Saving Time applies in this locality */
-#define	MSGBUFS	128		/* Characters saved from error messages */
+#define	MSGBUFS	1024		/* Characters saved from error messages */
 #define	NCARGS	5120		/* # characters in exec arglist */
 
 /*
@@ -71,7 +73,7 @@
  * cannot be changed easily
  */
 
-#define	NBPW	sizeof(int)	/* number of bytes in an integer */
+#define	NBPW	sizeof(i16)	/* historical Unix word size */
 #define	BSIZE	512		/* size of secondary block (bytes) */
 /* BSLOP can be 0 unless you have a TIU/Spider */
 #define	BSLOP	2		/* In case some device needs bigger buffers */
@@ -81,6 +83,7 @@
 #define	NMASK	0177		/* NINDIR-1 */
 #define	NSHIFT	7		/* LOG2(NINDIR) */
 #define	USIZE	16		/* size of user block (*64) */
+#define	EPOCH68_KSTACK_LONGS	(USIZE * 32)	/* 2KB kernel stack per proc */
 #define	UBASE	0140000		/* abs. addr of user block */
 #define	NULL	0
 #define	CMASK	0		/* default mask for file creation */
@@ -92,7 +95,7 @@
 #define	NICFREE	50		/* number of superblock free blocks */
 #define	INFSIZE	138		/* size of per-proc info for users */
 #define	CBSIZE	6		/* number of chars in a clist block */
-#define	CROUND	07		/* clist rounding: sizeof(int *) + CBSIZE - 1*/
+#define	CROUND	07		/* clist rounding: pointer + CBSIZE - 1 */
 
 /*
  * Some macros for units conversion
@@ -108,7 +111,7 @@
 #define	itod(x)	(daddr_t)((((unsigned)x+15)>>3))
 
 /* inumber to disk offset */
-#define	itoo(x)	(int)((x+15)&07)
+#define	itoo(x)	(i32)((x+15)&07)
 
 /* clicks to bytes */
 #define	ctob(x)	(x<<6)
@@ -117,22 +120,29 @@
 #define	btoc(x)	((((unsigned)x+63)>>6))
 
 /* major part of a device */
-#define	major(x)	(int)(((unsigned)x>>8))
+#define	major(x)	(i32)(((u32)x>>8))
 
 /* minor part of a device */
-#define	minor(x)	(int)(x&0377)
+#define	minor(x)	(i32)(x&0377)
 
 /* make a device number */
 #define	makedev(x,y)	(dev_t)((x)<<8 | (y))
 
-typedef	struct { int r[1]; } *	physadr;
-typedef	long		daddr_t;
-typedef char *		caddr_t;
-typedef	unsigned int	ino_t;
-typedef	long		time_t;
-typedef	int		label_t[6];	/* regs 2-7 */
-typedef	int		dev_t;
-typedef	long		off_t;
+/* typedef	long       		daddr_t;  	 disk address */
+/* typedef	char *     		caddr_t;  	 core address */
+/* typedef	unsigned int	ino_t;     	 i-node number */
+/* typedef	long       		time_t;   	 a time */
+/* typedef	unsigned long 	label_t[13]; 	 pc, sp, d2-d7, a2-a6 */
+/* typedef	int        		dev_t;    	 device code */
+/* typedef	long       		off_t;    	 offset in file */
+
+typedef	u32       		daddr_t;  	/* disk address */
+typedef	char *     		caddr_t;  	/* core address */
+typedef	u16				ino_t;     	/* i-node number */
+typedef	i32       		time_t;   	/* a time */
+typedef	u32 			label_t[13]; 	/* pc, sp, d2-d7, a2-a6 */
+typedef	u16       		dev_t;    	/* device code */
+typedef	i32       		off_t;    	/* offset in file */
 
 /*
  * Machine-dependent bits and macros

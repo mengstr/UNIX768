@@ -1,6 +1,10 @@
-main(argc, argv)
-int argc;
-char **argv;
+#include <stdio.h>
+#include <unistd.h>
+
+static i32 number(char *s);
+
+int
+main(int argc, char **argv)
 {
 	int m, a, b;
 
@@ -25,8 +29,10 @@ char **argv;
 
 usage:
 	printf("usage: mknod name b/c major minor\n");
+	return(1);
 }
 
+static i32
 number(s)
 char *s;
 {

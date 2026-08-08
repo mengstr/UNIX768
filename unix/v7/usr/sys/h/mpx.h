@@ -1,3 +1,6 @@
+#ifndef V7_SYS_MPX_H
+#define V7_SYS_MPX_H
+
 #define	M	3
 #define	C	100
 
@@ -6,9 +9,9 @@
  */
 struct	clist
 {
-	int	c_cc;
-	int	c_cf;
-	int	c_cl;
+	i32	c_cc;
+	i32	c_cf;
+	i32	c_cl;
 };
 
 struct	chan
@@ -32,7 +35,7 @@ struct	line
 	char	xflag;
 	char	state;
 	char	time;
-	int	sum;
+	i32	sum;
 	char	*ip;
 	char	*ep;
 };
@@ -68,3 +71,5 @@ struct	mach
  * trace buffer
  */
 #define	TBSIZ	100
+
+#endif /* V7_SYS_MPX_H */

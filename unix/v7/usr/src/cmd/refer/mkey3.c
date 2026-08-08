@@ -1,21 +1,25 @@
-# include "stdio.h"
-char *comname "/usr/lib/eign";
-static int cgate 0;
+# include "refer.h"
+char *comname = "/usr/lib/eign";
+static int cgate = 0;
 extern char *comname;
 # define COMNUM 500
 # define COMTSIZE 997
-int comcount 100;
+int comcount = 100;
 static char cbuf[COMNUM*9];
 static char *cwds[COMTSIZE];
 static char *cbp;
+static void cominit(void);
+static int c_look(char *, int);
 
+int
 common (s)
 	char *s;
 {
 if (cgate==0) cominit();
 return (c_look(s, 1));
 }
-cominit()
+static void
+cominit(void)
 {
 int i;
 FILE *f;
@@ -33,8 +37,10 @@ for(i=0; i<comcount; i++)
 	}
 fclose(f);
 }
+static int
 c_look (s, fl)
 	char *s;
+	int fl;
 {
 int h;
 h = hash(s) % (COMTSIZE);

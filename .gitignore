@@ -1,0 +1,14 @@
+.DS_Store
+.vscode/
+/build/
+/ramdisk.img
+/serialdisk.img
+*.log
+
+# The V7 source builds intentionally leave compiler intermediates in tree.
+*.o
+*.i
+*.k
+*.m
+a.out
+core

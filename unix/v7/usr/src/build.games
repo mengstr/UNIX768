@@ -1,0 +1,11 @@
+set -e
+
+cd games
+
+for game in quiz wump backgammon fish hangman fortune arithmetic banner moo maze
+do
+	echo CC $game.c
+	cc -O2 -s -o $game $game.c
+done
+echo build.games: complete
+exit 0

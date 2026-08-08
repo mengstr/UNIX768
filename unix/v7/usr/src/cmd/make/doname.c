@@ -9,25 +9,23 @@ p->done = 2   file already exists in current state
 p->done = 3   file make failed
 */
 
-doname(p, reclevel, tval)
-register struct nameblock *p;
-int reclevel;
-TIMETYPE *tval;
+int
+doname (register struct nameblock *p, int reclevel, TIMETYPE *tval)
 {
 int errstat;
 int okdel1;
 int didwork;
-TIMETYPE td, td1, tdep, ptime, ptime1, prestime();
+TIMETYPE td, td1, tdep, ptime, ptime1;
 register struct depblock *q;
-struct depblock *qtemp, *srchdir(), *suffp, *suffp1;
+struct depblock *qtemp, *suffp, *suffp1;
 struct nameblock *p1, *p2;
 struct shblock *implcom, *explcom;
 register struct lineblock *lp;
 struct lineblock *lp1, *lp2;
 char sourcename[100], prefix[100], temp[100], concsuff[20];
 char *pnamep, *p1namep;
-char *mkqlist();
-struct chain *qchain, *appendq();
+char *mkqlist(struct chain *p);
+struct chain *qchain;
 
 if(p == 0)
 	{
@@ -196,11 +194,11 @@ p->modtime = ptime;
 return(errstat);
 }
 
-docom(q)
-struct shblock *q;
+int
+docom (struct shblock *q)
 {
 char *s;
-struct varblock *varptr();
+struct varblock *varptr(char *v);
 int ign, nopr;
 char string[OUTMAX];
 
@@ -237,9 +235,8 @@ return(NO);
 
 
 
-docom1(comstring, nohalt, noprint)
-register char *comstring;
-int nohalt, noprint;
+int
+docom1 (register char *comstring, int nohalt, int noprint)
 {
 register int status;
 
@@ -273,12 +270,12 @@ return(status);
    expand into a list, after searching directory
 */
 
-expand(q)
-register struct depblock *q;
+int
+expand (register struct depblock *q)
 {
 register char *s;
 char *s1;
-struct depblock *p, *srchdir();
+struct depblock *p;
 
 s1 = q->depname->namep;
 for(s=s1 ; ;) switch(*s++)

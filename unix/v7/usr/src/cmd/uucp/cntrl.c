@@ -5,29 +5,24 @@
 
 struct Proto {
 	char P_id;
-	int (*P_turnon)();
-	int (*P_rdmsg)();
-	int (*P_wrmsg)();
-	int (*P_rddata)();
-	int (*P_wrdata)();
-	int (*P_turnoff)();
+	int (*P_turnon)(void);
+	int (*P_rdmsg)(char *, int);
+	int (*P_wrmsg)(int, char *, int);
+	int (*P_rddata)(int, FILE *);
+	int (*P_wrdata)(FILE *, int);
+	int (*P_turnoff)(void);
 };
-
-
-extern int gturnon(), gturnoff();
-extern int grdmsg(), grddata();
-extern int gwrmsg(), gwrdata();
-extern int imsg();
-extern int omsg();
 
 struct Proto Ptbl[]={
 	'g', gturnon, grdmsg, gwrmsg, grddata, gwrdata, gturnoff,
 	'\0'
 };
 
-int (*Rdmsg)()=imsg, (*Rddata)();
-int (*Wrmsg)()=omsg, (*Wrdata)();
-int (*Turnon)(), (*Turnoff)();
+int (*Rdmsg)(char *, int)=imsg;
+int (*Rddata)(int, FILE *);
+int (*Wrmsg)(int, char *, int)=omsg;
+int (*Wrdata)(FILE *, int);
+int (*Turnon)(void), (*Turnoff)(void);
 
 
 #define YES "Y"
@@ -74,17 +69,14 @@ char Dfile[MAXFULLNAME];
  *		FAIL - failed
  */
 
-cntrl(role, wkpre)
-int role;
-char *wkpre;
+int
+cntrl (int role, char *wkpre)
 {
 	char msg[BUFSIZ], rqstr[BUFSIZ];
 	FILE *fp;
 	int filemode;
 	struct stat stbuf;
 	char filename[MAXFULLNAME], wrktype, *wrkvec[20];
-	extern (*Rdmsg)(), (*Wrmsg)();
-	extern char *index(), *lastpart();
 	int status = 1, i;
 	int ret;
 	static int pnum, tmpnum = 0;
@@ -429,8 +421,8 @@ process:
  *	return code:  0  |  FAIL
  */
 
-rmesg(c, msg)
-char *msg, c;
+int
+rmesg (int c, char *msg)
 {
 	char str[50];
 
@@ -459,8 +451,8 @@ char *msg, c;
  *	return codes: 0 - ok | FAIL - ng
  */
 
-wmesg(m, s)
-char *s, m;
+int
+wmesg (int m, char *s)
 {
 	DEBUG(4, "wmesg '%c'", m);
 	DEBUG(4, "%.25s\n", s);
@@ -475,8 +467,8 @@ char *s, m;
  *	return codes:  none
  */
 
-notify(options, user, file, sys, stword)
-char *options, *user, *file, *sys, *stword;
+int
+notify (char *options, char *user, char *file, char *sys, char *stword)
 {
 	char str[200];
 	if (index(options, 'm') == NULL)
@@ -500,19 +492,16 @@ char *options, *user, *file, *sys, *stword;
  *		FAIL - can't find common or open failed
  */
 
-startup(role)
-int role;
+int
+startup (int role)
 {
-	extern (*Rdmsg)(), (*Wrmsg)();
-	extern imsg(), omsg();
-	extern char *blptcl(), fptcl();
 	char msg[BUFSIZ], str[BUFSIZ];
 
 	Rdmsg = imsg;
 	Wrmsg = omsg;
 	if (role == MASTER) {
 		RMESG(SLTPTCL, msg);
-		if ((str[0] = fptcl(&msg[1])) == NULL) {
+		if ((str[0] = fptcl(&msg[1])) == '\0') {
 			/* no protocol match */
 			WMESG(USEPTCL, NO);
 			return(FAIL);
@@ -553,11 +542,9 @@ int role;
  */
 
 char
-fptcl(str)
-char *str;
+fptcl (char *str)
 {
 	struct Proto *p;
-	extern char *index();
 
 	for (p = Ptbl; p->P_id != '\0'; p++) {
 		if (index(str, p->P_id) != NULL) {
@@ -583,8 +570,7 @@ char *str;
  */
 
 char *
-blptcl(str)
-char *str;
+blptcl (char *str)
 {
 	struct Proto *p;
 	char *s;
@@ -607,8 +593,8 @@ char *str;
  *
  */
 
-stptcl(c)
-char *c;
+int
+stptcl (char *c)
 {
 	struct Proto *p;
 

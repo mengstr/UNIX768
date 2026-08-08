@@ -7,6 +7,37 @@
 #include "../h/proc.h"
 #include "../h/timeb.h"
 
+void gtime(void);
+void ftime(void);
+void stime(void);
+void setuid(void);
+void getuid(void);
+void setgid(void);
+void getgid(void);
+void getpid(void);
+void sync(void);
+void nice(void);
+void unlink(void);
+void chdir(void);
+void chroot(void);
+void chdirec(struct inode **ipp);
+void chmod(void);
+void chown(void);
+void ssig(void);
+void kill(void);
+void times(void);
+void profil(void);
+void alarm(void);
+void pause(void);
+void umask(void);
+void utime(void);
+i32 mm58167_set_time(time_t when);
+void iupdat(struct inode *ip, time_t *ta, time_t *tm);
+void prele(struct inode *ip);
+void update(void);
+void xrele(struct inode *ip);
+i32 suser(void);
+
 /*
  * Everything in this file is a routine implementing a system call.
  */
@@ -14,7 +45,8 @@
 /*
  * return the current time (old-style entry)
  */
-gtime()
+void
+gtime(void)
 {
 	u.u_r.r_time = time;
 }
@@ -23,13 +55,14 @@ gtime()
  * New time entry-- return TOD with milliseconds, timezone,
  * DST flag
  */
-ftime()
+void
+ftime(void)
 {
 	register struct a {
 		struct	timeb	*tp;
 	} *uap;
 	struct timeb t;
-	register unsigned ms;
+	register u32 ms;
 
 	uap = (struct a *)u.u_ap;
 	spl7();
@@ -50,22 +83,26 @@ ftime()
 /*
  * Set the time
  */
-stime()
+void
+stime(void)
 {
 	register struct a {
 		time_t	time;
 	} *uap;
 
 	uap = (struct a *)u.u_ap;
-	if(suser())
+	if(suser()) {
 		time = uap->time;
+		mm58167_set_time(time);
+	}
 }
 
-setuid()
+void
+setuid(void)
 {
-	register uid;
+	register i32 uid;
 	register struct a {
-		int	uid;
+		i32	uid;
 	} *uap;
 
 	uap = (struct a *)u.u_ap;
@@ -77,18 +114,20 @@ setuid()
 	}
 }
 
-getuid()
+void
+getuid(void)
 {
 
-	u.u_r.r_val1 = u.u_ruid;
-	u.u_r.r_val2 = u.u_uid;
+	u.u_r.r_reg.r_val1 = u.u_ruid;
+	u.u_r.r_reg.r_val2 = u.u_uid;
 }
 
-setgid()
+void
+setgid(void)
 {
-	register gid;
+	register i32 gid;
 	register struct a {
-		int	gid;
+		i32	gid;
 	} *uap;
 
 	uap = (struct a *)u.u_ap;
@@ -99,30 +138,34 @@ setgid()
 	}
 }
 
-getgid()
+void
+getgid(void)
 {
 
-	u.u_r.r_val1 = u.u_rgid;
-	u.u_r.r_val2 = u.u_gid;
+	u.u_r.r_reg.r_val1 = u.u_rgid;
+	u.u_r.r_reg.r_val2 = u.u_gid;
 }
 
-getpid()
+void
+getpid(void)
 {
-	u.u_r.r_val1 = u.u_procp->p_pid;
-	u.u_r.r_val2 = u.u_procp->p_ppid;
+	u.u_r.r_reg.r_val1 = u.u_procp->p_pid;
+	u.u_r.r_reg.r_val2 = u.u_procp->p_ppid;
 }
 
-sync()
+void
+sync(void)
 {
 
 	update();
 }
 
-nice()
+void
+nice(void)
 {
-	register n;
+	register i32 n;
 	register struct a {
-		int	niceness;
+		i32	niceness;
 	} *uap;
 
 	uap = (struct a *)u.u_ap;
@@ -142,13 +185,16 @@ nice()
  * Hard to avoid races here, especially
  * in unlinking directories.
  */
-unlink()
+void
+unlink(void)
 {
 	register struct inode *ip, *pp;
 	struct a {
 		char	*fname;
 	};
+	register struct a *uap;
 
+	uap = (struct a *)u.u_ap;
 	pp = namei(uchar, 2);
 	if(pp == NULL)
 		return;
@@ -191,19 +237,21 @@ out:
 out1:
 	iput(pp);
 }
-chdir()
+void
+chdir(void)
 {
 	chdirec(&u.u_cdir);
 }
 
-chroot()
+void
+chroot(void)
 {
 	if (suser())
 		chdirec(&u.u_rdir);
 }
 
-chdirec(ipp)
-register struct inode **ipp;
+void
+chdirec(register struct inode **ipp)
 {
 	register struct inode *ip;
 	struct a {
@@ -231,12 +279,13 @@ bad:
 	iput(ip);
 }
 
-chmod()
+void
+chmod(void)
 {
 	register struct inode *ip;
 	register struct a {
 		char	*fname;
-		int	fmode;
+		i32	fmode;
 	} *uap;
 
 	uap = (struct a *)u.u_ap;
@@ -252,13 +301,14 @@ chmod()
 	iput(ip);
 }
 
-chown()
+void
+chown(void)
 {
 	register struct inode *ip;
 	register struct a {
 		char	*fname;
-		int	uid;
-		int	gid;
+		i32	uid;
+		i32	gid;
 	} *uap;
 
 	uap = (struct a *)u.u_ap;
@@ -270,12 +320,14 @@ chown()
 	iput(ip);
 }
 
-ssig()
+void
+ssig(void)
 {
-	register a;
+	register i32 a;
 	struct a {
-		int	signo;
-		int	fun;
+		i32	signo;
+		caddr_t	fun;
+		caddr_t	tramp;
 	} *uap;
 
 	uap = (struct a *)u.u_ap;
@@ -284,20 +336,22 @@ ssig()
 		u.u_error = EINVAL;
 		return;
 	}
-	u.u_r.r_val1 = u.u_signal[a];
-	u.u_signal[a] = uap->fun;
+	u.u_r.r_reg.r_val1 = u.u_signal[a];
+	u.u_signal[a] = (i32)uap->fun;
+	u.u_sigtramp = (i32)uap->tramp;
 	u.u_procp->p_sig &= ~(1<<(a-1));
 }
 
-kill()
+void
+kill(void)
 {
 	register struct proc *p, *q;
-	register a;
+	register i32 a;
 	register struct a {
-		int	pid;
-		int	signo;
+		i32	pid;
+		i32	signo;
 	} *uap;
-	int f, priv;
+	i32 f, priv;
 
 	uap = (struct a *)u.u_ap;
 	f = 0;
@@ -324,7 +378,8 @@ kill()
 		u.u_error = ESRCH;
 }
 
-times()
+void
+times(void)
 {
 	register struct a {
 		time_t	(*times)[4];
@@ -335,13 +390,14 @@ times()
 		u.u_error = EFAULT;
 }
 
-profil()
+void
+profil(void)
 {
 	register struct a {
 		short	*bufbase;
-		unsigned bufsize;
-		unsigned pcoffset;
-		unsigned pcscale;
+		u32	bufsize;
+		u32	pcoffset;
+		u32	pcscale;
 	} *uap;
 
 	uap = (struct a *)u.u_ap;
@@ -354,26 +410,28 @@ profil()
 /*
  * alarm clock signal
  */
-alarm()
+void
+alarm(void)
 {
 	register struct proc *p;
-	register c;
+	register i32 c;
 	register struct a {
-		int	deltat;
+		i32	deltat;
 	} *uap;
 
 	uap = (struct a *)u.u_ap;
 	p = u.u_procp;
 	c = p->p_clktim;
 	p->p_clktim = uap->deltat;
-	u.u_r.r_val1 = c;
+	u.u_r.r_reg.r_val1 = c;
 }
 
 /*
  * indefinite wait.
  * no one should wakeup(&u)
  */
-pause()
+void
+pause(void)
 {
 
 	for(;;)
@@ -383,24 +441,26 @@ pause()
 /*
  * mode mask for creation of files
  */
-umask()
+void
+umask(void)
 {
 	register struct a {
-		int	mask;
+		i32	mask;
 	} *uap;
-	register t;
+	register i32 t;
 
 	uap = (struct a *)u.u_ap;
 	t = u.u_cmask;
 	u.u_cmask = uap->mask & 0777;
-	u.u_r.r_val1 = t;
+	u.u_r.r_reg.r_val1 = t;
 }
 
 /*
  * Set IUPD and IACC times on file.
  * Can't set ICHG.
  */
-utime()
+void
+utime(void)
 {
 	register struct a {
 		char	*fname;

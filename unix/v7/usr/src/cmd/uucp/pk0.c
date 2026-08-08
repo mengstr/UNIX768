@@ -4,6 +4,7 @@
 #include <sys/param.h>
 #include <sys/pk.h>
 #include <sys/buf.h>
+#include "pkuser.h"
 
 /*
  * packet driver
@@ -11,6 +12,9 @@
 
 char next[8]	={ 1,2,3,4,5,6,7,0};	/* packet sequence numbers */
 char mask[8]	={ 1,2,4,010,020,040,0100,0200 };
+i32 npbits;
+i32 pkactive;
+i32 pkdebug;
 
 struct pack *pklines[NPLINES];
 
@@ -19,8 +23,8 @@ struct pack *pklines[NPLINES];
 /*
  * receive control messages
  */
-pkcntl(c, pk)
-register struct pack *pk;
+int
+pkcntl (int c, register struct pack *pk)
 {
 register cntl, val;
 
@@ -102,8 +106,8 @@ out:
 
 
 
-pkaccept(pk)
-register struct pack *pk;
+int
+pkaccept (register struct pack *pk)
 {
 register x,seq;
 char m, cntl, *p, imask, **bp;
@@ -153,7 +157,8 @@ free:
 		}
 
 		pk->p_is[x] = ~(B_COPY+B_MARK);
-		sum = (unsigned)chksum(pk->p_ib[x], pk->p_rsize) ^ (unsigned)cntl;
+		sum = (unsigned)chksum(pk->p_ib[x], pk->p_rsize)
+		    ^ (unsigned)(unsigned char)cntl;
 		sum += pk->p_isum[x];
 		if (sum == CHECK) {
 			seq = (cntl>>3) & MOD8;
@@ -178,10 +183,10 @@ free:
 				if (cntl&B_SHORT) {
 					pk->p_is[seq] = B_MARK+B_SHORT;
 					p = pk->p_ib[seq];
-					cc = (unsigned)*p++;
+					cc = (unsigned)(unsigned char)*p++;
 					if (cc & 0200) {
 						cc &= 0177;
-						cc |= *p << 7;
+						cc |= (unsigned)(unsigned char)*p << 7;
 					}
 				}
 				pk->p_isum[seq] = pk->p_rsize - cc;
@@ -242,8 +247,7 @@ free:
 }
 
 
-pkread(S)
-SDEF;
+pkread(struct pack *ipk, char *ibuf, int icount)
 {
 register struct pack *pk;
 register x,s;
@@ -305,15 +309,13 @@ char *cp, **bp;
 
 
 
-pkwrite(S)
-SDEF;
+ pkwrite(struct pack *ipk, char *ibuf, int icount)
 {
 register struct pack *pk;
 register x;
 int partial;
 caddr_t cp;
 int cc, s, fc, count;
-int pktimeout();
 
 	pk = PADDR;
 	if (pk->p_state&DOWN || !pk->p_state&LIVE) {
@@ -362,8 +364,8 @@ int pktimeout();
 	return(count);
 }
 
-pksack(pk)
-register struct pack *pk;
+int
+pksack (register struct pack *pk)
 {
 register x, i;
 
@@ -385,8 +387,8 @@ register x, i;
 
 
 
-pkoutput(pk)
-register struct pack *pk;
+int
+pkoutput (register struct pack *pk)
 {
 register x,rx;
 int s;
@@ -504,8 +506,7 @@ out:
  *	letting output drain
  *	releasing space and turning off line discipline
  */
-pkclose(S)
-SDEF;
+pkclose(struct pack *ipk)
 {
 register struct pack *pk;
 register i,s,rbits;
@@ -588,17 +589,16 @@ char *p;
 
 
 
-pkreset(pk)
-register struct pack *pk;
+int
+pkreset (register struct pack *pk)
 {
 
 	pk->p_ps = pk->p_pr =  pk->p_rpr = 0;
 	pk->p_nxtps = 1;
 }
 
-chksum(s,n)
-register char *s;
-register n;
+int
+chksum (register char *s, register n)
 {
 	register short sum;
 	register unsigned t;
@@ -614,7 +614,7 @@ register n;
 		} else
 			sum <<= 1;
 		t = sum;
-		sum += (unsigned)*s++;
+		sum += (unsigned)(unsigned char)*s++;
 		x += sum^n;
 		if ((unsigned)sum <= t) {
 			sum ^= x;
@@ -624,8 +624,8 @@ register n;
 	return(sum);
 }
 
-pkline(pk)
-register struct pack *pk;
+int
+pkline (register struct pack *pk)
 {
 register i;
 	for(i=0;i<NPLINES;i++) {
@@ -635,16 +635,15 @@ register i;
 	return(-i);
 }
 
-pkzero(s,n)
-register char *s;
-register n;
+int
+pkzero (register char *s, register n)
 {
 	while (n--)
 		*s++ = 0;
 }
 
-pksize(n)
-register n;
+int
+pksize (register n)
 {
 register k;
 

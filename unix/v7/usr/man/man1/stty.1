@@ -114,6 +114,9 @@ set erase character to
 can be of the form 
 .I `^X'
 which is interpreted as a `control X'.
+The form
+.I `^?'
+denotes DEL.
 .br
 .ns
 .TP 
@@ -122,6 +125,15 @@ set kill character to
 .IR c .
 .I `^X'
 works here also.
+.br
+.ns
+.TP
+.BI intr  \ c\fR
+set interrupt character to
+.IR c .
+The control-character forms described for
+.B erase
+work here also.
 .br
 .ns
 .TP

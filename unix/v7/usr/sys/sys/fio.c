@@ -9,6 +9,13 @@
 #include "../h/reg.h"
 #include "../h/acct.h"
 
+#pragma dontwarn 213
+
+void closef(struct file *fp);
+i32 suser(void);
+void openi(struct inode *ip, i32 rw);
+void xrele(struct inode *ip);
+
 /*
  * Convert a user supplied
  * file descriptor into a pointer
@@ -17,15 +24,15 @@
  * of the descriptor.
  */
 struct file *
-getf(f)
-register int f;
+getf(register i32 f)
 {
 	register struct file *fp;
 
 	if(0 <= f && f < NOFILE) {
 		fp = u.u_ofile[f];
-		if(fp != NULL)
+		if(fp != NULL) {
 			return(fp);
+		}
 	}
 	u.u_error = EBADF;
 	return(NULL);
@@ -42,14 +49,11 @@ register int f;
  * removal to the referencing file structure.
  * Call device handler on last close.
  */
-closef(fp)
-register struct file *fp;
+void closef(register struct file *fp)
 {
 	register struct inode *ip;
-	int flag, mode;
+	i32 flag, mode;
 	dev_t dev;
-	register int (*cfunc)();
-	struct chan *cp;
 
 	if(fp == NULL)
 		return;
@@ -59,8 +63,7 @@ register struct file *fp;
 	}
 	ip = fp->f_inode;
 	flag = fp->f_flag;
-	cp = fp->f_un.f_chan;
-	dev = (dev_t)ip->i_un.i_rdev;
+	dev = (dev_t)ip->i_un.i_special.i_rdev;
 	mode = ip->i_mode;
 
 	plock(ip);
@@ -72,26 +75,22 @@ register struct file *fp;
 	}
 	iput(ip);
 
-	switch(mode&IFMT) {
-
-	case IFCHR:
-	case IFMPC:
-		cfunc = cdevsw[major(dev)].d_close;
-		break;
-
-	case IFBLK:
-	case IFMPB:
-		cfunc = bdevsw[major(dev)].d_close;
-		break;
-	default:
-		return;
-	}
-
 	if ((flag & FMP) == 0)
 		for(fp=file; fp < &file[NFILE]; fp++)
 			if (fp->f_count && fp->f_inode==ip)
 				return;
-	(*cfunc)(dev, flag, cp);
+	switch(mode&IFMT) {
+
+	case IFCHR:
+	case IFMPC:
+		(*cdevsw[major(dev)].d_close)(dev, flag);
+		break;
+
+	case IFBLK:
+	case IFMPB:
+		(*bdevsw[major(dev)].d_close)(dev, flag);
+		break;
+	}
 }
 
 /*
@@ -99,13 +98,12 @@ register struct file *fp;
  * of special files to initialize and
  * validate before actual IO.
  */
-openi(ip, rw)
-register struct inode *ip;
+void openi(register struct inode *ip, i32 rw)
 {
 	dev_t dev;
-	register unsigned int maj;
+	register u32 maj;
 
-	dev = (dev_t)ip->i_un.i_rdev;
+	dev = (dev_t)ip->i_un.i_special.i_rdev;
 	maj = major(dev);
 	switch(ip->i_mode&IFMT) {
 
@@ -141,10 +139,12 @@ bad:
  * The super user is granted all
  * permissions.
  */
+i32
 access(ip, mode)
 register struct inode *ip;
+i32 mode;
 {
-	register m;
+	register i32 m;
 
 	m = mode;
 	if(m == IWRITE) {
@@ -201,7 +201,8 @@ owner()
  * Test if the current user is the
  * super user.
  */
-suser()
+i32
+suser(void)
 {
 
 	if(u.u_uid == 0) {
@@ -215,13 +216,14 @@ suser()
 /*
  * Allocate a user file descriptor.
  */
-ufalloc()
+i32
+ufalloc(void)
 {
-	register i;
+	register i32 i;
 
 	for(i=0; i<NOFILE; i++)
 		if(u.u_ofile[i] == NULL) {
-			u.u_r.r_val1 = i;
+			u.u_r.r_reg.r_val1 = i;
 			u.u_pofile[i] = 0;
 			return(i);
 		}

@@ -1,7 +1,8 @@
 # include "e.h"
 #include "e.def"
 
-bshiftb(p1, dir, p2) int p1, dir, p2; {
+void
+bshiftb(int p1, int dir, int p2) {
 	int shval, diffps, effps, effps2, d1, h1, b1, h2, b2;
 	char *sh1, *sh2;
 
@@ -40,9 +41,9 @@ bshiftb(p1, dir, p2) int p1, dir, p2; {
 			sh2 = "\\|";
 	}
 	if(dbg)printf(".\tb:b shift b: S%d <- S%d vert %d S%d vert %d; b=%d, h=%d\n", 
-		yyval, p1, shval, p2, -shval, ebase[yyval], eht[yyval]);
+		YV, p1, shval, p2, -shval, ebase[yyval], eht[yyval]);
 	printf(".as %d \\v'%du'\\s-%d%s\\*(%d\\s+%d%s\\v'%du'\n", 
-		yyval, shval, diffps, sh1, p2, diffps, sh2, -shval);
+		YV, shval, diffps, sh1, p2, diffps, sh2, -shval);
 	ps += deltaps;
 	if (rfont[p2] == ITAL)
 		rfont[p1] = 0;
@@ -51,18 +52,20 @@ bshiftb(p1, dir, p2) int p1, dir, p2; {
 	ofree(p2);
 }
 
-shift(p1) int p1; {
+void
+shift(int p1) {
 	ps -= deltaps;
 	yyval = p1;
-	if(dbg)printf(".\tshift: %d;ps=%d\n", yyval, ps);
+	if(dbg)printf(".\tshift: %d;ps=%d\n", YV, ps);
 }
 
-shift2(p1, p2, p3) int p1, p2, p3; {
+void
+shift2(int p1, int p2, int p3) {
 	int effps, effps2, h1, h2, h3, b1, b2, b3, subsh, d1, d2, supsh;
 	int treg;
 	treg = oalloc();
 	yyval = p1;
-	if(dbg)printf(".\tshift2 s%d <- %d %d %d\n", yyval, p1, p2, p3);
+	if(dbg)printf(".\tshift2 s%d <- %d %d %d\n", YV, p1, p2, p3);
 	effps = EFFPS(ps+deltaps);
 	eht[p3] = h3 = VERT( (eht[p3] * effps) / EFFPS(ps) );
 	ps += deltaps;

@@ -4,20 +4,22 @@
  */
 
 #include <stdio.h>
-#include <a.out.h>
 #include <core.h>
 #include <sys/param.h>
 #include <sys/proc.h>
 #include <sys/tty.h>
 #include <sys/dir.h>
 #include <sys/user.h>
+#include <sys/stat.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
-struct nlist nl[] = {
-	{ "_proc" },
-	{ "_swapdev" },
-	{ "_swplo" },
-	{ "" },
-};
+#define KSYMS "/etc/ksyms"
+#define KMEM "/dev/kmem"
+#define MEM "/dev/mem"
+#define EPOCH68_USER_PAGE_SIZE 0x40000L
+#define EPOCH68_EXECARGS 0x3fff8L
 
 struct	proc mproc;
 
@@ -29,15 +31,16 @@ int	vflg;
 int	kflg;
 int	xflg;
 char	*tptr;
-long	lseek();
-char	*gettty();
-char	*getptr();
-char	*strncmp();
+char	*gettty(void);
+char	*getptr(char **adr);
+static int getbyte(char *adr);
+static int getdev(void);
+static int prcom(int puid);
 int	aflg;
+int	kmem;
 int	mem;
-int	swmem;
-int	swap;
-daddr_t	swplo;
+long	procaddr;
+long	uareaaddr;
 
 int	ndev;
 struct devl {
@@ -45,10 +48,11 @@ struct devl {
 	dev_t	dev;
 } devl[256];
 
-char	*coref;
+static int ksym(char *file, char *name, long *valuep);
+static int kread(long addr, char *buf, int len);
 
-main(argc, argv)
-char **argv;
+int
+main(int argc, char **argv)
 {
 	int i;
 	char *ap;
@@ -101,40 +105,32 @@ bbreak:
 		fprintf(stderr, "Can't change to /dev\n");
 		exit(1);
 	}
-	nlist(argc>2? argv[2]:"/unix", nl);
-	if (nl[0].n_type==0) {
+	if (kflg) {
+		fprintf(stderr, "ps: crash dumps are not supported on Epoch68\n");
+		exit(1);
+	}
+	if (ksym(argc>2? argv[2]:KSYMS, "_proc", &procaddr) < 0 ||
+	    ksym(argc>2? argv[2]:KSYMS, "_uarea", &uareaaddr) < 0) {
 		fprintf(stderr, "No namelist\n");
 		exit(1);
 	}
-	coref = "/dev/mem";
-	if(kflg)
-		coref = "/usr/sys/core";
-	if ((mem = open(coref, 0)) < 0) {
+	if ((kmem = open(KMEM, 0)) < 0) {
+		fprintf(stderr, "No kmem\n");
+		exit(1);
+	}
+	if ((mem = open(MEM, 0)) < 0) {
 		fprintf(stderr, "No mem\n");
 		exit(1);
 	}
-	swmem = open(coref, 0);
-	/*
-	 * read mem to find swap dev.
-	 */
-	lseek(mem, (long)nl[1].n_value, 0);
-	read(mem, (char *)&nl[1].n_value, sizeof(nl[1].n_value));
-	/*
-	 * Find base of swap
-	 */
-	lseek(mem, (long)nl[2].n_value, 0);
-	read(mem, (char *)&swplo, sizeof(swplo));
-	/*
-	 * Locate proc table
-	 */
-	lseek(mem, (long)nl[0].n_value, 0);
 	getdev();
 	uid = getuid();
 	if (lflg)
-	printf(" F S UID   PID  PPID CPU PRI NICE  ADDR  SZ  WCHAN TTY TIME CMD\n"); else
+	printf(" F S UID   PID  PPID CPU PRI NICE  ADDR  SZ    WCHAN TTY TIME CMD\n"); else
 		if (chkpid==0) printf("   PID TTY TIME CMD\n");
 	for (i=0; i<NPROC; i++) {
-		read(mem, (char *)&mproc, sizeof mproc);
+		if (kread(procaddr + (long)i*sizeof(mproc),
+		    (char *)&mproc, sizeof(mproc)) < 0)
+			continue;
 		if (mproc.p_stat==0)
 			continue;
 		if (mproc.p_pgrp==0 && xflg==0 && mproc.p_uid==0)
@@ -142,6 +138,9 @@ bbreak:
 		puid = mproc.p_uid;
 		if ((uid != puid && aflg==0) ||
 		    (chkpid!=0 && chkpid!=mproc.p_pid))
+			continue;
+		if (kread(uareaaddr + (long)i*sizeof(u),
+		    (char *)&u, sizeof(u)) < 0)
 			continue;
 		if(prcom(puid)) {
 			printf("\n");
@@ -151,9 +150,9 @@ bbreak:
 	exit(retcode);
 }
 
-getdev()
+static int
+getdev(void)
 {
-#include <sys/stat.h>
 	register FILE *df;
 	struct stat sbuf;
 	struct direct dbuf;
@@ -175,63 +174,22 @@ getdev()
 		ndev++;
 	}
 	fclose(df);
-	if ((swap = open("/dev/swap", 0)) < 0) {
-		fprintf(stderr, "Can't open /dev/swap\n");
-		exit(1);
-	}
+	return(0);
 }
-
-long
-round(a, b)
-	long		a, b;
-{
-	long		w = ((a+b-1)/b)*b;
-
-	return(w);
-}
-
-struct map {
-	long	b1, e1; long f1;
-	long	b2, e2; long f2;
-};
-struct map datmap;
-int	file;
-prcom(puid)
+static int
+prcom(int puid)
 {
 	char abuf[512];
 	long addr;
-	register int *ip;
+	register i32 *ip;
 	register char *cp, *cp1;
 	long tm;
 	int c, nbad;
 	register char *tp;
-	long txtsiz, datsiz, stksiz;
-	int septxt;
 	int lw=(lflg?35:80);
 	char **ap;
 
-	if (mproc.p_flag&SLOAD) {
-		addr = ctob((long)mproc.p_addr);
-		file = swmem;
-	} else {
-		addr = (mproc.p_addr+swplo)<<9;
-		file = swap;
-	}
-	lseek(file, addr, 0);
-	if (read(file, (char *)&u, sizeof(u)) != sizeof(u))
-		return(0);
-
-	/* set up address maps for user pcs */
-	txtsiz = ctob(u.u_tsize);
-	datsiz = ctob(u.u_dsize);
-	stksiz = ctob(u.u_ssize);
-	septxt = u.u_sep;
-	datmap.b1 = (septxt ? 0 : round(txtsiz,TXTRNDSIZ));
-	datmap.e1 = datmap.b1+datsiz;
-	datmap.f1 = ctob(USIZE)+addr;
-	datmap.b2 = stackbas(stksiz);
-	datmap.e2 = stacktop(stksiz);
-	datmap.f2 = ctob(USIZE)+(datmap.e1-datmap.b1)+addr;
+	addr = (long)mproc.p_addr * EPOCH68_USER_PAGE_SIZE;
 
 	tp = gettty();
 	if (tptr && strncmp(tptr, tp, 2))
@@ -242,14 +200,14 @@ prcom(puid)
 	}
 	printf("%6u", mproc.p_pid);
 	if (lflg) {
-		printf("%6u%4d%4d%5d%6o%4d", mproc.p_ppid, mproc.p_cpu&0377,
+		printf("%6u%4d%4d%5d%6o%4d ", mproc.p_ppid, mproc.p_cpu&0377,
 			mproc.p_pri,
 			mproc.p_nice,
 			mproc.p_addr, (mproc.p_size+7)>>3);
 		if (mproc.p_wchan)
-			printf("%7o", mproc.p_wchan);
+			printf("%8lo", (long)mproc.p_wchan);
 		else
-			printf("       ");
+			printf("        ");
 	}
 	printf(" %-2.2s", tp);
 	if (mproc.p_stat==SZOMB) {
@@ -274,13 +232,11 @@ prcom(puid)
 		printf(" swapper");
 		return(1);
 	}
-	addr += ctob((long)mproc.p_size) - 512;
-
 	/* look for sh special */
-	lseek(file, addr+512-sizeof(char **), 0);
-	if (read(file, (char *)&ap, sizeof(char *)) != sizeof(char *))
+	lseek(mem, addr+EPOCH68_EXECARGS, 0);
+	if (read(mem, (char *)&ap, sizeof(ap)) != sizeof(ap))
 		return(1);
-	if (ap) {
+	if (ap && (unsigned long)ap < EPOCH68_USER_PAGE_SIZE) {
 		char b[82];
 		char *bp = b;
 		while((cp=getptr(ap++)) && cp && (bp<b+lw) ) {
@@ -295,15 +251,17 @@ prcom(puid)
 			}
 			*bp++ = ' ';
 		}
-		*bp++ = 0;
-		printf(lflg?" %.30s":" %.60s", b);
-		return(1);
+		*bp = 0;
+		if (bp > b) {
+			printf(lflg?" %.30s":" %.60s", b);
+			return(1);
+		}
 	}
 
-	lseek(file, addr, 0);
-	if (read(file, abuf, sizeof(abuf)) != sizeof(abuf))
+	lseek(mem, addr+EPOCH68_USER_PAGE_SIZE-sizeof(abuf), 0);
+	if (read(mem, abuf, sizeof(abuf)) != sizeof(abuf))
 		return(1);
-	for (ip = (int *)&abuf[512]-2; ip > (int *)abuf; ) {
+	for (ip = (i32 *)&abuf[512]-2; ip > (i32 *)abuf; ) {
 		if (*--ip == -1 || *ip==0) {
 			cp = (char *)(ip+1);
 			if (*cp==0)
@@ -311,8 +269,13 @@ prcom(puid)
 			nbad = 0;
 			for (cp1 = cp; cp1 < &abuf[512]; cp1++) {
 				c = *cp1&0177;
-				if (c==0)
+				if (c==0) {
+					if (cp1+1 == &abuf[512] || cp1[1]==0) {
+						*cp1 = 0;
+						break;
+					}
 					*cp1 = ' ';
+				}
 				else if (c < ' ' || c > 0176) {
 					if (++nbad >= 5) {
 						*cp1++ = ' ';
@@ -326,17 +289,21 @@ prcom(puid)
 					break;
 				}
 			}
-			while (*--cp1==' ')
-				*cp1 = 0;
-			printf(lflg?" %.30s":" %.60s", cp);
-			return(1);
+			while (cp1 > cp && cp1[-1]==' ')
+				*--cp1 = 0;
+			if (cp1 > cp) {
+				printf(lflg?" %.30s":" %.60s", cp);
+				return(1);
+			}
 		}
 	}
+	if (u.u_comm[0])
+		printf(" %.14s", u.u_comm);
 	return(1);
 }
 
 char *
-gettty()
+gettty(void)
 {
 	register i;
 	register char *p;
@@ -355,8 +322,7 @@ gettty()
 }
 
 char *
-getptr(adr)
-char **adr;
+getptr(char **adr)
 {
 	char *ptr;
 	register char *p, *pa;
@@ -370,31 +336,80 @@ char **adr;
 	return(ptr);
 }
 
-getbyte(adr)
-char *adr;
+static int
+getbyte(char *adr)
 {
-	register struct map *amap = &datmap;
 	char b;
 	long saddr;
+	u32 vaddr;
 
-	if(!within(adr, amap->b1, amap->e1)) {
-		if(within(adr, amap->b2, amap->e2)) {
-			saddr = (unsigned)adr + amap->f2 - amap->b2;
-		} else
-			return(0);
-	} else
-		saddr = (unsigned)adr + amap->f1 - amap->b1;
-	if(lseek(file, saddr, 0)==-1
-		   || read(file, &b, 1)<1) {
+	vaddr = (u32)adr;
+	if (vaddr >= EPOCH68_USER_PAGE_SIZE)
+		return(0);
+	saddr = (long)mproc.p_addr * EPOCH68_USER_PAGE_SIZE + vaddr;
+	if(lseek(mem, saddr, 0)==-1
+		   || read(mem, &b, 1)<1) {
 		return(0);
 	}
 	return((unsigned)b);
 }
 
-
-within(adr,lbd,ubd)
-char *adr;
-long lbd, ubd;
+static int
+ksym(char *file, char *name, long *valuep)
 {
-	return((unsigned)adr>=lbd && (unsigned)adr<ubd);
+	FILE *fp;
+	char line[96], sym[64];
+	register char *cp, *sp;
+	long value;
+
+	if ((fp = fopen(file, "r")) == NULL)
+		return(-1);
+	while (fgets(line, sizeof(line), fp) != NULL) {
+		cp = line;
+		while (*cp == ' ' || *cp == '\t')
+			cp++;
+		sp = sym;
+		while (*cp && *cp != ' ' && *cp != '\t' && *cp != ':' &&
+		    sp < &sym[sizeof(sym)-1])
+			*sp++ = *cp++;
+		*sp = 0;
+		while (*cp && *cp != '\n' &&
+		    !((*cp >= '0' && *cp <= '9') ||
+		    (cp[0] == '0' && cp[1] == 'x')))
+			cp++;
+		while (*cp == ' ' || *cp == '\t')
+			cp++;
+		value = 0;
+		if (cp[0] == '0' && cp[1] == 'x')
+			cp += 2;
+		while ((*cp >= '0' && *cp <= '9') ||
+		    (*cp >= 'a' && *cp <= 'f') ||
+		    (*cp >= 'A' && *cp <= 'F')) {
+			value <<= 4;
+			if (*cp >= '0' && *cp <= '9')
+				value += *cp - '0';
+			else if (*cp >= 'a' && *cp <= 'f')
+				value += *cp - 'a' + 10;
+			else
+				value += *cp - 'A' + 10;
+			cp++;
+		}
+		if (strcmp(sym, name) == 0) {
+			fclose(fp);
+			*valuep = value;
+			return(0);
+		}
+	}
+	fclose(fp);
+	return(-1);
+}
+
+static int
+kread(long addr, char *buf, int len)
+{
+	if (lseek(kmem, addr, 0) < 0)
+		return(-1);
+	if (read(kmem, buf, len) != len)
+		return(-1);
+	return(0);
 }

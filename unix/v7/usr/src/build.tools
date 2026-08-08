@@ -1,0 +1,50 @@
+set -e
+
+cd cmd/yacc
+sh build
+cd ../..
+
+YACC=${YACC-/usr/src/cmd/yacc/yacc.local}
+export YACC
+
+cd cmd/make
+sh build
+cd ../m4
+sh build
+cd ../..
+
+cd ar
+sh build
+cd ..
+
+cd cmd/lex
+sh build
+cd ../..
+
+LEX=${LEX-/usr/src/cmd/lex/lex.local}
+export LEX
+
+cd cmd/awk
+sh build
+cd ../dc
+sh build
+cd ..
+
+for prog in size nm strip cb
+do
+	echo CC $prog.c
+	cc -O2 -s -o $prog $prog.c
+done
+
+echo YACC expr.y
+$YACC expr.y
+mv y.tab.c expr.c
+echo CC expr.c
+cc -w -DYYSTYPE=long -s -o expr expr.c
+
+echo YACC bc.y
+$YACC bc.y
+mv y.tab.c bc.c
+echo CC bc.c
+cc -DYYSTYPE=bc_value -s -o bc bc.c
+exit 0

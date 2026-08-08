@@ -20,8 +20,8 @@
  *		FAIL  -  bad directory
  */
 
-gnsys(sname, dir, pre)
-char *sname, *dir, pre;
+int
+gnsys (char *sname, char *dir, int pre)
 {
 	char *s, *p1, *p2;
 	char px[3];
@@ -89,13 +89,11 @@ char *sname, *dir, pre;
  *		n - the number of items in the list
  */
 
-srchst(name, list, n)
-char *name, **list;
-int n;
+int
+srchst (char *name, char **list, int n)
 {
 	int i;
 	char *p;
-	extern char *calloc();
 
 	for (i = 0; i < n; i++)
 		if (strcmp(name, list[i]) == 0)

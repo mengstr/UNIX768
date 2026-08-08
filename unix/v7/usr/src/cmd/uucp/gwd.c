@@ -6,11 +6,10 @@
  *	return codes  0 | FAIL
  */
 
-gwd(wkdir)
-char *wkdir;
+int
+gwd (char *wkdir)
 {
 	FILE *fp;
-	extern FILE *popen(), *pclose();
 	char *c;
 
 	if ((fp = popen("pwd", "r")) == NULL)

@@ -1,6 +1,9 @@
 %{
+#include <stdio.h>
 extern long	evalval;
+extern char	*pe;
 #define	YYSTYPE	long
+int peek(int c, int r1, int r2);
 %}
 
 %term DIGITS
@@ -33,7 +36,7 @@ e	: e '|' e	={ $$ = ($1!=0 || $3!=0) ? 1 : 0; }
 	| e '/' e	={ $$ = ($1/$3); }
 	| e '%' e	={ $$ = ($1%$3); }
 	| '(' e ')'	={ $$ = ($2); }
-	| e POWER e	={ for ($$=1; $3-->0; $$ *= $1); }	
+	| e POWER e	={ for ($$=1; $3-->0; $$ *= $1); }
 	| '-' e %prec UMINUS	={ $$ = $2-1; $$ = -$2; }
 	| '+' e %prec UMINUS	={ $$ = $2-1; $$ = $2; }
 	| DIGITS	={ $$ = evalval; }
@@ -41,9 +44,8 @@ e	: e '|' e	={ $$ = ($1!=0 || $3!=0) ? 1 : 0; }
 
 %%
 
-yylex() {
-	extern char *pe;
-
+int
+yylex (void) {
 	while (*pe==' ' || *pe=='\t' || *pe=='\n')
 		pe++;
 	switch(*pe) {
@@ -80,7 +82,8 @@ yylex() {
 	}
 }
 
-peek(c, r1, r2)
+int
+peek (int c, int r1, int r2)
 {
 	if (*++pe != c)
 		return(r2);
@@ -88,7 +91,7 @@ peek(c, r1, r2)
 	return(r1);
 }
 
-yyerror(s)
-char *s;
+int
+yyerror (char *s)
 {
 }

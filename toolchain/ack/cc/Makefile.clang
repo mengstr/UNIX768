@@ -1,0 +1,27 @@
+HOST_SHELL ?= /bin/sh
+ROOT := .
+ifeq ($(notdir $(CURDIR)),cc)
+ROOT := ../../..
+endif
+
+BUILD_DIR = $(ROOT)/build/toolchain/ack/clang
+WRAPPER = $(ROOT)/toolchain/ack/cc/cc
+STAGED_WRAPPER = $(BUILD_DIR)/cc
+
+.PHONY: all check clean
+
+all: $(STAGED_WRAPPER)
+
+check:
+	$(HOST_SHELL) -n $(WRAPPER)
+	@printf '%s\n' "wrapper uses short host binary names in $(BUILD_DIR)"
+
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
+
+$(STAGED_WRAPPER): $(WRAPPER) | $(BUILD_DIR)
+	cp $(WRAPPER) $(STAGED_WRAPPER)
+	chmod 755 $(STAGED_WRAPPER)
+
+clean:
+	rm -f $(STAGED_WRAPPER)

@@ -1,12 +1,9 @@
 #include <stdio.h>
+#include <signal.h>
+#include <stdlib.h>
 
 #define	NDIM	10
 #define	NTAB	601
-char	*dfile	= "/usr/lib/units";
-char	*unames[NDIM];
-double	getflt();
-int	fperr();
-struct	table	*hash();
 struct unit
 {
 	double	factor;
@@ -18,41 +15,58 @@ struct table
 	double	factor;
 	char	dim[NDIM];
 	char	*name;
-} table[NTAB];
-char	names[NTAB*10];
+};
+
 struct prefix
 {
 	double	factor;
 	char	*pname;
-} prefix[] = 
-{
-	1e-18,	"atto",
-	1e-15,	"femto",
-	1e-12,	"pico",
-	1e-9,	"nano",
-	1e-6,	"micro",
-	1e-3,	"milli",
-	1e-2,	"centi",
-	1e-1,	"deci",
-	1e1,	"deka",
-	1e2,	"hecta",
-	1e2,	"hecto",
-	1e3,	"kilo",
-	1e6,	"mega",
-	1e6,	"meg",
-	1e9,	"giga",
-	1e12,	"tera",
-	0.0,	0
 };
-FILE	*inp;
-int	fperrc;
-int	peekc;
-int	dumpflg;
 
-main(argc, argv)
-char *argv[];
+static char	*dfile	= "/usr/lib/units";
+static char	*unames[NDIM];
+static struct table table[NTAB];
+static char	names[NTAB*10];
+static struct prefix prefix[] =
 {
-	register i;
+	{ 1e-18,	"atto" },
+	{ 1e-15,	"femto" },
+	{ 1e-12,	"pico" },
+	{ 1e-9,		"nano" },
+	{ 1e-6,		"micro" },
+	{ 1e-3,		"milli" },
+	{ 1e-2,		"centi" },
+	{ 1e-1,		"deci" },
+	{ 1e1,		"deka" },
+	{ 1e2,		"hecta" },
+	{ 1e2,		"hecto" },
+	{ 1e3,		"kilo" },
+	{ 1e6,		"mega" },
+	{ 1e6,		"meg" },
+	{ 1e9,		"giga" },
+	{ 1e12,		"tera" },
+	{ 0.0,		0 }
+};
+static FILE	*inp;
+static int	fperrc;
+static int	peekc;
+static int	dumpflg;
+
+static void units(struct unit *up);
+static int pu(int u, int i, int f);
+static int convr(struct unit *up);
+static int lookup(char *name, struct unit *up, int den, int c);
+static int equal(char *s1, char *s2);
+static void init(void);
+static double getflt(void);
+static int get(void);
+static struct table *hash(char *name);
+static void fperr(i16 sig);
+
+int
+main(int argc, char **argv)
+{
+	register int i;
 	register char *file;
 	struct unit u1, u2;
 	double f;
@@ -69,7 +83,7 @@ char *argv[];
 		printf("no table\n");
 		exit(1);
 	}
-	signal(8, fperr);
+	signal(SIGFPE, fperr);
 	init();
 
 loop:
@@ -106,11 +120,11 @@ fp:
 	goto loop;
 }
 
-units(up)
-struct unit *up;
+static void
+units(struct unit *up)
 {
 	register struct unit *p;
-	register f, i;
+	register int f, i;
 
 	p = up;
 	printf("\t%e ", p->factor);
@@ -126,7 +140,8 @@ struct unit *up;
 	putchar('\n');
 }
 
-pu(u, i, f)
+static int
+pu(int u, int i, int f)
 {
 
 	if(u > 0) {
@@ -137,18 +152,18 @@ pu(u, i, f)
 			printf("*%c*", i+'a');
 		if(u > 1)
 			putchar(u+'0');
-			return(2);
+		return(2);
 	}
 	if(u < 0)
 		return(1);
 	return(0);
 }
 
-convr(up)
-struct unit *up;
+static int
+convr(struct unit *up)
 {
 	register struct unit *p;
-	register c;
+	register int c;
 	register char *cp;
 	char name[20];
 	int den, err;
@@ -195,13 +210,12 @@ loop:
 	goto loop;
 }
 
-lookup(name, up, den, c)
-char *name;
-struct unit *up;
+static int
+lookup(char *name, struct unit *up, int den, int c)
 {
 	register struct unit *p;
 	register struct table *q;
-	register i;
+	register int i;
 	char *cp1, *cp2;
 	double e;
 
@@ -227,7 +241,7 @@ loop:
 		}
 		return(0);
 	}
-	for(i=0; cp1 = prefix[i].pname; i++) {
+	for(i=0; (cp1 = prefix[i].pname) != 0; i++) {
 		cp2 = name;
 		while(*cp1 == *cp2++)
 			if(*cp1++ == 0) {
@@ -249,8 +263,8 @@ loop:
 	return(1);
 }
 
-equal(s1, s2)
-char *s1, *s2;
+static int
+equal(char *s1, char *s2)
 {
 	register char *c1, *c2;
 
@@ -262,7 +276,8 @@ char *s1, *s2;
 	return(0);
 }
 
-init()
+static void
+init(void)
 {
 	register char *cp;
 	register struct table *tp, *lp;
@@ -288,13 +303,13 @@ init()
 l0:
 	c = get();
 	if(c == 0) {
-		printf("%l units; %l bytes\n\n", i, cp-names);
+		printf("%d units; %ld bytes\n\n", i, (long)(cp-names));
 		if(dumpflg)
 		for(tp = &table[0]; tp < &table[NTAB]; tp++) {
 			if(tp->name == 0)
 				continue;
 			printf("%s", tp->name);
-			units(tp);
+			units((struct unit *)tp);
 		}
 		fclose(inp);
 		inp = stdin;
@@ -330,7 +345,7 @@ l0:
 	lp = hash(np);
 	if(lp->name)
 		goto redef;
-	convr(lp);
+	convr((struct unit *)lp);
 	lp->name = np;
 	f = 0;
 	i++;
@@ -355,10 +370,10 @@ redef:
 	goto l0;
 }
 
-double
-getflt()
+static double
+getflt(void)
 {
-	register c, i, dp;
+	register int c, i, dp;
 	double d, e;
 	int f;
 
@@ -412,11 +427,12 @@ l1:
 	return(d);
 }
 
-get()
+static int
+get(void)
 {
-	register c;
+	register int c;
 
-	if(c=peekc) {
+	if((c=peekc) != 0) {
 		peekc = 0;
 		return(c);
 	}
@@ -431,9 +447,8 @@ get()
 	return(c);
 }
 
-struct table *
-hash(name)
-char *name;
+static struct table *
+hash(char *name)
 {
 	register struct table *tp;
 	register char *np;
@@ -456,9 +471,10 @@ l0:
 	goto l0;
 }
 
-fperr()
+static void
+fperr(i16 sig)
 {
-
-	signal(8, fperr);
+	(void)sig;
+	signal(SIGFPE, fperr);
 	fperrc++;
 }

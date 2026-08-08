@@ -2,8 +2,10 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <signal.h>
+#include <stdlib.h>
 #include <time.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #define	LISTS	512
 
@@ -15,26 +17,29 @@
 char	crontab[]	= "/usr/lib/crontab";
 time_t	itime;
 struct	tm *loct;
-struct	tm *localtime();
-char	*malloc();
-char	*realloc();
+struct	tm *localtime(time_t *);
 int	flag;
 char	*list;
 unsigned listsize;
 
-main()
+static char *cmp(char *p, int v);
+static void ex(char *s);
+static void init(void);
+static int number(int c);
+static void slp(void);
+
+int
+main(void)
 {
 	register char *cp;
-	char *cmp();
 	time_t filetime = 0;
 
 	setuid(1);
-	if (fork())
+	if (fork()) {
 		exit(0);
+	}
 	chdir("/");
 	freopen(crontab, "r", stdin);
-	freopen("/", "r", stdout);
-	freopen("/", "r", stderr);
 	signal(SIGHUP, SIG_IGN);
 	signal(SIGINT, SIG_IGN);
 	signal(SIGQUIT, SIG_IGN);
@@ -70,9 +75,8 @@ main()
 	}
 }
 
-char *
-cmp(p, v)
-char *p;
+static char *
+cmp(char *p, int v)
 {
 	register char *cp;
 
@@ -107,7 +111,8 @@ char *p;
 	return(cp);
 }
 
-slp()
+static void
+slp(void)
 {
 	register i;
 	time_t t;
@@ -118,10 +123,10 @@ slp()
 		sleep(i);
 }
 
-ex(s)
-char *s;
+static void
+ex(char *s)
 {
-	int st;
+	i16 st;
 
 	if(fork()) {
 		wait(&st);
@@ -130,11 +135,13 @@ char *s;
 	if(fork())
 		exit(0);
 	freopen("/", "r", stdin);
-	execl("/bin/sh", "sh", "-c", s, 0);
+	execl("/bin/sh", "sh", "-c", s, (char *)0);
+	execl("/usr/bin/sh", "sh", "-c", s, (char *)0);
 	exit(0);
 }
 
-init()
+static void
+init(void)
 {
 	register i, c;
 	register char *cp;
@@ -142,6 +149,8 @@ init()
 	register int n;
 
 	freopen(crontab, "r", stdin);
+	if (stdin == NULL)
+		return;
 	if (list) {
 		free(list);
 		list = realloc(list, LISTS);
@@ -236,8 +245,8 @@ ignore:
 	goto loop;
 }
 
-number(c)
-register c;
+static int
+number(int c)
 {
 	register n = 0;
 

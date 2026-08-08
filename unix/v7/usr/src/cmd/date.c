@@ -1,17 +1,20 @@
 /*
  * date : print date
- * date YYMMDDHHMM[.SS] : set date, if allowed
+ * date YYYYMMDDHHMM : set date, if allowed
+ * date YYMMDDHHMM[.SS] : legacy set-date form
  * date -u ... : date in GMT
  */
+#include <stdio.h>
 #include <time.h>
 #include <sys/types.h>
 #include <sys/timeb.h>
 #include <utmp.h>
+#include <unistd.h>
 long	timbuf;
 char	*ap, *ep, *sp;
 int	uflag;
 
-char	*timezone();
+char	*timezone(i32 zone, i32 dst);
 static	int	dmsize[12] =
 {
 	31,
@@ -30,13 +33,16 @@ static	int	dmsize[12] =
 
 struct utmp wtmp[2] = { {"|", "", 0}, {"{", "", 0}};
 
-char	*ctime();
-char	*asctime();
-struct	tm *localtime();
-struct	tm *gmtime();
+char	*ctime(long *clock);
+char	*asctime(struct tm *tm);
+struct	tm *localtime(long *clock);
+struct	tm *gmtime(long *clock);
+static i32 gtime(void);
+static i32 gp(i32 dfault);
+i32 dysize(i32 year);
 
-main(argc, argv)
-char *argv[];
+int
+main(int argc, char *argv[])
 {
 	register char *tzn;
 	struct timeb info;
@@ -91,12 +97,59 @@ char *argv[];
 	exit(rc);
 }
 
-gtime()
+static i32
+gtime(void)
 {
 	register int i, year, month;
 	int day, hour, mins, secs;
 	struct tm *L;
 	char x;
+	char *orig;
+	int len;
+	int all_digits;
+
+	orig = ap;
+	len = 0;
+	while (orig[len])
+		len++;
+	all_digits = 1;
+	for (i = 0; i < len; i++) {
+		if (orig[i] < '0' || orig[i] > '9') {
+			all_digits = 0;
+			break;
+		}
+	}
+	if (len == 12 && all_digits) {
+		year = ((orig[0] - '0') * 1000) + ((orig[1] - '0') * 100) +
+		    ((orig[2] - '0') * 10) + (orig[3] - '0');
+		month = ((orig[4] - '0') * 10) + (orig[5] - '0');
+		day = ((orig[6] - '0') * 10) + (orig[7] - '0');
+		hour = ((orig[8] - '0') * 10) + (orig[9] - '0');
+		mins = ((orig[10] - '0') * 10) + (orig[11] - '0');
+		secs = 0;
+		if (month < 1 || month > 12 ||
+		    day < 1 || day > 31 ||
+		    mins < 0 || mins > 59)
+			return(1);
+		if (hour == 24) {
+			hour = 0;
+			day++;
+		}
+		if (hour < 0 || hour > 23)
+			return(1);
+		timbuf = 0;
+		for(i = 1970; i < year; i++)
+			timbuf += dysize(i);
+		if (dysize(year) == 366 && month >= 3)
+			timbuf++;
+		while(--month)
+			timbuf += dmsize[month-1];
+		timbuf += day-1;
+		timbuf = 24*timbuf + hour;
+		timbuf = 60*timbuf + mins;
+		timbuf = 60*timbuf + secs;
+		return(0);
+	}
 
 	ep=ap;
 	while(*ep) ep++;
@@ -133,7 +186,10 @@ gtime()
 	if (hour<0 || hour>23)
 		return(1);
 	timbuf = 0;
-	year += 1900;
+	if(year < 70)
+		year += 2000;
+	else
+		year += 1900;
 	for(i=1970; i<year; i++)
 		timbuf += dysize(i);
 	/* Leap year */
@@ -149,7 +205,8 @@ gtime()
 
 }
 
-gp(dfault)
+static i32
+gp(i32 dfault)
 {
 	register int c, d;
 

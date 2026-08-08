@@ -9,8 +9,8 @@
  *	return codes:  none
  */
 
-xuucico(rmtname)
-char *rmtname;
+int
+xuucico (char *rmtname)
 {
 	if (fork() == 0) {
 		/*  start uucico for rmtname system  */
@@ -29,7 +29,7 @@ char *rmtname;
 			sprintf(opt, "-s%.7s", rmtname);
 		else
 			opt[0] = '\0';
-		execl(UUCICO, "UUCICO", "-r1", opt, 0);
+		execl(UUCICO, "UUCICO", "-r1", opt, (char *)0);
 		exit(100);
 	}
 	return;
@@ -42,7 +42,8 @@ char *rmtname;
  *	return codes:  none
  */
 
-xuuxqt()
+int
+xuuxqt (void)
 {
 	if (fork() == 0) {
 		/*  start uuxqt  */
@@ -56,13 +57,13 @@ xuuxqt()
 		signal(SIGHUP, SIG_IGN);
 		signal(SIGQUIT, SIG_IGN);
 		signal(SIGKILL, SIG_IGN);
-		execl(UUXQT, "UUXQT",  0);
+		execl(UUXQT, "UUXQT", (char *)0);
 		exit(100);
 	}
 	return;
 }
-xuucp(str)
-char *str;
+int
+xuucp (char *str)
 {
 	char text[300];
 	if (fork() == 0) {
@@ -78,7 +79,7 @@ char *str;
 		signal(SIGQUIT, SIG_IGN);
 		signal(SIGKILL, SIG_IGN);
 		sprintf(text, "%s -r %s", UUCP, str);
-		execl(SHELL, "sh", "-c", text, 0);
+		execl(SHELL, "sh", "-c", text, (char *)0);
 		exit(100);
 	}
 	sleep(15);

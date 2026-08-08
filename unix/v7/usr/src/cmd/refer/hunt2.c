@@ -1,21 +1,23 @@
 # include "refer..c"
-static int *coord 0;
-int hh[50]; extern int *hfreq, hfrflg, hcomp(), hexch();
+static int *coord = 0;
+int hh[50]; extern int *hfreq, hfrflg;
 extern int prfreqs;
 
+int
 doquery(hpt, nhash, fb, nitem, qitem, master)
-	union ptr {unsigned *a; long *b;} master;
+	union ptr master;
 	long *hpt;
 	FILE *fb;
 	char *qitem[];
+	int nhash, nitem;
 {
 long k;
 union ptr prevdrop;
-int nf 0, best 0, nterm 0, i, g, j;
+int nf = 0, best = 0, nterm = 0, i, g, j;
 int *prevcoord;
 long lp;
 extern int lmaster, colevel, reached;
-long getl(); unsigned getw(); extern int iflong;
+extern int iflong;
 
 # if D1
 fprintf(stderr, "entering doquery nitem %d\n",nitem);
@@ -69,7 +71,7 @@ for(i=0; i<lmaster; i++)
 	if (iflong)
 		master.b[i] = getl(fb);
 	else
-		master.a[i] = getw(fb);
+		master.a[i] = ref_getw(fb);
 	coord[i]=1;
 # if D2
 	if (iflong)
@@ -115,7 +117,7 @@ for(nterm=1; nterm<nitem; nterm++)
 		if (iflong)
 			k = getl(fb);
 		else
-			k = getw(fb);
+			k = ref_getw(fb);
 		if (k== -1) break;
 # if D2
 		fprintf(stderr,"next term finds %ld\n",k);
@@ -185,7 +187,7 @@ fprintf(stderr,"now have %d items\n",g);
 # endif
 	if (colevel>0)
 	for ( ; j<nf; j++)
-		if ((iflong?prevcoord.b[j]:prevcoord.a[j])+colevel > nterm)
+		if (prevcoord[j]+colevel > nterm)
 			{
 			_assert(g<lmaster);
 			if (iflong)
@@ -229,8 +231,8 @@ if (colevel>0)
 # endif
 if (colevel)
 	{
-	free(prevdrop, lmaster, iflong?4:2);
-	free(prevcoord, lmaster, sizeof (lmaster));
+	free(prevdrop.a);
+	free(prevcoord);
 	}
 # if D3
 for(g=0;g<nf;g++)
@@ -245,27 +247,28 @@ long
 getl(fb)
 	FILE *fb;
 {
-int x[2];
-long *lp;
-x[0] = getw(fb);
-x[1] = getw(fb);
-lp= x;
-return(*lp);
+long value;
+if (fread((char *)&value, sizeof(value), 1, fb) != 1)
+	return(-1L);
+return(value);
 }
+void
 putl(ll, f)
 	long ll;
 	FILE *f;
 {
-int *x;
-x = &ll;
-putw(x[0], f);
-putw(x[1], f);
+if (fwrite((char *)&ll, sizeof(ll), 1, f) != 1)
+	err("write error");
 }
+int
 hcomp( n1, n2)
+	int n1, n2;
 {
 return (hfreq[hh[n1]]<=hfreq[hh[n2]]);
 }
+void
 hexch( n1, n2 )
+	int n1, n2;
 {
 int t;
 t = hh[n1];

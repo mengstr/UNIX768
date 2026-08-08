@@ -1,0 +1,5 @@
+set -e
+rm -f diacrit.o eqnbox.o font.o fromto.o funny.o glob.o
+rm -f integral.o io.o lex.o lookup.o mark.o matrix.o move.o
+rm -f over.o paren.o pile.o shift.o size.o sqrt.o text.o e.o
+rm -f e.c e.def y.tab.c y.tab.h neqn

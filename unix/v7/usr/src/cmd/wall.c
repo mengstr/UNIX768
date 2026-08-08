@@ -1,15 +1,15 @@
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 #include <utmp.h>
 #define	USERS	50
 
 char	mesg[3000];
 int	msize;
-struct	utmp utmp[USERS];
-char	*strcpy();
-char	*strcat();
-
-main(argc, argv)
-char *argv[];
+struct utmp utmp[USERS];
+int sendmes(char *tty);
+int
+main (int argc, char *argv[])
 {
 	register i;
 	register struct utmp *p;
@@ -40,8 +40,8 @@ char *argv[];
 	exit(0);
 }
 
-sendmes(tty)
-char *tty;
+int
+sendmes (char *tty)
 {
 	register i;
 	char t[50], buf[BUFSIZ];
@@ -50,10 +50,10 @@ char *tty;
 	i = fork();
 	if(i == -1) {
 		fprintf(stderr, "Try again\n");
-		return;
+		return(0);
 	}
 	if(i)
-		return;
+		return(0);
 	strcpy(t, "/dev/");
 	strcat(t, tty);
 
@@ -65,4 +65,5 @@ char *tty;
 	fprintf(f, "Broadcast Message ...\n\n");
 	fwrite(mesg, msize, 1, f);
 	exit(0);
+	return(0);
 }

@@ -1,19 +1,19 @@
-/*
- * Concatenate files.
- */
-
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <string.h>
+#include <unistd.h>
 
 char	stdbuf[BUFSIZ];
+char	catbuf[BUFSIZ];
 
-main(argc, argv)
-char **argv;
+int
+main(int argc, char **argv)
 {
 	int fflg = 0;
 	register FILE *fi;
-	register c;
+	register n;
+	register fd;
 	int dev, ino = -1;
 	struct stat statb;
 
@@ -38,24 +38,33 @@ char **argv;
 		argc = 2;
 		fflg++;
 	}
+
+#define ERRPFX "cat: "
 	while (--argc > 0) {
 		if (fflg || (*++argv)[0]=='-' && (*argv)[1]=='\0')
 			fi = stdin;
 		else {
 			if ((fi = fopen(*argv, "r")) == NULL) {
-				fprintf(stderr, "cat: can't open %s\n", *argv);
+				write(2, ERRPFX, (long)strlen(ERRPFX));
+				write(2, "can't open ", 11);
+				write(2, *argv, (long)strlen(*argv));
+				write(2, "\n", 1);
 				continue;
 			}
+			setbuf(fi, (char *)NULL);
 		}
 		fstat(fileno(fi), &statb);
 		if (statb.st_dev==dev && statb.st_ino==ino) {
-			fprintf(stderr, "cat: input %s is output\n",
-			   fflg?"-": *argv);
+			write(2, ERRPFX, (long)strlen(ERRPFX));
+			write(2, "input ", 6);
+			write(2, fflg ? "-" : *argv, (long)strlen(fflg ? "-" : *argv));
+			write(2, " is output\n", 11);
 			fclose(fi);
 			continue;
 		}
-		while ((c = getc(fi)) != EOF)
-			putchar(c);
+		fd = fileno(fi);
+		while ((n = read(fd, catbuf, sizeof(catbuf))) > 0)
+			write(1, catbuf, n);
 		if (fi!=stdin)
 			fclose(fi);
 	}

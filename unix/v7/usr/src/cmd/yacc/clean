@@ -1,0 +1,3 @@
+set -e
+
+rm -f yacc yacc.local y1.o y1local.o y2.o y3.o y4.o

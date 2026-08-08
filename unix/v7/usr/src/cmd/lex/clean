@@ -1,0 +1,4 @@
+set -e
+
+rm -f lex lex.local *.o y.tab.c libln.a
+rm -f lib/*.o

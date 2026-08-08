@@ -1,3 +1,8 @@
+#include "defs"
+
+static int amatch(char *s, char *p);
+static int umatch(char *s, char *p);
+
 /* UNIX DEPENDENT PROCEDURES */
 
 
@@ -94,17 +99,17 @@ char *builtin[] =
 
 	0 };
 
-#include "defs"
+#define TIMETYPE long
 #include <sys/types.h>
-
-
-TIMETYPE exists(filename)
-char *filename;
-{
 #include <sys/stat.h>
+
+
+TIMETYPE
+exists (char *filename)
+{
 struct stat buf;
 register char *s;
-TIMETYPE lookarch();
+TIMETYPE lookarch(char *filename);
 
 for(s = filename ; *s!='\0' && *s!='(' ; ++s)
 	;
@@ -112,13 +117,14 @@ for(s = filename ; *s!='\0' && *s!='(' ; ++s)
 if(*s == '(')
 	return(lookarch(filename));
 
-if(stat(filename,&buf) < 0) 
+if(stat(filename,&buf) < 0)
 	return(0);
 else	return(buf.st_mtime);
 }
 
 
-TIMETYPE prestime()
+TIMETYPE
+prestime (void)
 {
 TIMETYPE t;
 time(&t);
@@ -133,10 +139,12 @@ FSTATIC char *n15end	= &n15[14];
 
 
 
-struct depblock *srchdir(pat, mkchain, nextdbl)
-register char *pat; /* pattern to be matched in directory */
-int mkchain;  /* nonzero if results to be remembered */
-struct depblock *nextdbl;  /* final value for chain */
+struct depblock *
+srchdir (
+    register char *pat, /* pattern to be matched in directory */
+    int mkchain,  /* nonzero if results to be remembered */
+    struct depblock *nextdbl  /* final value for chain */
+)
 {
 FILE * dirf;
 int i, nread;
@@ -239,8 +247,8 @@ return(thisdbl);
 
 /* stolen from glob through find */
 
-static amatch(s, p)
-char *s, *p;
+static
+amatch (char *s, char *p)
 {
 	register int cc, scc, k;
 	int c, lc;
@@ -280,8 +288,8 @@ char *s, *p;
 	return(0);
 }
 
-static umatch(s, p)
-char *s, *p;
+static
+umatch (char *s, char *p)
 {
 	if(*p==0) return(1);
 	while(*s)
@@ -290,16 +298,15 @@ char *s, *p;
 }
 
 #ifdef METERFILE
-#include <pwd.h>
 int meteron	= 0;	/* default: metering off */
 
-meter(file)
-char *file;
+int
+meter (char *file)
 {
 TIMETYPE tvec;
-char *p, *ctime();
+char *p;
 FILE * mout;
-struct passwd *pwd, *getpwuid();
+struct passwd *pwd;
 
 if(file==0 || meteron==0) return;
 
@@ -324,6 +331,8 @@ if( (mout=fopen(file,"a")) != NULL )
 */
 #include <ar.h>
 #include <a.out.h>
+#include <stdlib.h>
+#include <string.h>
 
 static struct ar_hdr arhead;
 FILE *arfd;
@@ -331,11 +340,9 @@ long int arpos, arlen;
 
 static struct exec objhead;
 
-static struct nlist objentry;
 
-
-TIMETYPE lookarch(filename)
-char *filename;
+TIMETYPE
+lookarch (char *filename)
 {
 char *p, *q, *send, s[15];
 int i, nc, nsym, objarch;
@@ -363,23 +370,48 @@ for( q = s ; q<send && *p!='\0' && *p!=')' ; *q++ = *p++ )
 	;
 while(q < send)
 	*q++ = '\0';
+s[nc] = '\0';
 while(getarch())
 	{
 	if(objarch)
 		{
+		struct nlist *entries;
+		char *strings, *name;
+		u32 strsize;
+
 		getobj();
-		nsym = objhead.a_syms / sizeof(objentry);
+		nsym = objhead.a_syms / sizeof(struct nlist);
+		entries = (struct nlist *)malloc((unsigned)objhead.a_syms);
+		if(entries == NULL)
+			fatal("out of memory");
+		fread((char *)entries, sizeof(struct nlist), nsym, arfd);
+		fread((char *)&strsize, sizeof(strsize), 1, arfd);
+		if(strsize < sizeof(strsize))
+			fatal1("%s has a bad string table", arhead.ar_name);
+		strings = malloc((unsigned)strsize);
+		if(strings == NULL)
+			fatal("out of memory");
+		*((u32 *)strings) = strsize;
+		fread(strings + sizeof(strsize), 1,
+			(unsigned)(strsize - sizeof(strsize)), arfd);
 		for(i = 0; i<nsym ; ++i)
 			{
-			fread( (char *) &objentry, sizeof(objentry),1,arfd);
-			if( (objentry.n_type & N_EXT)
-			   && ((objentry.n_type & ~N_EXT) || objentry.n_value)
-			   && eqstr(objentry.n_name,s,nc))
+			if(entries[i].n_strx < strsize)
+				name = strings + entries[i].n_strx;
+			else
+				name = "";
+			if( (entries[i].n_type & N_EXT)
+			   && ((entries[i].n_type & ~N_EXT) || entries[i].n_value)
+			   && strcmp(name,s) == 0)
 				{
+				free(strings);
+				free((char *)entries);
 				clarch();
 				return(arhead.ar_date);
 				}
 			}
+		free(strings);
+		free((char *)entries);
 		}
 
 	else if( eqstr(arhead.ar_name, s, nc))
@@ -394,17 +426,17 @@ return( 0L);
 }
 
 
-clarch()
+int
+clarch (void)
 {
 fclose( arfd );
 }
 
 
-openarch(f)
-register char *f;
+int
+openarch (register char *f)
 {
-int word;
-#include <sys/stat.h>
+unsigned word;
 struct stat buf;
 
 stat(f, &buf);
@@ -417,12 +449,13 @@ fread( (char *) &word, sizeof(word), 1, arfd);
 if(word != ARMAG)
 	fatal1("%s is not an archive", f);
 arpos = 0;
-arhead.ar_size = 2 - sizeof(arhead);
+arhead.ar_size = 2 - (i32)sizeof(arhead);
 }
 
 
 
-getarch()
+int
+getarch (void)
 {
 arpos += sizeof(arhead);
 arpos += (arhead.ar_size + 1 ) & ~1L;
@@ -434,26 +467,22 @@ return(1);
 }
 
 
-getobj()
+int
+getobj (void)
 {
-long int skip;
+long int base, skip;
 
+base = ftell(arfd);
 fread( (char *) &objhead, sizeof(objhead), 1, arfd);
-if( objhead.a_magic != A_MAGIC1 &&
-    objhead.a_magic != A_MAGIC2 &&
-    objhead.a_magic != A_MAGIC3 &&
-    objhead.a_magic != A_MAGIC4 )
+if(A_GETMID(objhead) != A_MID_SUN010 || A_GETMAGIC(objhead) != A_MAGIC5)
 		fatal1("%s is not an object module", arhead.ar_name);
-skip = objhead.a_text + objhead.a_data;
-if(! objhead.a_flag )
-	skip *= 2;
-fseek(arfd, skip, 1);
+skip = base + objhead.a_text + objhead.a_data;
+fseek(arfd, skip, 0);
 }
 
 
-eqstr(a,b,n)
-register char *a, *b;
-int n;
+int
+eqstr (register char *a, register char *b, int n)
 {
 register int i;
 for(i = 0 ; i < n ; ++i)

@@ -1,9 +1,9 @@
 #include "spell.h"
 
-main(argc, argv)
-char **argv;
+int
+main(int argc, char **argv)
 {
-	register i, j;
+	register int i, j;
 	long h;
 	register long *lp;
 	char word[NW];
@@ -40,4 +40,5 @@ char **argv;
 		if (dflag == indict)
 			fputs(word, stdout);
 	}
+	return(0);
 }

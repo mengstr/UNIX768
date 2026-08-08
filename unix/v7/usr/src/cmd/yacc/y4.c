@@ -19,7 +19,7 @@ int *maxa;
 int nxdb = 0;
 int adb = 0;
 
-callopt(){
+void callopt(void){
 
 	register i, *p, j, k, *q;
 
@@ -35,7 +35,7 @@ callopt(){
 		switch( gtnm() ){
 
 		case '\n':
-			yypact[++nstate] = (--pmem) - mem;
+			yypact[++nstate] = (int)((--pmem) - mem);
 		case ',':
 			continue;
 
@@ -48,13 +48,13 @@ callopt(){
 		break;
 		}
 
-	yypact[nstate] = yypgo[0] = (--pmem) - mem;
+	yypact[nstate] = yypgo[0] = (int)((--pmem) - mem);
 
 	for(;;){
 		switch( gtnm() ){
 
 		case '\n':
-			yypgo[++nnonter]= pmem-mem;
+			yypgo[++nnonter]= (int)(pmem-mem);
 		case ',':
 			continue;
 
@@ -67,7 +67,7 @@ callopt(){
 		break;
 		}
 
-	yypgo[nnonter--] = (--pmem) - mem;
+	yypgo[nnonter--] = (int)((--pmem) - mem);
 
 
 
@@ -81,8 +81,7 @@ callopt(){
 			if( *p < k ) k = *p;
 			}
 		if( k <= j ){ /* nontrivial situation */
-			/* temporarily, kill this for compatibility
-			j -= k;  /* j is now the range */
+			/* Temporarily omit j -= k for compatibility. */
 			if( k > maxoff ) maxoff = k;
 			}
 		greed[i] = (yypact[i+1]-yypact[i]) + 2*j;
@@ -123,7 +122,7 @@ callopt(){
 
 	if( adb>2 ){ /* print a array */
 		for( p=a; p <= maxa; p += 10){
-			fprintf( ftable, "%4d  ", p-a );
+			fprintf( ftable, "%4d  ", (int)(p-a) );
 			for( i=0; i<10; ++i ) fprintf( ftable, "%4d  ", p[i] );
 			fprintf( ftable, "\n" );
 			}
@@ -136,7 +135,7 @@ callopt(){
 	ZAPFILE(TEMPNAME);
 	}
 
-gin(i){
+void gin(int i){
 
 	register *p, *r, *s, *q1, *q2;
 
@@ -169,7 +168,7 @@ gin(i){
 			*s = r[1];
 			}
 
-		pgo[i] = p-a;
+		pgo[i] = (int)(p-a);
 		if( adb>1 ) fprintf( ftable, "Nonterminal %d, entry at %d\n" , i, pgo[i] );
 		goto nextgi;
 
@@ -181,7 +180,7 @@ gin(i){
 	nextgi:  ;
 	}
 
-stin(i){
+void stin(int i){
 	register *r, *s, n, flag, j, *q1, *q2;
 
 	greed[i] = 0;
@@ -220,7 +219,7 @@ stin(i){
 		for( r = q1; r < q2; r += 2 ){
 			if( (s = *r + n + a ) >= &a[ACTSIZE] ) error( "out of space in optimizer a array" );
 			if( s > maxa ) maxa = s;
-			if( *s != 0 && *s != r[1] ) error( "clobber of a array, pos'n %d, by %d", s-a, r[1] );
+			if( *s != 0 && *s != r[1] ) error( "clobber of a array, pos'n %d, by %d", (int)(s-a), r[1] );
 			*s = r[1];
 			}
 		pa[i] = n;
@@ -234,7 +233,7 @@ stin(i){
 
 	}
 
-nxti(){ /* finds the next i */
+int nxti(void){ /* finds the next i */
 	register i, max, maxi;
 
 	max = 0;
@@ -254,7 +253,7 @@ nxti(){ /* finds the next i */
 	else return( maxi );
 	}
 
-osummary(){
+void osummary(void){
 	/* write summary */
 
 	register i, *p;
@@ -266,26 +265,26 @@ osummary(){
 		}
 
 	fprintf( foutput, "Optimizer space used: input %d/%d, output %d/%d\n",
-		pmem-mem+1, MEMSIZE, maxa-a+1, ACTSIZE );
-	fprintf( foutput, "%d table entries, %d zero\n", (maxa-a)+1, i );
+		(int)(pmem-mem+1), MEMSIZE, (int)(maxa-a+1), ACTSIZE );
+	fprintf( foutput, "%d table entries, %d zero\n", (int)(maxa-a+1), i );
 	fprintf( foutput, "maximum spread: %d, maximum offset: %d\n", maxspr, maxoff );
 
 	}
 
-aoutput(){ /* this version is for C */
+void aoutput(void){ /* this version is for C */
 
 
 	/* write out the optimized parser */
 
-	fprintf( ftable, "# define YYLAST %d\n", maxa-a+1 );
+	fprintf( ftable, "# define YYLAST %d\n", (int)(maxa-a+1) );
 
-	arout( "yyact", a, (maxa-a)+1 );
+	arout( "yyact", a, (int)(maxa-a+1) );
 	arout( "yypact", pa, nstate );
 	arout( "yypgo", pgo, nnonter+1 );
 
 	}
 
-arout( s, v, n ) char *s; int *v, n; {
+void arout(char *s, int *v, int n) {
 
 	register i;
 
@@ -299,7 +298,7 @@ arout( s, v, n ) char *s; int *v, n; {
 	}
 
 
-gtnm(){
+int gtnm(void){
 
 	register s, val, c;
 

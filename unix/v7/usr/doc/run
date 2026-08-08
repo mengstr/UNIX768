@@ -123,9 +123,6 @@ setup)
 regen)
 	$fmtr $pkg $* /usr/doc/regen
 	;;
-learn)
-	refer -e /usr/doc/learn/p? | tbl | $fmtr $pkg $*
-	;;
 *)
 	echo 'what is' $name 1>&2
 	;;

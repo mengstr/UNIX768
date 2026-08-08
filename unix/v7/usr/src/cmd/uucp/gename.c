@@ -8,8 +8,8 @@
  *	return codes:  none
  */
 
-gename(pre, sys, grade, file)
-char pre, *sys, grade, *file;
+int
+gename (int pre, char *sys, int grade, char *file)
 {
 	char sqnum[5];
 
@@ -31,8 +31,8 @@ char pre, *sys, grade, *file;
  *	return codes:  none
  */
 
-getseq(snum)
-char *snum;
+int
+getseq (char *snum)
 {
 	FILE *fp;
 	int n;

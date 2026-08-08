@@ -6,10 +6,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <signal.h>
+#include <string.h>
+#include <unistd.h>
 #include <utmp.h>
 
-char	*strcat();
-char	*strcpy();
 struct	utmp ubuf;
 int	signum[] = {SIGHUP, SIGINT, SIGQUIT, 0};
 char	me[10]	= "???";
@@ -17,15 +17,15 @@ char	*him;
 char	*mytty;
 char	histty[32];
 char	*histtya;
-char	*ttyname();
-char	*rindex(), *index();
 int	logcnt;
-int	eof();
-int	timout();
+void eof(i16 signo);
+void timout(i16 signo);
+int ex(char *bp);
+int sigs(sighandler_t sig);
 FILE	*tf;
 
-main(argc, argv)
-char *argv[];
+int
+main (int argc, char *argv[])
 {
 	struct stat stbuf;
 	register i;
@@ -123,7 +123,7 @@ cont:
 		char buf[128];
 		i = read(0, buf, 128);
 		if(i <= 0)
-			eof();
+			eof(0);
 		if(buf[0] == '!') {
 			buf[i] = 0;
 			ex(buf);
@@ -137,22 +137,24 @@ perm:
 	exit(1);
 }
 
-timout()
+void
+timout (i16 signo)
 {
 
 	printf("Timeout opening his tty\n");
 	exit(1);
 }
 
-eof()
+void
+eof (i16 signo)
 {
 
 	fprintf(tf, "EOF\n");
 	exit(0);
 }
 
-ex(bp)
-char *bp;
+int
+ex (char *bp)
 {
 	register i;
 
@@ -163,22 +165,24 @@ char *bp;
 		goto out;
 	}
 	if(i == 0) {
-		sigs((int (*)())0);
-		execl("/bin/sh", "sh", "-c", bp+1, 0);
+		sigs(SIG_DFL);
+	execl("/bin/sh", "sh", "-c", bp+1, (char *)0);
 		exit(0);
 	}
-	while(wait((int *)NULL) != i)
+	while(wait((i16 *)NULL) != i)
 		;
 	printf("!\n");
 out:
 	sigs(eof);
+	return(0);
 }
 
-sigs(sig)
-int (*sig)();
+int
+sigs (sighandler_t sig)
 {
 	register i;
 
 	for(i=0;signum[i];i++)
 		signal(signum[i],sig);
+	return(0);
 }

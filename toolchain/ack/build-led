@@ -1,0 +1,22 @@
+build=$1
+ack=$2
+flags=$3
+includes=$4
+cc=$5
+
+test -d "$build" || mkdir "$build" || exit 1
+test -d "$build/led-build" || mkdir "$build/led-build" || exit 1
+cd "$build/led-build" || exit 1
+
+objs=
+exec < "$ack/led.list"
+while read f
+do
+	o=`basename "$f" .c`.o
+	echo CC "$o"
+	$cc $flags $includes -c -o "$o" "$ack/$f" || exit 1
+	objs="$objs $o"
+done
+
+echo LD led
+$cc -o "$build/led" $objs

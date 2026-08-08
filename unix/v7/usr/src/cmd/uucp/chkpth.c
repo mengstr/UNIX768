@@ -1,6 +1,7 @@
 #include "uucp.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <stdlib.h>
 
 
 #define DFLTNAME "default"
@@ -28,11 +29,10 @@ int Uptfirst = 1;
  *	return codes:  0  |  FAIL
  */
 
-chkpth(logname, mchname, path)
-char *path, *logname, *mchname;
+int
+chkpth (char *logname, char *mchname, char *path)
 {
 	struct userpath *u;
-	extern char *lastpart();
 	char **p, *s;
 	char c;
 	int ret, i;
@@ -93,11 +93,10 @@ char *path, *logname, *mchname;
  *	return codes:  0  |  FAIL
  */
 
-rdpth(u)
-struct userpath *u;
+int
+rdpth (struct userpath *u)
 {
 	char buf[BUFSIZ + 1], *pbuf[BUFSIZ + 1], *pc, **cp;
-	extern char *calloc(), *index();
 	FILE *uf;
 
 	if ((uf = fopen(USERFILE, "r")) == NULL) {
@@ -111,7 +110,7 @@ struct userpath *u;
 			fclose(uf);
 			return(FAIL);
 		}
-		if ((pc = calloc(strlen(buf) + 1, sizeof (char)))
+		if ((pc = (char *)calloc(strlen(buf) + 1, sizeof (char)))
 			== NULL) {
 			/* can not allocate space */
 			fclose(uf);
@@ -125,7 +124,7 @@ struct userpath *u;
 		if (pc != NULL)
 			*pc++ = '\0';
 		else
-			pc = u + strlen(u->us_lname);
+			pc = u->us_lname + strlen(u->us_lname);
 		u->us_mname = pc;
 		if (*u->us_lname == '\0')
 			Logdef = u;
@@ -139,7 +138,7 @@ struct userpath *u;
 		else
 			u->us_callback = 0;
 		if ((cp = u->us_path =
-		  calloc(nargs - i + 1, sizeof (char *))) == NULL) {
+		  (char **)calloc(nargs - i + 1, sizeof (char *))) == NULL) {
 			/*  can not allocate space */
 			fclose(uf);
 			return(FAIL);
@@ -165,8 +164,8 @@ struct userpath *u;
  *		1  -  call back
  */
 
-callback(name)
-char *name;
+int
+callback (char *name)
 {
 	struct userpath *u;
 	int ret, i;
@@ -197,8 +196,8 @@ char *name;
  *	return codes: 0 - stat failed or directory | number of links
  */
 
-chklnk(name)
-char *name;
+int
+chklnk (char *name)
 {
 	struct stat s;
 
@@ -206,7 +205,7 @@ char *name;
 		return(0);
 	if ((s.st_mode & S_IFMT) == S_IFDIR)
 		return(0);
-	return(s.st_nlinks);
+	return(s.st_nlink);
 }
 
 
@@ -223,13 +222,12 @@ char *name;
  *	return 0 | FAIL
  */
 
-chkperm(file, user, mopt)
-char *file, *user, *mopt;
+int
+chkperm (char *file, char *user, char *mopt)
 {
 	struct stat s;
 	int ret, bits;
 	char dir[MAXFULLNAME];
-	extern char *lastpart();
 
 	if (stat(file, &s) != -1)
 		return(0);

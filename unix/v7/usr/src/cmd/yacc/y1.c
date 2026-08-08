@@ -43,7 +43,7 @@ int **pres[NNONTERM+2];  /* vector of pointers to productions yielding each nont
 struct looksets *pfirst[NNONTERM+2];  /* vector of pointers to first sets for each nonterminal */
 int pempty[NNONTERM+1];  /* vector of nonterminals nontrivially deriving e */
 
-main(argc,argv) int argc; char *argv[]; {
+int main(int argc, char *argv[]) {
 
 	setup(argc,argv); /* initialize and read productions */
 	tbitset = NWORDS(ntokens);
@@ -60,7 +60,7 @@ main(argc,argv) int argc; char *argv[]; {
 	exit(0);
 	}
 
-others(){ /* put out other arrays, copy the parsers */
+void others(void){ /* put out other arrays, copy the parsers */
 	register c, i, j;
 
 	finput = fopen( PARSER, "r" );
@@ -107,14 +107,14 @@ others(){ /* put out other arrays, copy the parsers */
 	fclose( ftable );
 	}
 
-char *chcopy( p, q )  char *p, *q; {
+char *chcopy(char *p, char *q) {
 	/* copies string q into p, returning next free char ptr */
 	while( *p = *q++ ) ++p;
 	return( p );
 	}
 
 # define ISIZE 400
-char *writem(pp) int *pp; { /* creates output string for item pointed to by pp */
+char *writem(int *pp) { /* creates output string for item pointed to by pp */
 	int i,*p;
 	static char sarr[ISIZE];
 	char *q;
@@ -140,7 +140,7 @@ char *writem(pp) int *pp; { /* creates output string for item pointed to by pp *
 	return( sarr );
 	}
 
-char *symnam(i){ /* return a pointer to the name of symbol i */
+char *symnam(int i){ /* return a pointer to the name of symbol i */
 	char *cp;
 
 	cp = (i>=NTBASE) ? nontrst[i-NTBASE].name : tokset[i].name ;
@@ -158,16 +158,16 @@ int zzsrconf = 0;
 int * zzmemsz = mem0;
 int zzrrconf = 0;
 
-summary(){ /* output the summary on the tty */
+void summary(void){ /* output the summary on the tty */
 
 	if( foutput!=NULL ){
 		fprintf( foutput, "\n%d/%d terminals, %d/%d nonterminals\n", ntokens, NTERMS,
 			    nnonter, NNONTERM );
 		fprintf( foutput, "%d/%d grammar rules, %d/%d states\n", nprod, NPROD, nstate, NSTATES );
 		fprintf( foutput, "%d shift/reduce, %d reduce/reduce conflicts reported\n", zzsrconf, zzrrconf );
-		fprintf( foutput, "%d/%d working sets used\n", zzcwp-wsets,  WSETSIZE );
-		fprintf( foutput, "memory: states,etc. %d/%d, parser %d/%d\n", zzmemsz-mem0, MEMSIZE,
-			    memp-amem, ACTSIZE );
+		fprintf( foutput, "%d/%d working sets used\n", (int)(zzcwp-wsets),  WSETSIZE );
+		fprintf( foutput, "memory: states,etc. %d/%d, parser %d/%d\n", (int)(zzmemsz-mem0), MEMSIZE,
+			    (int)(memp-amem), ACTSIZE );
 		fprintf( foutput, "%d/%d distinct lookahead sets\n", nlset, LSETSIZE );
 		fprintf( foutput, "%d extra closures\n", zzclose - 2*nstate );
 		fprintf( foutput, "%d shift entries, %d exceptions\n", zzacent, zzexcp );
@@ -186,24 +186,26 @@ summary(){ /* output the summary on the tty */
 	if( fdefine != NULL ) fclose( fdefine );
 	}
 
-/* VARARGS1 */
-error(s,a1) char *s; { /* write out error comment */
-	
+void error(char *s, ...){ /* write out error comment */
+	va_list ap;
+
 	++nerrors;
 	fprintf( stderr, "\n fatal error: ");
-	fprintf( stderr, s,a1);
+	va_start(ap, s);
+	vfprintf( stderr, s, ap);
+	va_end(ap);
 	fprintf( stderr, ", line %d\n", lineno );
 	if( !fatfl ) return;
 	summary();
 	exit(1);
 	}
 
-aryfil( v, n, c ) int *v,n,c; { /* set elements 0 through n-1 to c */
+void aryfil(int *v, int n, int c) { /* set elements 0 through n-1 to c */
 	int i;
 	for( i=0; i<n; ++i ) v[i] = c;
 	}
 
-setunion( a, b ) register *a, *b; {
+int setunion(int *a, int *b) {
 	/* set a to the union of a and b */
 	/* return 1 if b is not a subset of a, 0 otherwise */
 	register i, x, sub;
@@ -216,7 +218,7 @@ setunion( a, b ) register *a, *b; {
 	return( sub );
 	}
 
-prlook( p ) struct looksets *p;{
+void prlook(struct looksets *p){
 	register j, *pp;
 	pp = p->lset;
 	if( pp == 0 ) fprintf( foutput, "\tNULL");
@@ -229,7 +231,7 @@ prlook( p ) struct looksets *p;{
 		}
 	}
 
-cpres(){ /* compute an array with the beginnings of  productions yielding given nonterminals
+void cpres(void){ /* compute an array with the beginnings of  productions yielding given nonterminals
 	The array pres points to these lists */
 	/* the array pyield has the lists: the total size is only NPROD+1 */
 	register **pmem;
@@ -255,11 +257,11 @@ cpres(){ /* compute an array with the beginnings of  productions yielding given 
 		summary();
 		exit(1);
 		}
-	if( pmem != &pyield[nprod] ) error( "internal Yacc error: pyield %d", pmem-&pyield[nprod] );
+	if( pmem != &pyield[nprod] ) error( "internal Yacc error: pyield %d", (int)(pmem-&pyield[nprod]) );
 	}
 
 int indebug = 0;
-cpfir() {
+void cpfir(void) {
 	/* compute an array with the first of nonterminals */
 	register *p, **s, i, **t, ch, changes;
 
@@ -305,7 +307,7 @@ cpfir() {
 		}
 	}
 
-state(c){ /* sorts last state,and sees if it equals earlier ones. returns state number */
+int state(int c){ /* sorts last state,and sees if it equals earlier ones. returns state number */
 	int size1,size2;
 	register i;
 	struct item *p1, *p2, *k, *l, *q1, *q2;
@@ -371,7 +373,7 @@ state(c){ /* sorts last state,and sees if it equals earlier ones. returns state 
 	}
 
 int pidebug = 0; /* debugging flag for putitem */
-putitem( ptr, lptr )  int *ptr;  struct looksets *lptr; {
+void putitem(int *ptr, struct looksets *lptr) {
 	register struct item *j;
 
 	if( pidebug && (foutput!=NULL) ) {
@@ -387,7 +389,7 @@ putitem( ptr, lptr )  int *ptr;  struct looksets *lptr; {
 		}
 	}
 
-cempty(){ /* mark nonterminals which derive the empty string */
+void cempty(void){ /* mark nonterminals which derive the empty string */
 	/* also, look for nonterminals which don't derive any token strings */
 
 # define EMPTY 1
@@ -452,7 +454,7 @@ again:
 	}
 
 int gsdebug = 0;
-stagen(){ /* generate the states */
+void stagen(void){ /* generate the states */
 
 	int i, j;
 	register c;
@@ -461,12 +463,12 @@ stagen(){ /* generate the states */
 	/* initialize */
 
 	nstate = 0;
-	/* THIS IS FUNNY from the standpoint of portability */
-	/* it represents the magic moment when the mem0 array, which has
-	/* been holding the productions, starts to hold item pointers, of a
-	/* different type... */
-	/* someday, alloc should be used to allocate all this stuff... for now, we
-	/* accept that if pointers don't fit in integers, there is a problem... */
+	/* THIS IS FUNNY from the standpoint of portability.
+	 * It represents the magic moment when the mem0 array, which has
+	 * been holding the productions, starts to hold item pointers of a
+	 * different type.  Someday alloc should be used for this storage;
+	 * for now, pointers must fit in the available arena.
+	 */
 
 	pstate[0] = pstate[1] = (struct item *)mem;
 	aryfil( clset.lset, tbitset, 0 );
@@ -522,7 +524,7 @@ stagen(){ /* generate the states */
 	}
 
 int cldebug = 0; /* debugging flag for closure */
-closure(i){ /* generate the closure of state i */
+void closure(int i){ /* generate the closure of state i */
 
 	int c, ch, work, k;
 	register struct wset *u, *v;
@@ -626,7 +628,7 @@ closure(i){ /* generate the closure of state i */
 		}
 	}
 
-struct looksets *flset( p )   struct looksets *p; {
+struct looksets *flset(struct looksets *p) {
 	/* decide if the lookahead set pointed to by p is known */
 	/* return pointer to a perminent location for the set */
 

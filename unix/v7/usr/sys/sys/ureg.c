@@ -2,138 +2,49 @@
 #include "../h/systm.h"
 #include "../h/dir.h"
 #include "../h/user.h"
-#include "../h/proc.h"
-#include "../h/text.h"
-#include "../h/seg.h"
+
+#define EPOCH68_USER_CLICKS	((256UL * 1024UL) / 64UL)
+
+i32 estabur(u32 nt, u32 nd, u32 ns, i32 sep, i32 xrw);
+void sureg(void);
 
 /*
- * Load the user hardware segmentation
- * registers from the software prototype.
- * The software registers must have
- * been setup prior by estabur.
+ * Load the user mapping for the current process.
+ *
+ * Epoch68 selects a process's fixed 256 KiB user page in swtch(); it has no
+ * PDP-11 user segmentation registers to reload here.  Keep the V7 hook so
+ * the machine-independent scheduler and text code retain their usual shape.
  */
+void
 sureg()
 {
-	register *udp, *uap, *rdp;
-	int *rap, *limudp;
-	int taddr, daddr;
-	struct text *tp;
-
-	taddr = daddr = u.u_procp->p_addr;
-	if ((tp=u.u_procp->p_textp) != NULL)
-		taddr = tp->x_caddr;
-	limudp = &u.u_uisd[16];
-	if (cputype==40)
-		limudp = &u.u_uisd[8];
-	rap = (int *)UISA;
-	rdp = (int *)UISD;
-	uap = &u.u_uisa[0];
-	for (udp = &u.u_uisd[0]; udp < limudp;) {
-		*rap++ = *uap++ + (*udp&TX? taddr: (*udp&ABS? 0: daddr));
-		*rdp++ = *udp++;
-	}
 }
 
 /*
- * Set up software prototype segmentation
- * registers to implement the 3 pseudo
- * text,data,stack segment sizes passed
- * as arguments.
- * The argument sep specifies if the
- * text and data+stack segments are to
- * be separated.
- * The last argument determines whether the text
- * segment is read-write or read-only.
+ * Check whether the requested text, data and stack layout fits the fixed
+ * Epoch68 user window.  Unlike the PDP-11, Epoch68 has neither separate I/D
+ * spaces nor per-segment access controls, so sep is unsupported and xrw does
+ * not alter the mapping.
+ *
+ * On Epoch68 nd is the absolute combined text/data/bss/heap end and nt is the
+ * text extent within that image.  The mapped image end is therefore the
+ * larger of nt and nd, followed by the stack allocation.
  */
+i32
 estabur(nt, nd, ns, sep, xrw)
-unsigned nt, nd, ns;
+u32 nt;
+u32 nd;
+u32 ns;
+i32 sep;
+i32 xrw;
 {
-	register a, *ap, *dp;
+	u32 image_end;
 
-	if(sep) {
-		if(cputype == 40)
-			goto err;
-		if(ctos(nt) > 8 || ctos(nd)+ctos(ns) > 8)
-			goto err;
-	} else
-		if(ctos(nt)+ctos(nd)+ctos(ns) > 8)
-			goto err;
-	if(nt+nd+ns+USIZE > maxmem)
-		goto err;
-	a = 0;
-	ap = &u.u_uisa[0];
-	dp = &u.u_uisd[0];
-	while(nt >= 128) {
-		*dp++ = (127<<8) | xrw|TX;
-		*ap++ = a;
-		a += 128;
-		nt -= 128;
+	image_end = max(nt, nd);
+	if(sep || image_end > EPOCH68_USER_CLICKS ||
+	    ns > EPOCH68_USER_CLICKS-image_end) {
+		u.u_error = ENOMEM;
+		return(-1);
 	}
-	if(nt) {
-		*dp++ = ((nt-1)<<8) | xrw|TX;
-		*ap++ = a;
-	}
-	if(sep)
-	while(ap < &u.u_uisa[8]) {
-		*ap++ = 0;
-		*dp++ = 0;
-	}
-	a = USIZE;
-	while(nd >= 128) {
-		*dp++ = (127<<8) | RW;
-		*ap++ = a;
-		a += 128;
-		nd -= 128;
-	}
-	if(nd) {
-		*dp++ = ((nd-1)<<8) | RW;
-		*ap++ = a;
-		a += nd;
-	}
-	while(ap < &u.u_uisa[8]) {
-		if(*dp &ABS) {
-			dp++;
-			ap++;
-			continue;
-		}
-		*dp++ = 0;
-		*ap++ = 0;
-	}
-	if(sep)
-	while(ap < &u.u_uisa[16]) {
-		if(*dp & ABS) {
-			dp++;
-			ap++;
-			continue;
-		}
-		*dp++ = 0;
-		*ap++ = 0;
-	}
-	a += ns;
-	while(ns >= 128) {
-		a -= 128;
-		ns -= 128;
-		*--dp = (127<<8) | RW;
-		*--ap = a;
-	}
-	if(ns) {
-		*--dp = ((128-ns)<<8) | RW | ED;
-		*--ap = a-128;
-	}
-	if(!sep) {
-		ap = &u.u_uisa[0];
-		dp = &u.u_uisa[8];
-		while(ap < &u.u_uisa[8])
-			*dp++ = *ap++;
-		ap = &u.u_uisd[0];
-		dp = &u.u_uisd[8];
-		while(ap < &u.u_uisd[8])
-			*dp++ = *ap++;
-	}
-	sureg();
 	return(0);
-
-err:
-	u.u_error = ENOMEM;
-	return(-1);
 }

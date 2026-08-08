@@ -1,7 +1,9 @@
  /* t6.c: compute tab stops */
-# define tx(a) (a>0 && a<128)
+# define tx(a) (PTRVAL(a)>0 && PTRVAL(a)<128)
 # include "t..c"
-maktab()
+static void wide(char *, char *, char *);
+void
+maktab(void)
 {
 # define FN(i,c) font[stynum[i]][c]
 # define SZ(i,c) csize[stynum[i]][c]
@@ -30,12 +32,12 @@ for(icol=0; icol <ncol; icol++)
 			case 'a':
 				acase[icol]=1;
 				s = table[ilin][icol].col;
-				if (s>0 && s<128 && text)
+				if (PTRVAL(s)>0 && PTRVAL(s)<128 && text)
 					{
 					if (doubled[icol]==0)
 						fprintf(tabout, ".nr %d 0\n.nr %d 0\n",S1,S2);
 					doubled[icol]=1;
-					fprintf(tabout, ".if \\n(%c->\\n(%d .nr %d \\n(%c-\n",s,S2,S2,s);
+					fprintf(tabout, ".if \\n(%c->\\n(%d .nr %d \\n(%c-\n",PTRVAL(s),S2,S2,PTRVAL(s));
 					}
 			case 'n':
 				if (table[ilin][icol].rcol!=0)
@@ -179,6 +181,7 @@ fprintf(tabout,
  ".if t .if (\\n(TW+\\n(.o)>7.65i .tm Table at line %d file %s is too wide - \\n(TW units\n", iline-1, ifile);
 return;
 }
+static void
 wide(s, fn, size)
 	char *s, *size, *fn;
 {
@@ -193,8 +196,9 @@ if (point(s))
 	fprintf(tabout, "%c",F1);
 	}
 else
-	fprintf(tabout, "\\n(%c-", s);
+	fprintf(tabout, "\\n(%c-", PTRVAL(s));
 }
+int
 filler(s)
 	char *s;
 {

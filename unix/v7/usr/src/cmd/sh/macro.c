@@ -13,9 +13,15 @@
 LOCAL CHAR	quote;	/* used locally */
 LOCAL CHAR	quoted;	/* used locally */
 
+LOCAL VOID	copyto(int);
+LOCAL int	skipto(int);
+LOCAL int	getch(int);
+LOCAL int	comsubst(void);
+LOCAL int	flush(int);
 
 
-LOCAL STRING	copyto(endch)
+
+LOCAL VOID	copyto(endch)
 	REG CHAR	endch;
 {
 	REG CHAR	c;
@@ -63,15 +69,16 @@ retry:
 			INT		dolg=0;
 			BOOL		bra;
 			REG STRING	argp, v;
+			INT		argrel;
 			CHAR		idb[2];
 			STRING		id=idb;
 
 			IF bra=(c==BRACE) THEN c=readc() FI
 			IF letter(c)
-			THEN	argp=relstak();
+			THEN	argrel=relstak();
 				WHILE alphanum(c) DO pushstak(c); c=readc() OD
 				zerostak();
-				n=lookup(absstak(argp)); setstak(argp);
+				n=lookup(absstak(argrel)); setstak(argrel);
 				v = n->namval; id = n->namid;
 				peekc = c|MARK;;
 			ELIF digchar(c)
@@ -80,7 +87,12 @@ retry:
 				THEN	dolg=1; c='1';
 				FI
 				c -= '0';
-				v=((c==0) ? cmdadr : (c<=dolc) ? dolv[c] : (dolg=0));
+				IF c==0
+				THEN	v=cmdadr;
+				ELIF c<=dolc
+				THEN	v=dolv[c];
+				ELSE	dolg=0; v=0;
+				FI
 			ELIF c=='$'
 			THEN	v=pidadr;
 			ELIF c=='!'
@@ -101,12 +113,12 @@ retry:
 			argp=0;
 			IF bra
 			THEN	IF c!='}'
-				THEN	argp=relstak();
+				THEN	argrel=relstak();
 					IF (v==0)NEQ(setchar(c))
 					THEN	copyto('}');
 					ELSE	skipto('}');
 					FI
-					argp=absstak(argp);
+					argp=absstak(argrel);
 				FI
 			ELSE	peekc = c|MARK; c = 0;
 			FI
@@ -155,7 +167,7 @@ STRING	macro(as)
 	REG CHAR	savq = quote;
 	FILEHDR		fb;
 
-	push(&fb); estabf(as);
+	push((FILE)&fb); estabf(as);
 	usestak();
 	quote=0; quoted=0;
 	copyto(0);

@@ -34,7 +34,9 @@
 /* for local use only since it hands
  * out a real address for the stack top
  */
+#if 0 /* Superseded by the ABI prototype in proto.h. */
 STKPTR		locstak();
+#endif
 
 /* Will allocate the item being used and return its
  * address (safe now).
@@ -44,33 +46,41 @@ STKPTR		locstak();
 /* For use after `locstak' to hand back
  * new stack top and then allocate item
  */
+#if 0 /* Superseded by the ABI prototype in proto.h. */
 STKPTR		endstak();
+#endif
 
 /* Copy a string onto the stack and
  * allocate the space.
  */
+#if 0 /* Superseded by the ABI prototype in proto.h. */
 STKPTR		cpystak();
+#endif
 
 /* Allocate given ammount of stack space */
+#if 0 /* Superseded by the ABI prototype in proto.h. */
 STKPTR		getstak();
+#endif
 
 /* A chain of ptrs of stack blocks that
  * have become covered by heap allocation.
  * `tdystak' will return them to the heap.
  */
-BLKPTR		stakbsy;
+extern BLKPTR	stakbsy;
 
 /* Base of the entire stack */
-STKPTR		stakbas;
+extern STKPTR	stakbas;
 
 /* Top of entire stack */
-STKPTR		brkend;
+extern STKPTR	brkend;
 
 /* Base of current item */
-STKPTR		stakbot;
+extern STKPTR	stakbot;
 
 /* Top of current item */
-STKPTR		staktop;
+extern STKPTR	staktop;
 
 /* Used with tdystak */
+#if 0 /* Superseded by the ABI prototype in proto.h. */
 STKPTR		savstak();
+#endif

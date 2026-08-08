@@ -16,12 +16,7 @@ for (p = d; *p != '\0';) *cmdp++ = *p++;\
  */
 
 char *Cmds[] = {
-	"mail",
 	"rmail",
-	"lpr",
-	"opr",
-	"fsend",
-	"fget",
 	NULL
 	};
 #define CMDOK(a, b)	cmdok(a,b)
@@ -32,8 +27,8 @@ char *Cmds[] = {
  *  to add allowable commands, add to the list under Cmds[]
  */
 
-main(argc, argv)
-char *argv[];
+int
+main (int argc, char *argv[])
 {
 	char xcmd[100];
 	int cmdnok;
@@ -46,7 +41,6 @@ char *argv[];
 	char path[MAXFULLNAME];
 	char cmd[BUFSIZ];
 	char *cmdp, prm[MAXFULLNAME], *ptr;
-	char *getprm();
 	int uid, ret;
 	int stcico = 0;
 	Debug = 0;
@@ -60,7 +54,7 @@ char *argv[];
 				Debug = 1;
 			break;
 		default:
-			sprintf(stderr, "unknown flag %s\n", argv[1]);
+			fprintf(stderr, "unknown flag %s\n", argv[1]);
 				break;
 		}
 		--argc;  argv++;
@@ -202,8 +196,8 @@ char *argv[];
 }
 
 
-cleanup(code)
-int code;
+int
+cleanup (int code)
 {
 	logcls();
 	rmlock(NULL);
@@ -218,8 +212,8 @@ int code;
  *	return codes:  0 - no file  |  1 - file to execute
  */
 
-gtxfile(file)
-char *file;
+int
+gtxfile (char *file)
 {
 	static FILE *pdir;
 	char pre[2];
@@ -252,8 +246,8 @@ char *file;
  *	return codes:  0 - not ready  |  1 - all files ready
  */
 
-gotfiles(file)
-char *file;
+int
+gotfiles (char *file)
 {
 	struct stat stbuf;
 	FILE *fp;
@@ -287,8 +281,8 @@ char *file;
  *	return codes - none
  */
 
-rmxfiles(xfile)
-char *xfile;
+int
+rmxfiles (char *xfile)
 {
 	FILE *fp;
 	char buf[BUFSIZ], file[NAMESIZE], tfile[NAMESIZE];
@@ -317,8 +311,8 @@ char *xfile;
  *	return codes - none
  */
 
-mvxfiles(xfile)
-char *xfile;
+int
+mvxfiles (char *xfile)
 {
 	FILE *fp;
 	char buf[BUFSIZ], ffile[MAXFULLNAME], tfile[NAMESIZE];
@@ -352,8 +346,8 @@ char *xfile;
  *	return 0 - ok | 1 nok
  */
 
-cmdok(xc, cmd)
-char *xc, *cmd;
+int
+cmdok (char *xc, char *cmd)
 {
 	char **ptr;
 

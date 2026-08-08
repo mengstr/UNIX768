@@ -1,7 +1,9 @@
 # include "ldefs.c"
-getl(p)	/* return next line of input, throw away trailing '\n' */
+# ifdef DEBUG
+static void treedump(void);
+# endif
+char *getl(char *p)	/* return next line of input, throw away trailing '\n' */
 	/* returns 0 if eof is had immediately */
-  char *p;
 	{
 	register int c;
 	register char *s, *t;
@@ -14,7 +16,7 @@ getl(p)	/* return next line of input, throw away trailing '\n' */
 	pres = '\n';
 	return(s);
 	}
-space(ch)
+int space(int ch)
 	{
 	switch(ch)
 		{
@@ -26,15 +28,17 @@ space(ch)
 	return(0);
 	}
 
-digit(c)
+int digit(int c)
 {
 	return(c>='0' && c <= '9');
 }
-error(s,p,d)
-	{
+void error(char *s, ...) {
+	va_list ap;
 	if(!eof)fprintf(errorf,"%d: ",yyline);
 	fprintf(errorf,"(Error) ");
-	fprintf(errorf,s,p,d);
+	va_start(ap,s);
+	vfprintf(errorf,s,ap);
+	va_end(ap);
 	putc('\n',errorf);
 # ifdef DEBUG
 	if(debug && sect != ENDSECTION) {
@@ -50,19 +54,19 @@ error(s,p,d)
 	exit(1);	/* error return code */
 	}
 
-warning(s,p,d)
-	{
+void warning(char *s, ...) {
+	va_list ap;
 	if(!eof)fprintf(errorf,"%d: ",yyline);
 	fprintf(errorf,"(Warning) ");
-	fprintf(errorf,s,p,d);
+	va_start(ap,s);
+	vfprintf(errorf,s,ap);
+	va_end(ap);
 	putc('\n',errorf);
 	fflush(errorf);
 	fflush(fout);
 	fflush(stdout);
 	}
-index(a,s)
-	char *s;
-{
+int lexindex(int a, const char *s) {
 	register int k;
 	for(k=0; s[k]; k++)
 		if (s[k]== a)
@@ -70,25 +74,24 @@ index(a,s)
 	return(-1);
 	}
 
-alpha(c)
-  int c; {
+int alpha(int c) {
 # ifdef ASCII
 return('a' <= c && c <= 'z' || 'A' <= c && c <= 'Z');
 # endif
 # ifdef EBCDIC
-return(index(c,"abcdefghijklmnopqrstuvxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") >= 0);
+return(lexindex(c,"abcdefghijklmnopqrstuvxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") >= 0);
 # endif
 }
-printable(c)
+int printable(int c)
 {
 # ifdef ASCII
 return( c>040 && c < 0177);
 # endif
 # ifdef EBCDIC
-return(index(c, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,;:><+*)('&%!-=\"")>=0);
+return(lexindex(c, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,;:><+*)('&%!-=\"")>=0);
 # endif
 }
-lgate()
+void lgate(void)
 {
 	char fname[20];
 	if (lgatflg) return;
@@ -103,15 +106,14 @@ lgate()
 	}
 /* scopy(ptr to str, ptr to str) - copy first arg str to second */
 /* returns ptr to second arg */
-scopy(s,t)
-  char *s, *t; {
+void scopy(char *s, char *t) {
 	register char *i;
 	i = t;
 	while(*i++ = *s++);
 	return;
 	}
-siconv(t)	/* convert string t, return integer value */
-  char *t; {
+int siconv(char *t)	/* convert string t, return integer value */
+  {
 	register int i,sw;
 	register char *s;
 	s = t;
@@ -128,8 +130,7 @@ siconv(t)	/* convert string t, return integer value */
 	}
 /* slength(ptr to str) - return integer length of string arg */
 /* excludes '\0' terminator */
-slength(s)
-  char *s; {
+int slength(char *s) {
 	register int n;
 	register char *t;
 	t = s;
@@ -139,8 +140,7 @@ slength(s)
 /* scomp(x,y) - return -1 if x < y,
 		0 if x == y,
 		return 1 if x > y, all lexicographically */
-scomp(x,y)
-  char *x,*y; {
+int scomp(char *x, char *y) {
 	register char *a,*d;
 	a = x;
 	d = y;
@@ -154,9 +154,7 @@ scomp(x,y)
 		}
 	return(0);	/* equal */
 	}
-ctrans(ss)
-	char **ss;
-{
+int ctrans(char **ss) {
 	register int c, k;
 	if ((c = **ss) != '\\')
 		return(c);
@@ -170,7 +168,7 @@ ctrans(ss)
 	case '\\': c = '\\'; break;
 	case '0': case '1': case '2': case '3':
 	case '4': case '5': case '6': case '7':
-		c =- '0';
+		c -= '0';
 		while ((k = *(*ss+1)) >= '0' && k <= '7')
 			{
 			c = c*8 + k - '0';
@@ -180,14 +178,13 @@ ctrans(ss)
 	}
 	return(c);
 }
-cclinter(sw)
-  int sw; {
+void cclinter(int sw) {
 		/* sw = 1 ==> ccl */
 	register int i, j, k;
 	int m;
 	if(!sw){		/* is NCCL */
 		for(i=1;i<NCH;i++)
-			symbol[i] =^ 1;			/* reverse value */
+				symbol[i] ^= 1;			/* reverse value */
 		}
 	for(i=1;i<NCH;i++)
 		if(symbol[i]) break;
@@ -235,8 +232,7 @@ cclinter(sw)
 		}
 	return;
 	}
-usescape(c)
-  int c; {
+int usescape(int c) {
 	register char d;
 	switch(c){
 	case 'n': c = '\n'; break;
@@ -246,7 +242,7 @@ usescape(c)
 	case 'f': c = 014; break;		/* form feed for ascii */
 	case '0': case '1': case '2': case '3':
 	case '4': case '5': case '6': case '7':
-		c =- '0';
+		c -= '0';
 		while('0' <= (d=gch()) && d <= '7'){
 			c = c * 8 + (d-'0');
 			if(!('0' <= peek && peek <= '7')) break;
@@ -255,9 +251,7 @@ usescape(c)
 	}
 	return(c);
 	}
-lookup(s,t)
-  char *s;
-  char **t; {
+int lookup(char *s, char **t) {
 	register int i;
 	i = 0;
 	while(*t){
@@ -268,7 +262,7 @@ lookup(s,t)
 		}
 	return(-1);
 	}
-cpyact(){ /* copy C action to the next ; or closing } */
+int cpyact(void){ /* copy C action to the next ; or closing } */
 	register int brac, c, mth;
 	int savline, sw;
 
@@ -364,7 +358,7 @@ loop:
 	}
 error("Premature EOF");
 }
-gch(){
+int gch(void){
 	register int c;
 	prev = pres;
 	c = pres = peek;
@@ -386,9 +380,7 @@ gch(){
 	if(c == '\n')yyline++;
 	return(c);
 	}
-mn2(a,d,c)
-  int a,d,c;
-	{
+int mn2(int a, i32 d, i32 c) {
 	name[tptr] = a;
 	left[tptr] = d;
 	right[tptr] = c;
@@ -396,21 +388,21 @@ mn2(a,d,c)
 	nullstr[tptr] = 0;
 	switch(a){
 	case RSTR:
-		parent[d] = tptr;
+		parent[(int)d] = tptr;
 		break;
 	case BAR:
 	case RNEWE:
-		if(nullstr[d] || nullstr[c]) nullstr[tptr] = TRUE;
-		parent[d] = parent[c] = tptr;
+		if(nullstr[(int)d] || nullstr[(int)c]) nullstr[tptr] = TRUE;
+		parent[(int)d] = parent[(int)c] = tptr;
 		break;
 	case RCAT:
 	case DIV:
-		if(nullstr[d] && nullstr[c])nullstr[tptr] = TRUE;
-		parent[d] = parent[c] = tptr;
+		if(nullstr[(int)d] && nullstr[(int)c])nullstr[tptr] = TRUE;
+		parent[(int)d] = parent[(int)c] = tptr;
 		break;
 	case RSCON:
-		parent[d] = tptr;
-		nullstr[tptr] = nullstr[d];
+		parent[(int)d] = tptr;
+		nullstr[tptr] = nullstr[(int)d];
 		break;
 # ifdef DEBUG
 	default:
@@ -422,9 +414,7 @@ mn2(a,d,c)
 		error("Parse tree too big %s",(treesize == TREESIZE?"\nTry using %e num":""));
 	return(tptr++);
 	}
-mn1(a,d)
-  int a,d;
-	{
+int mn1(int a, i32 d) {
 	name[tptr] = a;
 	left[tptr] = d;
 	parent[tptr] = 0;
@@ -432,17 +422,17 @@ mn1(a,d)
 	switch(a){
 	case RCCL:
 	case RNCCL:
-		if(slength(d) == 0) nullstr[tptr] = TRUE;
+		if(slength((char *)d) == 0) nullstr[tptr] = TRUE;
 		break;
 	case STAR:
 	case QUEST:
 		nullstr[tptr] = TRUE;
-		parent[d] = tptr;
+		parent[(int)d] = tptr;
 		break;
 	case PLUS:
 	case CARAT:
-		nullstr[tptr] = nullstr[d];
-		parent[d] = tptr;
+		nullstr[tptr] = nullstr[(int)d];
+		parent[(int)d] = tptr;
 		break;
 	case S2FINAL:
 		nullstr[tptr] = TRUE;
@@ -460,9 +450,7 @@ mn1(a,d)
 		error("Parse tree too big %s",(treesize == TREESIZE?"\nTry using %e num":""));
 	return(tptr++);
 	}
-mn0(a)
-  int a;
-	{
+int mn0(int a) {
 	name[tptr] = a;
 	parent[tptr] = 0;
 	nullstr[tptr] = 0;
@@ -478,20 +466,20 @@ mn0(a)
 		error("Parse tree too big %s",(treesize == TREESIZE?"\nTry using %e num":""));
 	return(tptr++);
 	}
-munput(t,p)	/* implementation dependent */
-  char *p;
-  int t; {
-	register int i,j;
-	if(t == 'c'){
-		*pushptr++ = peek;		/* watch out for this */
-		peek = p;
-		}
-	else if(t == 's'){
-		*pushptr++ = peek;
-		peek = p[0];
-		i = slength(p);
-		for(j = i-1; j>=1; j--)
-			*pushptr++ = p[j];
+void munput(int t, i32 p) {	/* implementation dependent */
+		register int i,j;
+		char *s;
+		if(t == 'c'){
+			*pushptr++ = peek;		/* watch out for this */
+			peek = p;
+			}
+		else if(t == 's'){
+			s = (char *)p;
+			*pushptr++ = peek;
+			peek = s[0];
+			i = slength(s);
+			for(j = i-1; j>=1; j--)
+				*pushptr++ = s[j];
 		}
 # ifdef DEBUG
 	else error("Unrecognized munput option %c",t);
@@ -501,8 +489,7 @@ munput(t,p)	/* implementation dependent */
 	return;
 	}
 
-dupl(n)
-  int n; {
+int dupl(int n) {
 	/* duplicate the subtree whose root is n, return ptr to it */
 	register int i;
 	i = name[n];
@@ -526,8 +513,7 @@ dupl(n)
 	return(0);
 	}
 # ifdef DEBUG
-allprint(c)
-  char c; {
+void allprint(char c) {
 	switch(c){
 		case 014:
 			printf("\\f");
@@ -551,7 +537,7 @@ allprint(c)
 		default:
 			if(!printable(c)){
 				printf("\\%-3o",c);
-				charc =+ 3;
+				charc += 3;
 				}
 			else 
 				putchar(c);
@@ -560,8 +546,7 @@ allprint(c)
 	charc++;
 	return;
 	}
-strpt(s)
-  char *s; {
+void strpt(char *s) {
 	charc = 0;
 	while(*s){
 		allprint(*s++);
@@ -572,7 +557,7 @@ strpt(s)
 		}
 	return;
 	}
-sect1dump(){
+void sect1dump(void){
 	register int i;
 	printf("Sect 1:\n");
 	if(def[0]){
@@ -599,11 +584,11 @@ sect1dump(){
 			}
 		}
 	}
-sect2dump(){
+void sect2dump(void){
 	printf("Sect 2:\n");
 	treedump();
 	}
-treedump()
+static void treedump(void)
 	{
 	register int t;
 	register char *p;
@@ -617,62 +602,62 @@ treedump()
 				}
 		else switch(name[t]){
 			case RSTR:
-				printf("%d ",left[t]);
+				printf("%ld ",left[t]);
 				allprint(right[t]);
 				break;
 			case RCCL:
 				printf("ccl ");
-				strpt(left[t]);
+				strpt((char *)left[t]);
 				break;
 			case RNCCL:
 				printf("nccl ");
-				strpt(left[t]);
+				strpt((char *)left[t]);
 				break;
 			case DIV:
-				printf("/ %d %d",left[t],right[t]);
+				printf("/ %ld %ld",left[t],right[t]);
 				break;
 			case BAR:
-				printf("| %d %d",left[t],right[t]);
+				printf("| %ld %ld",left[t],right[t]);
 				break;
 			case RCAT:
-				printf("cat %d %d",left[t],right[t]);
+				printf("cat %ld %ld",left[t],right[t]);
 				break;
 			case PLUS:
-				printf("+ %d",left[t]);
+				printf("+ %ld",left[t]);
 				break;
 			case STAR:
-				printf("* %d",left[t]);
+				printf("* %ld",left[t]);
 				break;
 			case CARAT:
-				printf("^ %d",left[t]);
+				printf("^ %ld",left[t]);
 				break;
 			case QUEST:
-				printf("? %d",left[t]);
+				printf("? %ld",left[t]);
 				break;
 			case RNULLS:
 				printf("nullstring");
 				break;
 			case FINAL:
-				printf("final %d",left[t]);
+				printf("final %ld",left[t]);
 				break;
 			case S1FINAL:
-				printf("s1final %d",left[t]);	
+				printf("s1final %ld",left[t]);
 				break;
 			case S2FINAL:
-				printf("s2final %d",left[t]);
+				printf("s2final %ld",left[t]);
 				break;
 			case RNEWE:
-				printf("new %d %d",left[t],right[t]);
+				printf("new %ld %ld",left[t],right[t]);
 				break;
 			case RSCON:
-				p = right[t];
+				p = (char *)right[t];
 				printf("start %s",sname[*p++-1]);
 				while(*p)
 					printf(", %s",sname[*p++-1]);
-				printf(" %d",left[t]);
+				printf(" %ld",left[t]);
 				break;
 			default:
-				printf("unknown %d %d %d",name[t],left[t],right[t]);
+				printf("unknown %d %ld %ld",name[t],left[t],right[t]);
 				break;
 			}
 		if(nullstr[t])printf("\t(null poss.)");

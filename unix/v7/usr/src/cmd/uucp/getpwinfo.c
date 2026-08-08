@@ -10,19 +10,16 @@
  *	return codes:  0  |  FAIL
  */
 
-guinfo(uid, name, path)
-int uid;
-char *path, *name;
+int
+guinfo (int uid, char *name, char *path)
 {
 	struct passwd *pwd;
-	struct passwd *getpwuid();
 
 	if ((pwd = getpwuid(uid)) == NULL) {
 		/* can not find uid in passwd file */
 		*path = '\0';
 		return(FAIL);
 	}
-
 	strcpy(path, pwd->pw_dir);
 	strcpy(name, pwd->pw_name);
 	return(0);
@@ -37,12 +34,10 @@ char *path, *name;
  *	return codes:  0  |  FAIL
  */
 
-gninfo(name, uid, path)
-char *path, *name;
-int *uid;
+int
+gninfo (char *name, int *uid, char *path)
 {
 	struct passwd *pwd;
-	struct passwd *getpwnam();
 
 	if ((pwd = getpwnam(name)) == NULL) {
 		/* can not find name in passwd file */
@@ -54,5 +49,3 @@ int *uid;
 	*uid = pwd->pw_uid;
 	return(0);
 }
-
-

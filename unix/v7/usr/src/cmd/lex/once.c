@@ -1,6 +1,6 @@
 	/* because of external definitions, this code should occur only once */
 # ifdef ASCII
-int ctable[2*NCH] {
+int ctable[2*NCH] = {
   0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
  10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
  20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
@@ -16,7 +16,7 @@ int ctable[2*NCH] {
 120,121,122,123,124,125,126,127};
 # endif
 # ifdef EBCDIC
-int ctable[2*NCH] {
+int ctable[2*NCH] = {
   0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
  10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
  20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
@@ -44,34 +44,42 @@ int ctable[2*NCH] {
 240,241,242,243,244,245,246,247,248,249,
 250,251,252,253,254,255};
 # endif
-int ZCH NCH;
-FILE *fout NULL, *errorf {stdout};
-int sect DEFSECTION;
-int prev '\n';	/* previous input character */
-int pres '\n';	/* present input character */
-int peek '\n';	/* next input character */
-char *pushptr pushc;
-char *slptr slist;
+int ZCH = NCH;
+FILE *fout = NULL, *errorf = NULL;
+int sect = DEFSECTION;
+int prev = '\n';	/* previous input character */
+int pres = '\n';	/* present input character */
+int peek = '\n';	/* next input character */
+char pushc[TOKENSIZE];
+char slist[STARTSIZE];
+char *pushptr = pushc;
+char *slptr = slist;
 
 # if (unix || ibm)
-char *cname "/usr/lib/lex/ncform";
-char *ratname "/usr/lib/lex/nrform";
+# ifndef LEX_NCFORM
+# define LEX_NCFORM "/usr/lib/lex/ncform"
+# endif
+# ifndef LEX_NRFORM
+# define LEX_NRFORM "/usr/lib/lex/nrform"
+# endif
+char *cname = LEX_NCFORM;
+char *ratname = LEX_NRFORM;
 # endif
 
 # ifdef gcos
-char *cname "pounce/lexcform";
-char *ratname "pounce/lexrform";
+char *cname = "pounce/lexcform";
+char *ratname = "pounce/lexrform";
 # endif
-int ccount 1;
-int casecount 1;
-int aptr 1;
-int nstates NSTATES, maxpos MAXPOS;
-int treesize TREESIZE, ntrans NTRANS;
+int ccount = 1;
+int casecount = 1;
+int aptr = 1;
+int nstates = NSTATES, maxpos = MAXPOS;
+int treesize = TREESIZE, ntrans = NTRANS;
 int yytop;
-int outsize NOUTPUT;
-int sptr 1;
-int optim TRUE;
-int report 2;
+int outsize = NOUTPUT;
+int sptr = 1;
+int optim = TRUE;
+int report = 2;
 int debug;		/* 1 = on */
 int charc;
 int sargc;
@@ -88,13 +96,11 @@ int chset;	/* 1 = char set modified */
 FILE *fin, *fother;
 int fptr;
 int *name;
-int *left;
-int *right;
+i32 *left;
+i32 *right;
 int *parent;
 char *nullstr;
 int tptr;
-char pushc[TOKENSIZE];
-char slist[STARTSIZE];
 char **def, **subs, *dchar;
 char **sname, *schar;
 char *ccl;
@@ -122,9 +128,8 @@ int stnum;
 char match[NCH];
 char extra[NACTIONS];
 char *pchar, *pcptr;
-int pchlen TOKENSIZE;
+int pchlen = TOKENSIZE;
  long rcount;
 int *verify, *advance, *stoff;
 int scon;
 char *psave;
-int buserr(), segviol();

@@ -1,0 +1,116 @@
+# ROM-monitor loader for a self-hosted V7 bootstrap.
+
+mkfs rd(0,0) 32768
+attach rd(0,0)
+
+# Devices.
+mkdir /dev
+mknod /dev/console c 0 0
+mknod /dev/ymodem c 0 1
+mknod /dev/tty0 c 0 2
+mknod /dev/tty1 c 0 3
+mknod /dev/tty2 c 0 4
+mknod /dev/tty3 c 0 5
+mknod /dev/rd0 b 0 0
+mknod /dev/sd0 b 1 0
+mknod /dev/mem c 8 0
+mknod /dev/kmem c 8 1
+mknod /dev/null c 8 2
+mknod /dev/rtc c 19 0
+chmod 0666 /dev/console
+chmod 0600 /dev/ymodem
+chmod 0666 /dev/tty0
+chmod 0666 /dev/tty1
+chmod 0666 /dev/tty2
+chmod 0666 /dev/tty3
+chmod 0600 /dev/rd0
+chmod 0600 /dev/sd0
+chmod 0440 /dev/mem
+chmod 0440 /dev/kmem
+chmod 0666 /dev/null
+chmod 0444 /dev/rtc
+
+# Filesystem hierarchy needed by the seed and package installers.
+mkdir /bin
+mkdir /etc
+mkdir /lib
+mkdir /local
+mkdir /local/bin
+mkdir /local/lib
+mkdir /dist
+mkdir /tmp 0777
+mkdir /usr
+mkdir /usr/adm
+mkdir /usr/bin
+mkdir /usr/dmr
+mkdir /usr/games
+mkdir /usr/games/lib
+mkdir /usr/games/quiz.k
+mkdir /usr/include
+mkdir /usr/include/sys
+mkdir /usr/lib
+mkdir /usr/lib/ack
+mkdir /usr/lib/cawf
+mkdir /usr/lib/lex
+mkdir /usr/lib/refer
+mkdir /usr/lib/uucp
+mkdir /usr/spool
+mkdir /usr/spool/at 0777
+mkdir /usr/spool/at/past 0777
+mkdir /usr/spool/mail
+mkdir /usr/spool/uucp 0777
+mkdir /usr/spool/uucp/.XQTDIR 0777
+mkdir /usr/src
+mkdir /usr/sys
+mkdir /usr/sys/h
+mkdir /usr/tmp 0777
+
+# Kernel and initial process environment.
+rx /unix 0755
+rx /etc/init 0755
+rx /etc/termcap 0644
+rx /bin/osh 0755
+rx /.profile 0644
+rx /usr/dmr/.profile 0644
+
+# Minimal command set used to receive and build the source packages.
+rx /bin/sh 0755
+rx /bin/echo 0755
+rx /bin/ls 0755
+rx /bin/ed 0755
+rx /bin/test 0755
+rx /bin/mkdir 4755
+rx /bin/rm 0755
+rx /bin/rx 0755
+rx /bin/ln 0755
+rx /bin/cp 0755
+rx /bin/mv 4755
+rx /bin/chmod 0755
+rx /bin/sync 0755
+rx /bin/tar 0755
+rx /etc/glob 0755
+rx /etc/ksyms 0644
+rx /local/bin/pcat 0755
+rx /dist/bootstrap 0755
+
+# Seed ACK pipeline.  The dev package later rebuilds and replaces it.
+rx /usr/lib/ack/cpp 0755
+rx /bin/cc 0755
+rx /usr/lib/ack/c1 0755
+rx /usr/lib/ack/opt 0755
+rx /usr/lib/ack/opt2 0755
+rx /usr/lib/ack/ncg 0755
+rx /usr/lib/ack/as 0755
+rx /usr/lib/ack/led 0755
+rx /usr/lib/ack/cv 0755
+ln /usr/lib/ack/as /bin/as
+ln /usr/lib/ack/led /bin/ld
+
+# Target runtime used by the compiler driver and linker.
+rx /lib/crt0.o 0644
+rx /lib/libc.a 0644
+rx /lib/libfp.a 0644
+rx /lib/libm.a 0644
+rx /lib/end.o 0644
+
+boot /unix

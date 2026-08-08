@@ -1,7 +1,8 @@
 #include	"stdio.h"
+#include	<unistd.h>
 
-main(argc, argv)
-char **argv;
+int
+main(int argc, char **argv)
 {
 	register char *p1, *p2, *p3;
 
@@ -24,6 +25,6 @@ char **argv;
 		*p1 = '\0';
 	}
 output:
-	puts(p2, stdout);
+	puts(p2);
 	exit(0);
 }

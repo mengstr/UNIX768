@@ -7,7 +7,7 @@ tbl	*keytbl[TBLSIZE];	/* key words */
 tbl	*restbl[TBLSIZE];	/* reserved words */
 tbl	*deftbl[TBLSIZE];	/* user-defined names */
 
-struct {
+static struct {
 	char	*key;
 	int	keyval;
 } keyword[]	={
@@ -78,7 +78,7 @@ struct {
 	0, 	0
 };
 
-struct {
+static struct {
 	char	*res;
 	char	*resval;
 } resword[]	={
@@ -174,14 +174,12 @@ struct {
 	0,	0
 };
 
-tbl *lookup(tblp, name, defn)	/* find name in tbl. if defn non-null, install */
-tbl **tblp;
-char *name, *defn;
+tbl *
+lookup(tbl **tblp, char *name, char *defn)	/* find name in tbl. if defn non-null, install */
 {
 	register tbl *p;
 	register int h;
 	register char *s = name;
-	char *malloc();
 
 	for (h = 0; *s != '\0'; )
 		h += *s++;
@@ -206,12 +204,13 @@ char *name, *defn;
 	return(p);
 }
 
-init_tbl()	/* initialize all tables */
+void
+init_tbl(void)	/* initialize all tables */
 {
 	int i;
 
 	for (i = 0; keyword[i].key != NULL; i++)
-		lookup(keytbl, keyword[i].key, keyword[i].keyval);
+		lookup(keytbl, keyword[i].key, (char *)(long)keyword[i].keyval);
 	for (i = 0; resword[i].res != NULL; i++)
 		lookup(restbl, resword[i].res, resword[i].resval);
 }

@@ -11,6 +11,10 @@
 #include <sys/ino.h>
 #include <sys/fblk.h>
 #include <sys/filsys.h>
+#ifndef STANDALONE
+#include <stdlib.h>
+#include <unistd.h>
+#endif
 
 struct	filsys	sblock;
 struct	dinode	itab[INOPB*NI];
@@ -28,6 +32,7 @@ ino_t	nrfile;
 ino_t	ndfile;
 ino_t	nbfile;
 ino_t	ncfile;
+ino_t	nfreeino;
 
 daddr_t	ndirect;
 daddr_t	nindir;
@@ -38,14 +43,15 @@ daddr_t	ndup;
 
 int	nerror;
 
-long	atol();
-daddr_t	alloc();
-#ifndef STANDALONE
-char	*malloc();
-#endif
+i32	atol(char *s);
+void	l3tol(i32 *lp, char *cp, i32 n);
+static void check(char *file); static void pass1(struct dinode *ip);
+static int chk(daddr_t bno, char *s); static int duped(daddr_t bno);
+static daddr_t alloc(void); static void bfree(daddr_t bno);
+static void bread(daddr_t bno, char *buf, int cnt);
+static void bwrite(daddr_t bno, char *buf); static void makefree(void);
 
-main(argc, argv)
-char *argv[];
+main(int argc, char **argv)
 {
 	register i;
 	long n;
@@ -98,6 +104,7 @@ char *argv[];
 	return(nerror);
 }
 
+static void
 check(file)
 char *file;
 {
@@ -117,6 +124,7 @@ char *file;
 	ndfile = 0;
 	ncfile = 0;
 	nbfile = 0;
+	nfreeino = 0;
 
 	ndirect = 0;
 	nindir = 0;
@@ -174,7 +182,7 @@ char *file;
 		return;
 	}
 	nfree = 0;
-	while(n = alloc()) {
+	while((n = alloc())) {
 		if (chk(n, "free"))
 			break;
 		nfree++;
@@ -215,6 +223,7 @@ char *file;
 	}
 }
 
+static void
 pass1(ip)
 register struct dinode *ip;
 {
@@ -226,7 +235,7 @@ register struct dinode *ip;
 
 	i = ip->di_mode & IFMT;
 	if(i == 0) {
-		sblock.s_tinode++;
+		nfreeino++;
 		return;
 	}
 	if(i == IFCHR) {
@@ -292,6 +301,7 @@ register struct dinode *ip;
 	}
 }
 
+static int
 chk(bno, s)
 daddr_t bno;
 char *s;
@@ -312,6 +322,7 @@ char *s;
 	return(0);
 }
 
+static int
 duped(bno)
 daddr_t bno;
 {
@@ -329,12 +340,12 @@ daddr_t bno;
 	return(0);
 }
 
-daddr_t
-alloc()
+static daddr_t
+alloc(void)
 {
 	int i;
 	daddr_t bno;
-	union {
+	union fblkbuf {
 		char	data[BSIZE];
 		struct	fblk fb;
 	} buf;
@@ -352,7 +363,7 @@ alloc()
 		return(bno);
 	if(sblock.s_nfree <= 0) {
 		bread(bno, buf.data, BSIZE);
-		sblock.s_nfree = buf.df_nfree;
+		sblock.s_nfree = buf.fb.df_nfree;
 		if (sblock.s_nfree<0 || sblock.s_nfree>NICFREE) {
 			printf("Bad free list, entry count of block %ld = %d\n",
 				bno, sblock.s_nfree);
@@ -360,27 +371,29 @@ alloc()
 			return(0);
 		}
 		for(i=0; i<NICFREE; i++)
-			sblock.s_free[i] = buf.df_free[i];
+			sblock.s_free[i] = buf.fb.df_free[i];
 	}
 	return(bno);
 }
 
+static void
 bfree(bno)
 daddr_t bno;
 {
-	union {
+	union fblkbuf {
 		char	data[BSIZE];
 		struct	fblk fb;
 	} buf;
 	int i;
 
-	sblock.s_tfree++;
+	if (bno != (daddr_t)0)
+		sblock.s_tfree++;
 	if(sblock.s_nfree >= NICFREE) {
 		for(i=0; i<BSIZE; i++)
 			buf.data[i] = 0;
-		buf.df_nfree = sblock.s_nfree;
+		buf.fb.df_nfree = sblock.s_nfree;
 		for(i=0; i<NICFREE; i++)
-			buf.df_free[i] = sblock.s_free[i];
+			buf.fb.df_free[i] = sblock.s_free[i];
 		bwrite(bno, buf.data);
 		sblock.s_nfree = 0;
 	}
@@ -388,6 +401,7 @@ daddr_t bno;
 	sblock.s_nfree++;
 }
 
+static void
 bread(bno, buf, cnt)
 daddr_t bno;
 char *buf;
@@ -406,6 +420,7 @@ char *buf;
 	}
 }
 
+static void
 bwrite(bno, buf)
 daddr_t bno;
 char	*buf;
@@ -416,7 +431,8 @@ char	*buf;
 		printf("write error %ld\n", bno);
 }
 
-makefree()
+static void
+makefree(void)
 {
 	char flg[MAXFN];
 	int adr[MAXFN];
@@ -454,7 +470,7 @@ makefree()
 	time(&sblock.s_time);
 #endif
 	sblock.s_tfree = 0;
-	sblock.s_tinode = 0;
+	sblock.s_tinode = nfreeino;
 
 	bfree((daddr_t)0);
 	d = sblock.s_fsize-1;

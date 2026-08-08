@@ -3,38 +3,89 @@
  */
 
 #include <sys/types.h>
-#include <sgtty.h>
-#include <utmp.h>
-#include <signal.h>
 #include <pwd.h>
+#include <string.h>
+#include <unistd.h>
+#include <local.h>
+#include <utmp.h>
+
+#define SCPYN(a, b)	strncpy(a, b, sizeof(a))
+
+#include <sgtty.h>
+#include <signal.h>
 #include <stdio.h>
 #include <sys/stat.h>
-#define SCPYN(a, b)	strncpy(a, b, sizeof(a))
+
+struct passwd *getpwnam(char *name);
+int setpwent(void);
+char *rindex(char *sp, i32 c);
+char *ttyname(i32 fd);
+int ttyslot(void);
+char homedir[64] = "HOME=";
+char *envinit[] = {homedir, "TERM=vt100", "PATH=:/bin:/etc:/local/bin:/usr/bin", 0};
+extern char **environ;
 
 char	maildir[30] =	"/usr/spool/mail/";
 struct	passwd nouser = {"", "nope"};
 struct	sgttyb ttyb;
-struct	utmp utmp;
-char	minusnam[16] = "-";
-char	homedir[64] = "HOME=";
-char	*envinit[] = {homedir, "PATH=:/bin:/usr/bin", 0};
 struct	passwd *pwd;
+char	*crypt(char *pw, char *salt);
+char	*getpass(char *prompt);
+void	showmotd(void);
+void	catch(i16 signo);
+i32	execlp(char *file, char *arg0, ...);
 
-struct	passwd *getpwnam();
-char	*strcat();
-int	setpwent();
-char	*ttyname();
-char	*crypt();
-char	*getpass();
-char	*rindex(), *index();
-extern	char **environ;
+static void
+fd_puts(i32 fd, char *s)
+{
+	register long n;
 
-main(argc, argv)
-char **argv;
+	n = (long)strlen(s);
+	write(fd, s, n);
+}
+
+static void
+fail1(char *msg)
+{
+	fd_puts((i32)1, msg);
+	fd_puts((i32)1, "\n");
+	exit(1);
+}
+
+static void
+fail2(char *prefix, char *value)
+{
+	fd_puts((i32)1, prefix);
+	fd_puts((i32)1, value);
+	fd_puts((i32)1, "\n");
+	exit(1);
+}
+
+static void
+set_home(char *dir)
+{
+	register char *hp;
+	register char *dp;
+	register int n;
+
+	hp = homedir + 5;
+	dp = dir;
+	n = sizeof(homedir) - 6;
+	while (n-- > 0 && *dp)
+		*hp++ = *dp++;
+	*hp = '\0';
+}
+
+int
+main(int argc, char **argv)
 {
 	register char *namep;
+	char *shell;
+	char minusnam[32];
+	struct utmp utmp;
 	int t, f, c;
 	char *ttyn;
+	char *linep;
 
 	alarm(60);
 	signal(SIGQUIT, SIG_IGN);
@@ -52,7 +103,7 @@ char **argv;
 	if (ttyn==0)
 		ttyn = "/dev/tty??";
 
-    loop:
+loop:
 	SCPYN(utmp.ut_name, "");
 	if (argc>1) {
 		SCPYN(utmp.ut_name, argv[1]);
@@ -71,7 +122,7 @@ char **argv;
 		}
 	}
 	setpwent();
-	if ((pwd = getpwnam(utmp.ut_name)) == NULL)
+	if ((pwd = getpwnam(utmp.ut_name)) == 0)
 		pwd = &nouser;
 	endpwent();
 	if (*pwd->pw_passwd != '\0') {
@@ -81,15 +132,22 @@ char **argv;
 			goto loop;
 		}
 	}
+
 	if(chdir(pwd->pw_dir) < 0) {
 		printf("No directory\n");
 		goto loop;
 	}
+
 	time(&utmp.ut_time);
 	t = ttyslot();
 	if (t>0 && (f = open("/etc/utmp", 1)) >= 0) {
 		lseek(f, (long)(t*sizeof(utmp)), 0);
-		SCPYN(utmp.ut_line, index(ttyn+1, '/')+1);
+		linep = rindex(ttyn, '/');
+		if (linep)
+			linep++;
+		else
+			linep = ttyn;
+		SCPYN(utmp.ut_line, linep);
 		write(f, (char *)&utmp, sizeof(utmp));
 		close(f);
 	}
@@ -101,15 +159,20 @@ char **argv;
 	chown(ttyn, pwd->pw_uid, pwd->pw_gid);
 	setgid(pwd->pw_gid);
 	setuid(pwd->pw_uid);
-	if (*pwd->pw_shell == '\0')
-		pwd->pw_shell = "/bin/sh";
+
+	shell = pwd->pw_shell;
+	if (shell == 0 || shell[0] == '\0')
+		shell = "/bin/sh";
+
 	environ = envinit;
-	strncat(homedir, pwd->pw_dir, sizeof(homedir)-6);
-	if ((namep = rindex(pwd->pw_shell, '/')) == NULL)
-		namep = pwd->pw_shell;
+	set_home(pwd->pw_dir);
+
+	if ((namep = rindex(shell, '/')) == 0)
+		namep = shell;
 	else
 		namep++;
-	strcat(minusnam, namep);
+	minusnam[0] = '-';
+	strcpy(minusnam + 1, namep);
 	alarm(0);
 	umask(02);
 	showmotd();
@@ -122,19 +185,22 @@ char **argv;
 	}
 	signal(SIGQUIT, SIG_DFL);
 	signal(SIGINT, SIG_DFL);
-	execlp(pwd->pw_shell, minusnam, 0);
+	execlp(shell, minusnam, 0);
 	printf("No shell\n");
 	exit(0);
 }
 
 int	stopmotd;
-catch()
+void
+catch(i16 signo)
 {
+	(void)signo;
 	signal(SIGINT, SIG_IGN);
 	stopmotd++;
 }
 
-showmotd()
+void
+showmotd(void)
 {
 	FILE *mf;
 	register c;

@@ -1,13 +1,15 @@
 #include <stdio.h>
+#include <errno.h>
 #include <sys/param.h>
 #include <sys/filsys.h>
 #include <sys/fblk.h>
+#include <unistd.h>
 
 daddr_t	blkno	= 1;
 char	*dargv[] = {
 	0,
-	"/dev/rp0",
-	"/dev/rp3",
+	"/dev/rd0",
+	"/dev/sd0",
 	0
 };
 
@@ -15,10 +17,13 @@ char	*dargv[] = {
 struct	filsys sblock;
 
 int	fi;
-daddr_t	alloc();
 
-main(argc, argv)
-char **argv;
+static void dfree(char *file);
+static daddr_t alloc(void);
+static void bread(daddr_t bno, char *buf, i32 cnt);
+
+int
+main(int argc, char **argv)
 {
 	int i;
 
@@ -30,13 +35,16 @@ char **argv;
 	for(i=1; i<argc; i++) {
 		dfree(argv[i]);
 	}
+	return(0);
 }
 
+static void
 dfree(file)
 char *file;
 {
 	daddr_t i;
 
+	blkno = 1;
 	fi = open(file, 0);
 	if(fi < 0) {
 		fprintf(stderr,"cannot open %s\n", file);
@@ -47,49 +55,61 @@ char *file;
 	i = 0;
 	while(alloc())
 		i++;
-	printf("%s %D\n", file, i);
+	printf("%s %ld\n", file, i);
 	close(fi);
 }
 
-daddr_t
+static daddr_t
 alloc()
 {
 	int i;
 	daddr_t b;
-	struct fblk buf;
+	union {
+		char data[BSIZE];
+		struct fblk fb;
+	} buf;
 
-	i = --sblock.s_nfree;
-	if(i<0 || i>=NICFREE) {
-		printf("bad free count, b=%D\n", blkno);
+	if(sblock.s_nfree <= 0)
+		return(0);
+	if(sblock.s_nfree > NICFREE) {
+		printf("bad free count, b=%ld\n", blkno);
 		return(0);
 	}
+	i = --sblock.s_nfree;
 	b = sblock.s_free[i];
+	sblock.s_free[i] = (daddr_t)0;
 	if(b == 0)
 		return(0);
 	if(b<sblock.s_isize || b>=sblock.s_fsize) {
-		printf("bad free block (%D)\n", b);
+		printf("bad free block (%ld)\n", b);
 		return(0);
 	}
 	if(sblock.s_nfree <= 0) {
-		bread(b, (char *)&buf, sizeof(buf));
+		bread(b, buf.data, BSIZE);
 		blkno = b;
-		sblock.s_nfree = buf.df_nfree;
+		sblock.s_nfree = buf.fb.df_nfree;
+		if(sblock.s_nfree < 0 || sblock.s_nfree > NICFREE) {
+			printf("bad free count, b=%ld\n", blkno);
+			sblock.s_nfree = 0;
+			return(0);
+		}
 		for(i=0; i<NICFREE; i++)
-			sblock.s_free[i] = buf.df_free[i];
+			sblock.s_free[i] = buf.fb.df_free[i];
 	}
 	return(b);
 }
 
+static void
 bread(bno, buf, cnt)
 daddr_t bno;
 char *buf;
+i32 cnt;
 {
 	int n;
-	extern errno;
 
 	lseek(fi, bno<<BSHIFT, 0);
 	if((n=read(fi, buf, cnt)) != cnt) {
-		printf("read error %D\n", bno);
+		printf("read error %ld\n", bno);
 		printf("count = %d; errno = %d\n", n, errno);
 		exit(0);
 	}

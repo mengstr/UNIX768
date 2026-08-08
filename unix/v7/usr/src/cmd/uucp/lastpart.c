@@ -1,3 +1,4 @@
+#include <string.h>
 
 
 /*******
@@ -9,8 +10,7 @@
  */
 
 char *
-lastpart(file)
-char *file;
+lastpart (char *file)
 {
 	char *c;
 

@@ -1,7 +1,9 @@
  /* tg.c: process included text blocks */
 # include "t..c"
+char *
 gettext(sp, ilin,icol, fn, sz)
 	char *sp, *fn, *sz;
+	int ilin, icol;
 {
 /* get a section of text */
 char line[256];
@@ -59,9 +61,10 @@ else
 	*sp=0;
 oname=texname;
 texname = texstr[++texct];
-return(oname);
+return((char *)(long)oname);
 }
-untext()
+void
+untext(void)
 {
 rstofill();
 fprintf(tabout, ".nf\n");

@@ -19,6 +19,9 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <signal.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #define DEFLTX "/usr/lib/eign"
 #define TILDE 0177
 #define SORT "/bin/sort"
@@ -31,9 +34,13 @@
 
 #define isabreak(c) (btable[c])
 
-extern char *calloc(), *mktemp();
-extern char *getline();
-int status;
+static void msg(char *s, char *arg); static void diag(char *s, char *arg);
+static char *getline(void); static void cmpline(char *pend);
+static int cmpword(char *cpp, char *pend, char *hpp); static void putline(char *strt, char *end);
+static void getsort(void); static char *rtrim(char *a, char *c, int d);
+static char *ltrim(char *c, char *b, int d); static void putout(char *strt, char *end);
+static void onintr(void); static int hash(char *strtp, char *endp); static int storeh(int num, char *strtp);
+i16 status;
 
 
 char *hasht[MAXT];
@@ -66,25 +73,22 @@ FILE *sortptr;
 char *bfile;	/*contains user supplied break chars */
 FILE *bptr;
 
-main(argc,argv)
-int argc;
-char **argv;
+main(int argc, char **argv)
 {
 	register int c;
 	register char *bufp;
 	int pid;
 	char *pend;
-	extern onintr();
 
 	char *xfile;
 	FILE *xptr;
 
-	if(signal(SIGHUP,onintr)==SIG_IGN)
+	if(signal(SIGHUP,(sighandler_t)onintr)==SIG_IGN)
 		signal(SIGHUP,SIG_IGN);
-	if(signal(SIGINT,onintr)==SIG_IGN)
+	if(signal(SIGINT,(sighandler_t)onintr)==SIG_IGN)
 		signal(SIGINT,SIG_IGN);
-	signal(SIGPIPE,onintr);
-	signal(SIGTERM,onintr);
+	signal(SIGPIPE,(sighandler_t)onintr);
+	signal(SIGTERM,(sighandler_t)onintr);
 
 /*	argument decoding	*/
 
@@ -247,6 +251,7 @@ char **argv;
 	onintr();
 }
 
+static void
 msg(s,arg)
 char *s;
 char *arg;
@@ -254,6 +259,7 @@ char *arg;
 	fprintf(stderr,"%s %s\n",s,arg);
 	return;
 }
+static void
 diag(s,arg)
 char *s, *arg;
 {
@@ -263,7 +269,8 @@ char *s, *arg;
 }
 
 
-char *getline()
+static char *
+getline(void)
 {
 
 	register c;
@@ -299,6 +306,7 @@ char *getline()
 	return(0);
 }
 
+static void
 cmpline(pend)
 char *pend;
 {
@@ -346,6 +354,7 @@ char *pend;
 	}
 }
 
+static int
 cmpword(cpp,pend,hpp)
 char *cpp, *pend, *hpp;
 {
@@ -360,6 +369,7 @@ char *cpp, *pend, *hpp;
 	return(0);
 }
 
+static void
 putline(strt, end)
 char *strt, *end;
 {
@@ -376,13 +386,13 @@ char *strt, *end;
 	putc('\n',sortptr);
 }
 
-getsort()
+static void
+getsort(void)
 {
 	register c;
 	register char *tilde, *linep, *ref;
 	char *p1a,*p1b,*p2a,*p2b,*p3a,*p3b,*p4a,*p4b;
 	int w;
-	char *rtrim(), *ltrim();
 
 	if((sortptr = fopen(sortfile,"r")) == NULL)
 		diag("Cannot open sorted data:",sortfile);
@@ -456,7 +466,8 @@ getsort()
 	}
 }
 
-char *rtrim(a,c,d)
+static char *
+rtrim(a,c,d)
 char *a,*c;
 {
 	char *b,*x;
@@ -469,7 +480,8 @@ char *a,*c;
 	return(b);
 }
 
-char *ltrim(c,b,d)
+static char *
+ltrim(c,b,d)
 char *c,*b;
 {
 	char *a,*x;
@@ -482,6 +494,7 @@ char *c,*b;
 	return(a);
 }
 
+static void
 putout(strt,end)
 char *strt, *end;
 {
@@ -494,7 +507,8 @@ char *strt, *end;
 	}
 }
 
-onintr()
+static void
+onintr(void)
 {
 
 	if(*sortfile)
@@ -502,6 +516,7 @@ onintr()
 	exit(1);
 }
 
+static int
 hash(strtp,endp)
 char *strtp, *endp;
 {
@@ -529,6 +544,7 @@ char *strtp, *endp;
 	return(k);
 }
 
+static int
 storeh(num,strtp)
 int num;
 char *strtp;

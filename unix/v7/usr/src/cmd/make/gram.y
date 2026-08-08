@@ -1,22 +1,9 @@
 %{#include "defs"
-%}
 
-%term NAME SHELLINE START MACRODEF COLON DOUBLECOLON GREATER
-%union
-	{
-	struct shblock *yshblock;
-	struct depblock *ydepblock;
-	struct nameblock *ynameblock;
-	}
+static int nextlin(void);
+static int retsh(char *q);
+int yyerror(char *s);
 
-%type <yshblock> SHELLINE, shlist, shellist
-%type <ynameblock> NAME, namelist
-%type <ydepblock> deplist, dlist
-
-
-%%
-
-%{
 struct depblock *pp;
 FSTATIC struct shblock *prevshp;
 
@@ -27,8 +14,23 @@ FSTATIC int nlefts;
 struct lineblock *lp, *lpp;
 FSTATIC struct depblock *prevdep;
 FSTATIC int sepc;
+extern int yylineno;
 %}
 
+%term NAME SHELLINE START MACRODEF COLON DOUBLECOLON GREATER
+%union
+	{
+	struct shblock *yshblock;
+	struct depblock *ydepblock;
+	struct nameblock *ynameblock;
+	}
+
+%type <yshblock> SHELLINE shlist shellist
+%type <ynameblock> NAME namelist
+%type <ydepblock> deplist dlist
+
+
+%%
 
 file:
 	| file comline
@@ -36,7 +38,7 @@ file:
 
 comline:  START
 	| MACRODEF
-	| START namelist deplist shellist = {
+	| START namelist deplist shellist {
 	    while( --nlefts >= 0)
 		{
 		leftp = lefts[nlefts];
@@ -74,8 +76,8 @@ comline:  START
 	| error
 	;
 
-namelist: NAME	= { lefts[0] = $1; nlefts = 1; }
-	| namelist NAME	= { lefts[nlefts++] = $2;
+namelist: NAME	{ lefts[0] = $1; nlefts = 1; }
+	| namelist NAME	{ lefts[nlefts++] = $2;
 	    	if(nlefts>NLEFTS) fatal("Too many lefts"); }
 	;
 
@@ -88,8 +90,8 @@ deplist:
 	| dlist
 	;
 
-dlist:  sepchar	= { prevdep = 0;  $$ = 0; }
-	| dlist NAME	= {
+dlist:  sepchar	{ prevdep = 0;  $$ = 0; }
+	| dlist NAME	{
 			  pp = ALLOC(depblock);
 			  pp->nxtdepblock = NULL;
 			  pp->depname = $2;
@@ -99,16 +101,16 @@ dlist:  sepchar	= { prevdep = 0;  $$ = 0; }
 			  }
 	;
 
-sepchar:  COLON 	= { sepc = ALLDEPS; }
-	| DOUBLECOLON	= { sepc = SOMEDEPS; }
+sepchar:  COLON 	{ sepc = ALLDEPS; }
+	| DOUBLECOLON	{ sepc = SOMEDEPS; }
 	;
 
-shellist:	= {$$ = 0; }
-	| shlist = { $$ = $1; }
+shellist:	{ $$ = 0; }
+	| shlist { $$ = $1; }
 	;
 
-shlist:	SHELLINE   = { $$ = $1;  prevshp = $1; }
-	| shlist SHELLINE = { $$ = $1;
+shlist:	SHELLINE   { $$ = $1;  prevshp = $1; }
+	| shlist SHELLINE { $$ = $1;
 			prevshp->nxtshblock = $2;
 			prevshp = $2;
 			}
@@ -120,7 +122,8 @@ char *zznextc;	/* zero if need another line; otherwise points to next char */
 int yylineno;
 extern FILE * fin;
 
-yylex()
+int
+yylex (void)
 {
 register char *p;
 register char *q;
@@ -181,13 +184,11 @@ return(0);	/* never executed */
 
 
 
-retsh(q)
-char *q;
+static int
+retsh (char *q)
 {
 register char *p;
 struct shblock *sp;
-char *copys();
-
 for(p=q+1 ; *p==' '||*p=='\t' ; ++p)  ;
 
 sp = ALLOC(shblock);
@@ -198,7 +199,8 @@ zznextc = 0;
 return(SHELLINE);
 }
 
-nextlin()
+static int
+nextlin (void)
 {
 static char yytext[INMAX];
 static char *yytextl	= yytext+INMAX;
@@ -249,7 +251,7 @@ else	{
 				while( (kc=getc(fin))=='\t' || kc==' ' || kc=='\n')
 					if(kc == '\n')
 						++yylineno;
-	
+
 				if(kc != EOF)
 					break;
 			case EOF:
@@ -264,7 +266,7 @@ endloop:
 
 	if((c = text[0]) == '\t')
 		return( retsh(text) );
-	
+
 	if(isalpha(c) || isdigit(c) || c==' ' || c=='.')
 		for(p=text+1; *p!='\0'; )
 			if(*p == ':')

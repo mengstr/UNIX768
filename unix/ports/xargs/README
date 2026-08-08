@@ -1,0 +1,26 @@
+PWB xargs for Epoch68 UNIX V7
+==============================
+
+This is a focused ANSI C port of the historical PWB/UNIX xargs source
+preserved in the archived UNIX768 repository's PWB source-intake tree. That
+source came from
+TUHS spencer_pwb.tar.gz, path sys/source/s2/xargs.c, with an archive timestamp
+of 1980-02-10.
+
+The command retains the historical option syntax and limits:
+
+        -x          fail rather than split an oversized argument list
+        -l          execute once per input line
+        -i[pattern] substitute each input line for pattern (default {})
+        -t          trace commands on standard error
+        -e[string]  set the logical end-of-input string (default _)
+        -s[number]  set maximum command-line size (maximum 470)
+        -n[number]  use at most number input arguments per command
+        -p          prompt on /dev/tty before executing
+
+With no command, xargs runs /bin/echo.
+
+The port replaces the missing PWB macros.h helpers, pre-V7 initialization and
+assignment syntax, implicit pointer returns, ABI-dependent error-message
+argument walking, and pexec() with typed V7 libc operations.  It intentionally
+does not add modern GNU or POSIX extensions.

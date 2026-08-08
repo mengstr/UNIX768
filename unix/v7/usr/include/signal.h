@@ -1,3 +1,8 @@
+#include "sys/inttypes.h"
+
+#ifndef _SIGNAL_H_
+#define _SIGNAL_H_
+
 #define NSIG 17
 
 #define	SIGHUP	1	/* hangup */
@@ -16,6 +21,10 @@
 #define	SIGALRM	14	/* alarm clock */
 #define	SIGTERM	15	/* software termination signal from kill */
 
-int	(*signal())();
-#define	SIG_DFL	(int (*)())0
-#define	SIG_IGN	(int (*)())1
+typedef void (*sighandler_t)(i16);
+
+sighandler_t signal(i16, sighandler_t);
+#define	SIG_DFL	((sighandler_t)0)
+#define	SIG_IGN	((sighandler_t)1)
+
+#endif

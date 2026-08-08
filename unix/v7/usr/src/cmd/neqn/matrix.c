@@ -1,6 +1,7 @@
 #include "e.h"
 
-column(type, p1) int type, p1; {
+void
+column(int type, int p1) {
 	int i;
 
 	lp[p1] = ct - p1 - 1;
@@ -13,7 +14,8 @@ column(type, p1) int type, p1; {
 	lp[ct++] = type;
 }
 
-matrix(p1) int p1; {
+void
+matrix(int p1) {
 	int nrow, ncol, i, j, k, hb, b, val[100];
 	char *space;
 
@@ -51,8 +53,8 @@ matrix(p1) int p1; {
 	ebase[yyval] = ebase[val[0]];
 	lfont[yyval] = rfont[yyval] = 0;
 	if(dbg)printf(".\tmatrix S%d: r=%d, c=%d, h=%d, b=%d\n",
-		yyval,nrow,ncol,eht[yyval],ebase[yyval]);
-	printf(".ds %d \"", yyval);
+		YV,nrow,ncol,eht[yyval],ebase[yyval]);
+	printf(".ds %d \"", YV);
 	for( i=0; i<ncol; i++ )  {
 		printf("\\*(%d%s", val[i], i==ncol-1 ? "" : space);
 		ofree(val[i]);

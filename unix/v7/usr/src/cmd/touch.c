@@ -1,9 +1,11 @@
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
+static void touch(i32 force, char *name);
 
-main(argc,argv)
-int argc;
-char *argv[];
+int
+main(int argc, char *argv[])
 {
 int i;
 static int force = 1;
@@ -13,6 +15,7 @@ for(i = 1 ; i < argc ; ++i)
 		touch(force, argv[i]);
 	else
 		force = 0;
+return 0;
 }
 
 
@@ -22,8 +25,9 @@ for(i = 1 ; i < argc ; ++i)
 #include <sys/stat.h>
 
 
+static void
 touch(force, name)
-int force;
+i32 force;
 char *name;
 {
 struct stat stbuff;

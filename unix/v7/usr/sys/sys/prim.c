@@ -4,23 +4,27 @@
 #include "../h/conf.h"
 #include "../h/buf.h"
 
+void ndflush(struct clist *q, i32 cc);
+
 struct cblock {
 	struct cblock *c_next;
 	char	c_info[CBSIZE];
 };
 
-struct	cblock	cfree[NCLIST];
+char	cfree_space[(NCLIST * sizeof(struct cblock)) + CROUND];
+struct	cblock	*cfree;
 struct	cblock	*cfreelist;
-int	cbad;
+i16	cbad;
 
 /*
  * Character list get/put
  */
+i32
 getc(p)
 register struct clist *p;
 {
 	register struct cblock *bp;
-	register int c, s;
+	register i32 c, s;
 
 	s = spl6();
 	if (p->c_cc <= 0) {
@@ -31,12 +35,12 @@ register struct clist *p;
 		c = *p->c_cf++ & 0377;
 		if (--p->c_cc<=0) {
 			bp = (struct cblock *)(p->c_cf-1);
-			bp = (struct cblock *) ((int)bp & ~CROUND);
+			bp = (struct cblock *)((unsigned long)bp & ~(unsigned long)CROUND);
 			p->c_cf = NULL;
 			p->c_cl = NULL;
 			bp->c_next = cfreelist;
 			cfreelist = bp;
-		} else if (((int)p->c_cf & CROUND) == 0){
+		} else if (((unsigned long)p->c_cf & (unsigned long)CROUND) == 0){
 			bp = (struct cblock *)(p->c_cf);
 			bp--;
 			p->c_cf = bp->c_next->c_info;
@@ -52,12 +56,14 @@ register struct clist *p;
  * copy clist to buffer.
  * return number of bytes moved.
  */
+i32
 q_to_b(q, cp, cc)
 register struct clist *q;
 register char *cp;
+i32 cc;
 {
 	register struct cblock *bp;
-	register int s;
+	register i32 s;
 	char *acp;
 
 	if (cc <= 0)
@@ -75,13 +81,13 @@ register char *cp;
 		*cp++ = *q->c_cf++;
 		if (--q->c_cc <= 0) {
 			bp = (struct cblock *)(q->c_cf-1);
-			bp = (struct cblock *)((int)bp & ~CROUND);
+			bp = (struct cblock *)((unsigned long)bp & ~(unsigned long)CROUND);
 			q->c_cf = q->c_cl = NULL;
 			bp->c_next = cfreelist;
 			cfreelist = bp;
 			break;
 		}
-		if (((int)q->c_cf & CROUND) == 0) {
+		if (((unsigned long)q->c_cf & (unsigned long)CROUND) == 0) {
 			bp = (struct cblock *)(q->c_cf);
 			bp--;
 			q->c_cf = bp->c_next->c_info;
@@ -99,19 +105,19 @@ register char *cp;
  * in clist starting at q->c_cf.
  * Stop counting if flag&character is non-null.
  */
-ndqb(q, flag)
-register struct clist *q;
+i32
+ndqb(register struct clist *q, i32 flag)
 {
-register cc;
-int s;
+	register i32 cc;
+	i32 s;
 
 	s = spl6();
 	if (q->c_cc <= 0) {
 		cc = -q->c_cc;
 		goto out;
 	}
-	cc = ((int)q->c_cf + CBSIZE) & ~CROUND;
-	cc -= (int)q->c_cf;
+	cc = (i32)(((((unsigned long)q->c_cf) + CBSIZE) &
+	    ~(unsigned long)CROUND) - (unsigned long)q->c_cf);
 	if (q->c_cc < cc)
 		cc = q->c_cc;
 	if (flag) {
@@ -122,8 +128,7 @@ int s;
 		end += cc;
 		while (p < end) {
 			if (*p & flag) {
-				cc = (int)p;
-				cc -= (int)q->c_cf;
+				cc = (i32)(p - q->c_cf);
 				break;
 			}
 			p++;
@@ -140,11 +145,11 @@ out:
  * Update clist to show that cc characters
  * were removed.  It is assumed that cc < CBSIZE.
  */
-ndflush(q, cc)
+void ndflush(q, cc)
 register struct clist *q;
-register cc;
+i32 cc;
 {
-register s;
+	register i32 s;
 
 	s = spl6();
 	if (q->c_cc < 0) {
@@ -165,7 +170,7 @@ register s;
 	}
 	q->c_cc -= cc;
 	q->c_cf += cc;
-	if (((int)q->c_cf & CROUND) == 0) {
+	if (((unsigned long)q->c_cf & (unsigned long)CROUND) == 0) {
 		register struct cblock *bp;
 
 		bp = (struct cblock *)(q->c_cf) -1;
@@ -179,7 +184,7 @@ register s;
 	} else
 	if (q->c_cc == 0) {
 		register struct cblock *bp;
-		q->c_cf = (char *)((int)q->c_cf & ~CROUND);
+		q->c_cf = (char *)((unsigned long)q->c_cf & ~(unsigned long)CROUND);
 		bp = (struct cblock *)(q->c_cf);
 		bp->c_next = cfreelist;
 		cfreelist = bp;
@@ -188,12 +193,14 @@ register s;
 out:
 	splx(s);
 }
+i32
 putc(c, p)
+i32 c;
 register struct clist *p;
 {
 	register struct cblock *bp;
 	register char *cp;
-	register s;
+	register i32 s;
 
 	s = spl6();
 	if ((cp = p->c_cl) == NULL || p->c_cc < 0 ) {
@@ -204,7 +211,7 @@ register struct clist *p;
 		cfreelist = bp->c_next;
 		bp->c_next = NULL;
 		p->c_cf = cp = bp->c_info;
-	} else if (((int)cp & CROUND) == 0) {
+	} else if (((unsigned long)cp & (unsigned long)CROUND) == 0) {
 		bp = (struct cblock *)cp - 1;
 		if ((bp->c_next = cfreelist) == NULL) {
 			splx(s);
@@ -228,14 +235,15 @@ register struct clist *p;
  * copy buffer to clist.
  * return number of bytes not transfered.
  */
+i32
 b_to_q(cp, cc, q)
 register char *cp;
 struct clist *q;
-register int cc;
+i32 cc;
 {
 	register char *cq;
 	register struct cblock *bp;
-	register s, acc;
+	register i32 s, acc;
 
 	if (cc <= 0)
 		return(0);
@@ -252,7 +260,7 @@ register int cc;
 	}
 
 	while (cc) {
-		if (((int)cq & CROUND) == 0) {
+		if (((unsigned long)cq & (unsigned long)CROUND) == 0) {
 			bp = (struct cblock *) cq - 1;
 			if ((bp->c_next = cfreelist) == NULL) 
 				goto out;
@@ -275,15 +283,16 @@ out:
  * Initialize clist by freeing all character blocks, then count
  * number of character devices. (Once-only routine)
  */
-cinit()
+void cinit()
 {
-	register int ccp;
+	register unsigned long ccp;
 	register struct cblock *cp;
 	register struct cdevsw *cdp;
 
-	ccp = (int)cfree;
+	ccp = (unsigned long)cfree_space;
 	ccp = (ccp+CROUND) & ~CROUND;
-	for(cp=(struct cblock *)ccp; cp <= &cfree[NCLIST-1]; cp++) {
+	cfree = (struct cblock *)ccp;
+	for(cp = cfree; cp < &cfree[NCLIST]; cp++) {
 		cp->c_next = cfreelist;
 		cfreelist = cp;
 	}
@@ -298,10 +307,10 @@ cinit()
  * integer (2-byte) get/put
  * using clists
  */
-getw(p)
-register struct clist *p;
+i32
+getw(register struct clist *p)
 {
-	register int s;
+	register i32 s;
 
 	if (p->c_cc <= 1)
 		return(-1);
@@ -309,10 +318,10 @@ register struct clist *p;
 	return(s | (getc(p)<<8));
 }
 
-putw(c, p)
-register struct clist *p;
+i32
+putw(i32 c, register struct clist *p)
 {
-	register s;
+	register i32 s;
 
 	s = spl6();
 	if (cfreelist==NULL) {

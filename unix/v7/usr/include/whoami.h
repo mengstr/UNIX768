@@ -1,1 +1,1 @@
-#define	sysname	"where I am"
+#define	sysname	"unix768"

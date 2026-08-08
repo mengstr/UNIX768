@@ -6,6 +6,8 @@
  *	the partial ordering specified by the graph
 */
 #include "stdio.h"
+#include <unistd.h>
+#include <stdlib.h>
 
 /*	the nodelist always has an empty element at the end to
  *	make it easy to grow in natural order
@@ -26,17 +28,21 @@ struct predlist {
 	struct nodelist *pred;
 };
 
-struct nodelist *index();
-struct nodelist *findloop();
-struct nodelist *mark();
-char *malloc();
+static int present(struct nodelist *i, struct nodelist *j);
+static int anypred(struct nodelist *i);
+static struct nodelist *tsort_index(register char *s);
+static int cmp(register char *s, register char *t);
+static int error(char *s, char *t);
+static int note(char *s, char *t);
+static struct nodelist *findloop(void);
+
 char *empty = "";
 
 /*	the first for loop reads in the graph,
  *	the second prints out the ordering
 */
-main(argc,argv)
-char **argv;
+int
+main (int argc, char **argv)
 {
 	register struct predlist *t;
 	FILE *input = stdin;
@@ -54,9 +60,9 @@ char **argv;
 			break;
 		if(x!=2)
 			error("odd data",empty);
-		i = index(precedes);
-		j = index(follows);
-		if(i==j||present(i,j)) 
+		i = tsort_index(precedes);
+		j = tsort_index(follows);
+		if(i==j||present(i,j))
 			continue;
 		t = (struct predlist *)malloc(sizeof(struct predlist));
 		t->nextpred = j->inedges;
@@ -79,12 +85,13 @@ char **argv;
 		printf("%s\n",i->name);
 		i->live = DEAD;
 	}
+	return(0);
 }
 
 /*	is i present on j's predecessor list?
 */
-present(i,j)
-struct nodelist *i, *j;
+static int
+present (struct nodelist *i, struct nodelist *j)
 {
 	register struct predlist *t;
 	for(t=j->inedges; t!=NULL; t=t->nextpred)
@@ -95,8 +102,8 @@ struct nodelist *i, *j;
 
 /*	is there any live predecessor for i?
 */
-anypred(i)
-struct nodelist *i;
+static int
+anypred (struct nodelist *i)
 {
 	register struct predlist *t;
 	for(t=i->inedges; t!=NULL; t=t->nextpred)
@@ -107,9 +114,8 @@ struct nodelist *i;
 
 /*	turn a string into a node pointer
 */
-struct nodelist *
-index(s)
-register char *s;
+static struct nodelist *
+tsort_index (register char *s)
 {
 	register struct nodelist *i;
 	register char *t;
@@ -130,8 +136,8 @@ register char *s;
 	return(i);
 }
 
-cmp(s,t)
-register char *s, *t;
+static int
+cmp (register char *s, register char *t)
 {
 	while(*s==*t) {
 		if(*s==0)
@@ -142,15 +148,15 @@ register char *s, *t;
 	return(0);
 }
 
-error(s,t)
-char *s, *t;
+static int
+error (char *s, char *t)
 {
 	note(s,t);
 	exit(1);
 }
 
-note(s,t)
-char *s,*t;
+static int
+note (char *s, char *t)
 {
 	fprintf(stderr,"tsort: %s%s\n",s,t);
 }
@@ -158,8 +164,8 @@ char *s,*t;
 /*	given that there is a cycle, find some
  *	node in it
 */
-struct nodelist *
-findloop()
+static struct nodelist *
+findloop (void)
 {
 	register struct nodelist *i, *j;
 	register struct predlist *p;
@@ -171,7 +177,7 @@ findloop()
 		i->live = ONCE;
 		for(p=i->inedges; ; p=p->nextpred) {
 			if(p==NULL)
-				error("error 1");
+				error("error 1", empty);
 			i = p->pred;
 			if(i->live!=DEAD)
 				break;
@@ -182,7 +188,7 @@ findloop()
 		note(i->name,empty);
 		for(p=i->inedges; ; p=p->nextpred) {
 			if(p==NULL)
-				error("error 2");
+				error("error 2", empty);
 			i = p->pred;
 			if(i->live!=DEAD)
 				break;
@@ -193,4 +199,3 @@ findloop()
 			j->live = LIVE;
 	return(i);
 }
-

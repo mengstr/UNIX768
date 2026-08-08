@@ -1,7 +1,8 @@
 # include "e.h"
 # include "e.def"
 
-integral(p, p1, p2) {
+void
+integral(int p, int p1, int p2) {
 	if (p1 != 0)
 		printf(".ds %d \\h'-0.4m'\\v'0.4m'\\*(%d\\v'-0.4m'\n", p1, p1);
 	if (p2 != 0)
@@ -17,13 +18,14 @@ integral(p, p1, p2) {
 	lfont[p] = ROM;
 }
 
-setintegral() {
+void
+setintegral(void) {
 	char *f;
 
 	yyval = oalloc();
 	f = "\\(is";
 	printf(".ds %d \\s%d\\v'.1m'\\s+4%s\\s-4\\v'-.1m'\\s%d\n", 
-		yyval, ps, f, ps);
+		YV, ps, f, ps);
 	eht[yyval] = VERT( (((ps+4)*12)/10)*6 );
 	ebase[yyval] = VERT( (ps*6*3)/10 );
 	lfont[yyval] = rfont[yyval] = ROM;

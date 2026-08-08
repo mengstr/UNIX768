@@ -1,31 +1,39 @@
 #include "spell.h"
 #define DLEV 2
 
-char	*strcat();
-int	strip();
-char	*skipv();
-int	an();
-int	s();
-int	es();
-int	ily();
-int	ncy();
-int	CCe();
-int	VCe();
-int	bility();
-int	tion();
-int	ize();
-int	y_to_e();
-int	i_to_y();
-int	nop();
-int	metry();
+static int suffix(char *, int);
+static int strip(char *, char *, char *, int);
+static char *skipv(char *);
+static int an(char *, char *, char *, int);
+static int s(char *, char *, char *, int);
+static int es(char *, char *, char *, int);
+static int ily(char *, char *, char *, int);
+static int ncy(char *, char *, char *, int);
+static int CCe(char *, char *, char *, int);
+static int VCe(char *, char *, char *, int);
+static int bility(char *, char *, char *, int);
+static int tion(char *, char *, char *, int);
+static int ize(char *, char *, char *, int);
+static int y_to_e(char *, char *, char *, int);
+static int i_to_y(char *, char *, char *, int);
+static int nop(char *, char *, char *, int);
+static int metry(char *, char *, char *, int);
+static char *lookuppref(char **, char *);
+static int putsuf(char *, char *, int);
+static int putw(char *, char *, int);
+static int monosyl(char *, char *);
+static int vowel(int);
+static void ise(void);
+static void ztos(char *);
+static int dict(char *, char *);
 
 struct suftab {
 	char *suf;
-	int (*p1)();
+	int (*p1)(char *, char *, char *, int);
 	int n1;
 	char *d1;
 	char *a1;
-	int (*p2)();
+	int (*p2)(char *, char *, char *, int);
 	int n2;
 	char *d2;
 	char *a2;
@@ -121,8 +129,8 @@ char original[100];
 char *deriv[40];
 char affix[40];
 
-main(argc,argv)
-char **argv;
+int
+main(int argc, char **argv)
 {
 	register char *ep, *cp;
 	register char *dp;
@@ -178,6 +186,7 @@ lcase:
 	}
 }
 
+static int
 suffix(ep,lev)
 char *ep;
 {
@@ -205,17 +214,26 @@ next:		;
 	return(0);
 }
 
-nop()
+static int
+nop(ep,d,a,lev)
+char *ep, *d, *a;
+int lev;
 {
+	(void)ep;
+	(void)d;
+	(void)a;
+	(void)lev;
 	return(0);
 }
 
+static int
 strip(ep,d,a,lev)
 char *ep,*d,*a;
 {
 	return(putsuf(ep,a,lev)||suffix(ep,lev));
 }
 
+static int
 s(ep,d,a,lev)
 char *ep,*d,*a;
 {
@@ -226,6 +244,7 @@ char *ep,*d,*a;
 	return(strip(ep,d,a,lev));
 }
 
+static int
 an(ep,d,a,lev)
 char *ep,*d,*a;
 {
@@ -234,6 +253,7 @@ char *ep,*d,*a;
 	return(putsuf(ep,a,lev));
 }
 
+static int
 ize(ep,d,a,lev)
 char *ep,*d,*a;
 {
@@ -241,6 +261,7 @@ char *ep,*d,*a;
 	return(strip(ep,"",d,lev));
 }
 
+static int
 y_to_e(ep,d,a,lev)
 char *ep,*d,*a;
 {
@@ -248,6 +269,7 @@ char *ep,*d,*a;
 	return(strip(ep,"",d,lev));
 }
 
+static int
 ily(ep,d,a,lev)
 char *ep,*d,*a;
 {
@@ -257,6 +279,7 @@ char *ep,*d,*a;
 		return(strip(ep,d,a,lev));
 }
 
+static int
 ncy(ep,d,a,lev)
 char *ep, *d, *a;
 {
@@ -266,6 +289,7 @@ char *ep, *d, *a;
 	return(strip(ep,d,a,lev));
 }
 
+static int
 bility(ep,d,a,lev)
 char *ep,*d,*a;
 {
@@ -273,6 +297,7 @@ char *ep,*d,*a;
 	return(y_to_e(ep,d,a,lev));
 }
 
+static int
 i_to_y(ep,d,a,lev)
 char *ep,*d,*a;
 {
@@ -283,6 +308,7 @@ char *ep,*d,*a;
 	return(strip(ep,"",a,lev));
 }
 
+static int
 es(ep,d,a,lev)
 char *ep,*d,*a;
 {
@@ -301,6 +327,7 @@ char *ep,*d,*a;
 	}
 }
 
+static int
 metry(ep,d,a,lev)
 char *ep, *d,*a;
 {
@@ -309,6 +336,7 @@ char *ep, *d,*a;
 	return(strip(ep,d,a,lev));
 }
 
+static int
 tion(ep,d,a,lev)
 char *ep,*d,*a;
 {
@@ -323,6 +351,7 @@ char *ep,*d,*a;
 }
 
 /*	possible consonant-consonant-e ending*/
+static int
 CCe(ep,d,a,lev)
 char *ep,*d,*a;
 {
@@ -360,6 +389,7 @@ char *ep,*d,*a;
 }
 
 /*	possible consonant-vowel-consonant-e ending*/
+static int
 VCe(ep,d,a,lev)
 char *ep,*d,*a;
 {
@@ -378,7 +408,7 @@ char *ep,*d,*a;
 	return(strip(ep,d,a,lev));
 }
 
-char *lookuppref(wp,ep)
+static char *lookuppref(wp,ep)
 char **wp;
 char *ep;
 {
@@ -399,6 +429,7 @@ next:	;
 	return(0);
 }
 
+static int
 putsuf(ep,a,lev)
 char *ep,*a;
 {
@@ -426,10 +457,11 @@ char *ep,*a;
 	return(val);
 }
 
+static int
 putw(bp,ep,lev)
 char *bp,*ep;
 {
-	register i, j;
+	register int i, j;
 	char duple[3];
 	if(ep-bp<=1)
 		return(0);
@@ -458,6 +490,7 @@ char *bp,*ep;
 }
 
 
+static int
 monosyl(bp,ep)
 char *bp, *ep;
 {
@@ -472,7 +505,7 @@ char *bp, *ep;
 	return(1);
 }
 
-char *
+static char *
 skipv(s)
 char *s;
 {
@@ -483,7 +516,9 @@ char *s;
 	return(s);
 }
 
+static int
 vowel(c)
+int c;
 {
 	switch(Tolower(c)) {
 	case 'a':
@@ -498,7 +533,8 @@ vowel(c)
 }
 
 /* crummy way to Britishise */
-ise()
+static void
+ise(void)
 {
 	register struct suftab *p;
 	for(p = suftab;p->suf;p++) {
@@ -507,6 +543,7 @@ ise()
 		ztos(p->a1);
 	}
 }
+static void
 ztos(s)
 char *s;
 {
@@ -515,15 +552,16 @@ char *s;
 			*s = 's';
 }
 
+static int
 dict(bp,ep)
 char *bp, *ep;
 {
 	register char *wp;
 	long h;
 	register long *lp;
-	register i;
+	register int i;
 	if(xflag)
-		printf("=%.*s\n",ep-bp,bp);
+		printf("=%.*s\n",(int)(ep-bp),bp);
 	for(i=0; i<NP; i++) {
 		for (wp = bp, h = 0, lp = pow2[i]; wp < ep; ++wp, ++lp)
 			h += *wp * *lp;

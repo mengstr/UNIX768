@@ -1,5 +1,4 @@
-struct fblk
-{
-	int    	df_nfree;
-	daddr_t	df_free[NICFREE];
-};
+/*
+ * free-list block format -- shared with kernel <fblk.h>.
+ */
+#include "../../sys/h/fblk.h"

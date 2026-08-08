@@ -1,12 +1,48 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/dir.h>
 #include <signal.h>
+#include <string.h>
+#include <unistd.h>
 
-char	*sprintf();
-char	*strcat();
-daddr_t	bsrch();
+static void usage(void);
+static void dorep(char *argv[]);
+static i32 endtape(void);
+static void getdir(void);
+static void passtape(void);
+static void putfile(char *longname, char *shortname);
+static void doxtract(char *argv[]);
+static void dotable(void);
+static void putempty(void);
+static void longt(struct stat *st);
+static void pmode(struct stat *st);
+static void select(i32 *pairp, struct stat *st);
+static void checkdir(char *name);
+static void onintr(void);
+static void onquit(void);
+static void onhup(void);
+static void onterm(void);
+static void tomodes(struct stat *sp);
+static i32 checksum(void);
+static i32 checkw(i32 c, char *name);
+static i32 response(void);
+static i32 checkupdate(char *arg);
+static long fromoct(char *cp, i32 n);
+static void done(i32 n);
+static i32 prefix(char *s1, char *s2);
+static void getwdir(char *s);
+static daddr_t lookup(char *s);
+static daddr_t bsrch(char *s, i32 n, daddr_t l, daddr_t h);
+static i32 cmp(char *b, char *s, i32 n);
+static i32 readtape(char *buffer);
+static i32 writetape(char *buffer);
+static void backtape(void);
+static void flushtape(void);
+static void copy(char *to, char *from);
+char *mktemp(char *template);
+
 #define TBLOCK	512
 #define NBLOCK	20
 #define NAMSIZ	100
@@ -50,14 +86,12 @@ char	tname[] = "/tmp/tarXXXXXX";
 char	*usefile;
 char	magtape[]	= "/dev/mt1";
 
-char	*malloc();
+char	*ctime(long *clock);
 
-main(argc, argv)
-int	argc;
-char	*argv[];
+int
+main(int argc, char *argv[])
 {
 	char *cp;
-	int onintr(), onquit(), onhup(), onterm();
 
 	if (argc < 2)
 		usage();
@@ -137,12 +171,12 @@ noupdate:
 			usage();
 			done(1);
 		}
-		if (signal(SIGINT, SIG_IGN) != SIG_IGN)
-			signal(SIGINT, onintr);
-		if (signal(SIGHUP, SIG_IGN) != SIG_IGN)
-			signal(SIGHUP, onhup);
-		if (signal(SIGQUIT, SIG_IGN) != SIG_IGN)
-			signal(SIGQUIT, onquit);
+			if (signal(SIGINT, SIG_IGN) != SIG_IGN)
+				signal(SIGINT, (sighandler_t)onintr);
+			if (signal(SIGHUP, SIG_IGN) != SIG_IGN)
+				signal(SIGHUP, (sighandler_t)onhup);
+			if (signal(SIGQUIT, SIG_IGN) != SIG_IGN)
+				signal(SIGQUIT, (sighandler_t)onquit);
 /*
 		if (signal(SIGTERM, SIG_IGN) != SIG_IGN)
 			signal(SIGTERM, onterm);
@@ -192,14 +226,15 @@ noupdate:
 	done(0);
 }
 
-usage()
+static void
+usage(void)
 {
 	fprintf(stderr, "tar: usage  tar -{txru}[cvfblm] [tapefile] [blocksize] file1 file2...\n");
 	done(1);
 }
 
-dorep(argv)
-char	*argv[];
+static void
+dorep(char *argv[])
 {
 	register char *cp, *cp2;
 	char wdir[60];
@@ -215,10 +250,6 @@ char	*argv[];
 		if (tfile != NULL) {
 			char buf[200];
 
-			strcat(buf, "sort +0 -1 +1nr ");
-			strcat(buf, tname);
-			strcat(buf, " -o ");
-			strcat(buf, tname);
 			sprintf(buf, "sort +0 -1 +1nr %s -o %s; awk '$1 != prev {print; prev=$1}' %s >%sX;mv %sX %s",
 				tname, tname, tname, tname, tname, tname);
 			fflush(tfile);
@@ -253,7 +284,8 @@ char	*argv[];
 				fprintf(stderr, "Missing links to %s\n", ihead->pathname);
 }
 
-endtape()
+static i32
+endtape(void)
 {
 	if (dblock.dbuf.name[0] == '\0') {
 		backtape();
@@ -263,7 +295,8 @@ endtape()
 		return(0);
 }
 
-getdir()
+static void
+getdir(void)
 {
 	register struct stat *sp;
 	int i;
@@ -272,15 +305,12 @@ getdir()
 	if (dblock.dbuf.name[0] == '\0')
 		return;
 	sp = &stbuf;
-	sscanf(dblock.dbuf.mode, "%o", &i);
-	sp->st_mode = i;
-	sscanf(dblock.dbuf.uid, "%o", &i);
-	sp->st_uid = i;
-	sscanf(dblock.dbuf.gid, "%o", &i);
-	sp->st_gid = i;
-	sscanf(dblock.dbuf.size, "%lo", &sp->st_size);
-	sscanf(dblock.dbuf.mtime, "%lo", &sp->st_mtime);
-	sscanf(dblock.dbuf.chksum, "%o", &chksum);
+	sp->st_mode = (int)fromoct(dblock.dbuf.mode, sizeof dblock.dbuf.mode);
+	sp->st_uid = (int)fromoct(dblock.dbuf.uid, sizeof dblock.dbuf.uid);
+	sp->st_gid = (int)fromoct(dblock.dbuf.gid, sizeof dblock.dbuf.gid);
+	sp->st_size = fromoct(dblock.dbuf.size, sizeof dblock.dbuf.size);
+	sp->st_mtime = fromoct(dblock.dbuf.mtime, sizeof dblock.dbuf.mtime);
+	chksum = (int)fromoct(dblock.dbuf.chksum, sizeof dblock.dbuf.chksum);
 	if (chksum != checksum()) {
 		fprintf(stderr, "directory checksum error\n");
 		done(2);
@@ -289,7 +319,8 @@ getdir()
 		fprintf(tfile, "%s %s\n", dblock.dbuf.name, dblock.dbuf.mtime);
 }
 
-passtape()
+static void
+passtape(void)
 {
 	long blocks;
 	char buf[TBLOCK];
@@ -304,9 +335,8 @@ passtape()
 		readtape(buf);
 }
 
-putfile(longname, shortname)
-char *longname;
-char *shortname;
+static void
+putfile(char *longname, char *shortname)
 {
 	int infile;
 	long blocks;
@@ -322,7 +352,6 @@ char *shortname;
 	}
 
 	fstat(infile, &stbuf);
-
 	if (tfile != NULL && checkupdate(longname) == 0) {
 		close(infile);
 		return;
@@ -389,7 +418,7 @@ char *shortname;
 		if (found) {
 			strcpy(dblock.dbuf.linkname, lp->pathname);
 			dblock.dbuf.linkflag = '1';
-			sprintf(dblock.dbuf.chksum, "%6o", checksum());
+			sprintf(dblock.dbuf.chksum, "%6lo", checksum());
 			writetape( (char *) &dblock);
 			if (vflag) {
 				fprintf(stderr, "a %s ", longname);
@@ -423,7 +452,7 @@ char *shortname;
 		fprintf(stderr, "a %s ", longname);
 		fprintf(stderr, "%ld blocks\n", blocks);
 	}
-	sprintf(dblock.dbuf.chksum, "%6o", checksum());
+	sprintf(dblock.dbuf.chksum, "%6lo", checksum());
 	writetape( (char *) &dblock);
 
 	while ((i = read(infile, buf, TBLOCK)) > 0 && blocks > 0) {
@@ -439,8 +468,8 @@ char *shortname;
 
 
 
-doxtract(argv)
-char	*argv[];
+static void
+doxtract(char *argv[])
 {
 	long blocks, bytes;
 	char buf[TBLOCK];
@@ -515,7 +544,8 @@ gotit:
 	}
 }
 
-dotable()
+static void
+dotable(void)
 {
 	for (;;) {
 		getdir();
@@ -531,7 +561,8 @@ dotable()
 	}
 }
 
-putempty()
+static void
+putempty(void)
 {
 	char buf[TBLOCK];
 	char *cp;
@@ -541,11 +572,10 @@ putempty()
 	writetape(buf);
 }
 
-longt(st)
-register struct stat *st;
+static void
+longt(register struct stat *st)
 {
 	register char *cp;
-	char *ctime();
 
 	pmode(st);
 	printf("%3d/%1d", st->st_uid, st->st_gid);
@@ -566,32 +596,31 @@ register struct stat *st;
 #define	WOTH	02
 #define	XOTH	01
 #define	STXT	01000
-int	m1[] = { 1, ROWN, 'r', '-' };
-int	m2[] = { 1, WOWN, 'w', '-' };
-int	m3[] = { 2, SUID, 's', XOWN, 'x', '-' };
-int	m4[] = { 1, RGRP, 'r', '-' };
-int	m5[] = { 1, WGRP, 'w', '-' };
-int	m6[] = { 2, SGID, 's', XGRP, 'x', '-' };
-int	m7[] = { 1, ROTH, 'r', '-' };
-int	m8[] = { 1, WOTH, 'w', '-' };
-int	m9[] = { 2, STXT, 't', XOTH, 'x', '-' };
+i32	m1[] = { 1, ROWN, 'r', '-' };
+i32	m2[] = { 1, WOWN, 'w', '-' };
+i32	m3[] = { 2, SUID, 's', XOWN, 'x', '-' };
+i32	m4[] = { 1, RGRP, 'r', '-' };
+i32	m5[] = { 1, WGRP, 'w', '-' };
+i32	m6[] = { 2, SGID, 's', XGRP, 'x', '-' };
+i32	m7[] = { 1, ROTH, 'r', '-' };
+i32	m8[] = { 1, WOTH, 'w', '-' };
+i32	m9[] = { 2, STXT, 't', XOTH, 'x', '-' };
 
-int	*m[] = { m1, m2, m3, m4, m5, m6, m7, m8, m9};
+i32	*m[] = { m1, m2, m3, m4, m5, m6, m7, m8, m9};
 
-pmode(st)
-register struct stat *st;
+static void
+pmode(register struct stat *st)
 {
-	register int **mp;
+	register i32 **mp;
 
 	for (mp = &m[0]; mp < &m[9];)
 		select(*mp++, st);
 }
 
-select(pairp, st)
-int *pairp;
-struct stat *st;
+static void
+select(i32 *pairp, struct stat *st)
 {
-	register int n, *ap;
+	register i32 n, *ap;
 
 	ap = pairp;
 	n = *ap++;
@@ -600,8 +629,8 @@ struct stat *st;
 	printf("%c", *ap);
 }
 
-checkdir(name)
-register char *name;
+static void
+checkdir(register char *name)
 {
 	register char *cp;
 	int i;
@@ -610,12 +639,12 @@ register char *name;
 			*cp = '\0';
 			if (access(name, 01) < 0) {
 				if (fork() == 0) {
-					execl("/bin/mkdir", "mkdir", name, 0);
-					execl("/usr/bin/mkdir", "mkdir", name, 0);
+					execl("/bin/mkdir", "mkdir", name, (char *)0);
+					execl("/usr/bin/mkdir", "mkdir", name, (char *)0);
 					fprintf(stderr, "tar: cannot find mkdir!\n");
 					done(0);
 				}
-				while (wait(&i) >= 0);
+					while (wait((i16 *)&i) >= 0);
 				chown(name, stbuf.st_uid, stbuf.st_gid);
 			}
 			*cp = '/';
@@ -623,32 +652,36 @@ register char *name;
 	}
 }
 
-onintr()
+static void
+onintr(void)
 {
 	signal(SIGINT, SIG_IGN);
 	term++;
 }
 
-onquit()
+static void
+onquit(void)
 {
 	signal(SIGQUIT, SIG_IGN);
 	term++;
 }
 
-onhup()
+static void
+onhup(void)
 {
 	signal(SIGHUP, SIG_IGN);
 	term++;
 }
 
-onterm()
+static void
+onterm(void)
 {
 	signal(SIGTERM, SIG_IGN);
 	term++;
 }
 
-tomodes(sp)
-register struct stat *sp;
+static void
+tomodes(register struct stat *sp)
 {
 	register char *cp;
 
@@ -661,7 +694,8 @@ register struct stat *sp;
 	sprintf(dblock.dbuf.mtime, "%11lo ", sp->st_mtime);
 }
 
-checksum()
+static i32
+checksum(void)
 {
 	register i;
 	register char *cp;
@@ -674,8 +708,8 @@ checksum()
 	return(i);
 }
 
-checkw(c, name)
-char *name;
+static i32
+checkw(i32 c, char *name)
 {
 	if (wflag) {
 		printf("%c ", c);
@@ -690,7 +724,8 @@ char *name;
 	return(1);
 }
 
-response()
+static i32
+response(void)
 {
 	char c;
 
@@ -701,13 +736,12 @@ response()
 	return(c);
 }
 
-checkupdate(arg)
-char	*arg;
+static i32
+checkupdate(char *arg)
 {
 	char name[100];
 	long	mtime;
 	daddr_t seekp;
-	daddr_t	lookup();
 
 	rewind(tfile);
 	for (;;) {
@@ -722,14 +756,34 @@ char	*arg;
 	}
 }
 
-done(n)
+static long
+fromoct(cp, n)
+register char *cp;
+register i32 n;
+{
+	register long v;
+
+	v = 0;
+	while (n > 0 && (*cp == ' ' || *cp == '\0')) {
+		cp++;
+		n--;
+	}
+	while (n > 0 && *cp >= '0' && *cp <= '7') {
+		v = (v << 3) + *cp++ - '0';
+		n--;
+	}
+	return(v);
+}
+
+static void
+done(i32 n)
 {
 	unlink(tname);
 	exit(n);
 }
 
-prefix(s1, s2)
-register char *s1, *s2;
+static i32
+prefix(register char *s1, register char *s2)
 {
 	while (*s1)
 		if (*s1++ != *s2++)
@@ -739,37 +793,54 @@ register char *s1, *s2;
 	return(1);
 }
 
-getwdir(s)
-char *s;
+static void
+getwdir(char *s)
 {
+	char *cp;
+	char *pwd_argv[2];
 	int i;
-	int	pipdes[2];
+	i16	pipdes[2];
+	i16	status;
+	int	pid;
+	int	nread;
 
 	pipe(pipdes);
-	if ((i = fork()) == 0) {
+	if ((pid = fork()) == 0) {
+		pwd_argv[0] = "pwd";
+		pwd_argv[1] = (char *)0;
 		close(1);
 		dup(pipdes[1]);
-		execl("/bin/pwd", "pwd", 0);
-		execl("/usr/bin/pwd", "pwd", 0);
+		close(pipdes[0]);
+		close(pipdes[1]);
+		execv("/bin/pwd", pwd_argv);
+		execv("/usr/bin/pwd", pwd_argv);
 		fprintf(stderr, "pwd failed!\n");
 		printf("/\n");
 		exit(1);
 	}
-	while (wait((int *)NULL) != -1)
+	while ((i = wait(&status)) != -1)
+		;
+	nread = read(pipdes[0], s, 50);
+	if (nread > 0) {
+		s[nread] = '\0';
+		for (cp = s; *cp != '\n' && *cp != '\0'; cp++)
 			;
-	read(pipdes[0], s, 50);
-	while(*s != '\n')
-		s++;
-	*s = '\0';
+		if (*cp != '\0')
+			*cp = '\0';
+	}
+	if (nread <= 0) {
+		s[0] = '/';
+		s[1] = '\n';
+		s[2] = '\0';
+	}
 	close(pipdes[0]);
 	close(pipdes[1]);
 }
 
 #define	N	200
 int	njab;
-daddr_t
-lookup(s)
-char *s;
+static daddr_t
+lookup(char *s)
 {
 	register i;
 	daddr_t a;
@@ -781,10 +852,8 @@ char *s;
 	return(a);
 }
 
-daddr_t
-bsrch(s, n, l, h)
-daddr_t l, h;
-char *s;
+static daddr_t
+bsrch(char *s, i32 n, daddr_t l, daddr_t h)
 {
 	register i, j;
 	char b[N];
@@ -827,8 +896,8 @@ loop:
 	return(m);
 }
 
-cmp(b, s, n)
-char *b, *s;
+static i32
+cmp(char *b, char *s, i32 n)
 {
 	register i;
 
@@ -843,8 +912,8 @@ char *b, *s;
 	return(b[i+1] == ' '? 0 : -1);
 }
 
-readtape(buffer)
-char *buffer;
+static i32
+readtape(char *buffer)
 {
 	int i, j;
 
@@ -875,12 +944,12 @@ char *buffer;
 		recno = 0;
 	}
 	first = 1;
-	copy(buffer, &tbuf[recno++]);
+	copy(buffer, (char *)&tbuf[recno++]);
 	return(TBLOCK);
 }
 
-writetape(buffer)
-char *buffer;
+static i32
+writetape(char *buffer)
 {
 	first = 1;
 	if (nblock == 0)
@@ -892,7 +961,7 @@ char *buffer;
 		}
 		recno = 0;
 	}
-	copy(&tbuf[recno++], buffer);
+	copy((char *)&tbuf[recno++], buffer);
 	if (recno >= nblock) {
 		if (write(mt, tbuf, TBLOCK*nblock) < 0) {
 			fprintf(stderr, "Tar: tape write error\n");
@@ -903,7 +972,8 @@ char *buffer;
 	return(TBLOCK);
 }
 
-backtape()
+static void
+backtape(void)
 {
 	lseek(mt, (long) -TBLOCK, 1);
 	if (recno >= nblock) {
@@ -916,13 +986,15 @@ backtape()
 	}
 }
 
-flushtape()
+static void
+flushtape(void)
 {
-	write(mt, tbuf, TBLOCK*nblock);
+	if (recno > 0)
+		write(mt, tbuf, TBLOCK*nblock);
 }
 
-copy(to, from)
-register char *to, *from;
+static void
+copy(register char *to, register char *from)
 {
 	register i;
 

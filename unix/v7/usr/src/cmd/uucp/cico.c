@@ -27,29 +27,29 @@ int Stattype[] = {0, 0, 0, 0,
 
 int Errorrate = 0;
 struct sgttyb Savettyb;
+void onintr(i16);
+void intrINT(i16);
+void intrHUP(i16);
+void intrQUIT(i16);
+void intrTERM(i16);
+void intrEXIT(i16);
+void timeout(i16);
+static char *pskip(char *);
 
 /*******
  *	cico - this program is used  to place a call to a
  *	remote machine, login, and copy files between the two machines.
  */
 
-main(argc, argv)
-char *argv[];
+int
+main (int argc, char *argv[])
 {
-	int ret, seq;
+	int ret, seq, uid;
 	int onesys = 0;
 	char wkpre[NAMESIZE], file[NAMESIZE];
 	char msg[BUFSIZ], *p, *q;
-	extern onintr(), timeout();
-	extern intrINT();
-	extern intrHUP();
-	extern intrQUIT();
-	extern intrTERM();
-	extern intrEXIT();
-	extern char *pskip();
 	char rflags[30];
 	char *ttyn;
-	char *ttyname();
 
 	signal(SIGILL, intrEXIT);
 	signal(SIGTRAP, intrEXIT);
@@ -63,7 +63,8 @@ char *argv[];
 	signal(SIGHUP, intrHUP);
 	signal(SIGQUIT, intrQUIT);
 	signal(SIGTERM, intrTERM);
-	ret = guinfo(getuid(), User, msg);
+	uid = getuid();
+	ret = guinfo(uid, User, msg);
 	strcpy(Loginuser, User);
 	ASSERT(ret == 0, "BAD UID ret %d", ret);
 
@@ -109,7 +110,6 @@ char *argv[];
 		}
 		--argc;  argv++;
 	}
-
 	chdir(Spool);
 	strcpy(Wrkdir, Spool);
 
@@ -172,7 +172,10 @@ char *argv[];
 			q = pskip(p);
 			switch(*(++p)) {
 			case 'g':
+				/* Epoch68: the legacy kernel packet line discipline is not built. */
+#if 0
 				Pkdrvon = 1;
+#endif
 				break;
 			case 'x':
 				Debug = atoi(++p);
@@ -216,7 +219,6 @@ loop:
 		logent("SYSTEM STATUS", "CAN NOT CALL");
 		cleanup(0);
 	}
-
 	sprintf(wkpre, "%c.%.7s", CMDPRE, Rmtname);
 
 	if (Role == MASTER) {
@@ -354,8 +356,8 @@ int Hupvec[] = {0, 0, 1};
  *	int code;
  */
 
-cleanup(code)
-int code;
+int
+cleanup (int code)
 {
 	int ret;
 
@@ -381,8 +383,9 @@ int code;
 		close(Ofn);
 	}
 	DEBUG(1, "exit code %d\n", code);
-	if (code == 0)
+	if (code == 0) {
 		xuuxqt();
+	}
 	exit(code);
 }
 
@@ -390,8 +393,8 @@ int code;
  *	onintr(inter)	interrupt - remove locks and exit
  */
 
-onintr(inter)
-int inter;
+void
+onintr(i16 inter)
 {
 	char str[30];
 	signal(inter, SIG_IGN);
@@ -400,11 +403,11 @@ int inter;
 	cleanup(inter);
 }
 
-intrINT() { onintr(SIGINT);}
-intrHUP() { onintr(SIGHUP);}
-intrQUIT() { onintr(SIGQUIT);}
-intrTERM() { onintr(SIGTERM);}
-intrEXIT() {_exit(77);}
+void intrINT(i16 sig) { onintr(SIGINT);}
+void intrHUP(i16 sig) { onintr(SIGHUP);}
+void intrQUIT(i16 sig) { onintr(SIGQUIT);}
+void intrTERM(i16 sig) { onintr(SIGTERM);}
+void intrEXIT(i16 sig) {_exit(77);}
 
 /***
  *	fixmode(tty)	fix kill/echo/raw on line
@@ -412,8 +415,8 @@ intrEXIT() {_exit(77);}
  *	return codes:  none
  */
 
-fixmode(tty)
-int tty;
+int
+fixmode (int tty)
 {
 	struct sgttyb ttbuf;
 	int ret;
@@ -432,14 +435,14 @@ int tty;
  *	timeout()	catch SIGALRM routine
  */
 
-timeout()
+void
+timeout(i16 sig)
 {
 	longjmp(Sjbuf, 1);
 }
 
 static char *
-pskip(p)
-register char *p;
+pskip (register char *p)
 {
 	while( *p && *p != ' ' )
 		++p;

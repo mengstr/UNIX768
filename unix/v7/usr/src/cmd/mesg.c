@@ -10,14 +10,18 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 struct stat sbuf;
 
 char *tty;
-char *ttyname();
+char *ttyname(i32 fd);
 
-main(argc, argv)
-char *argv[];
+static void error(char *s);
+static void newmode(i32 m);
+
+int
+main(int argc, char *argv[])
 {
 	int r=0;
 	tty = ttyname(2);
@@ -41,14 +45,16 @@ char *argv[];
 	exit(r);
 }
 
-error(s)
-char *s;
+static void
+error(char *s)
 {
 	fprintf(stderr,"mesg: %s\n",s);
 	exit(-1);
 }
 
+static void
 newmode(m)
+i32 m;
 {
 	if(chmod(tty,m)<0)
 		error("cannot change mode");

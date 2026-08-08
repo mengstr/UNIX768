@@ -1,14 +1,17 @@
 #include <stdio.h>
 #include <grp.h>
 #include <pwd.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
 
-struct	group	*getgrnam(), *grp;
-struct	passwd	*getpwuid(), *pwd;
-char	*getpass(), *crypt();
+struct group *getgrnam(char *name), *grp;
+struct passwd *getpwuid(i32 uid), *pwd;
+char *getpass(char *prompt), *crypt(char *key, char *salt);
+int done(void);
 
-main(argc,argv)
-int	argc;
-char	**argv;
+int
+main (int argc, char **argv)
 {
 	register i;
 	if(argc != 2) {
@@ -23,7 +26,7 @@ char	**argv;
 		printf("You do not exist!\n");
 		done();
 	}
-	for(i=0;grp->gr_mem[i];i++) 
+	for(i=0;grp->gr_mem[i];i++)
 		if(strcmp(grp->gr_mem[i], pwd->pw_name) == 0)
 			break;
 	if(grp->gr_mem[i] == 0 && strcmp(grp->gr_name,"other")) {
@@ -42,14 +45,15 @@ char	**argv;
 	done();
 }
 
-done()
+int
+done (void)
 {
 	register i;
 
 	setuid(getuid());
 	for (i=3; i<15; i++)
 		close(i);
-	execl("/bin/sh", "sh", 0);
+	execl("/bin/sh", "sh", (char *)0);
 	printf("No shell!\n");
 	exit(0);
 }

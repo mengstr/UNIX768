@@ -1,7 +1,10 @@
  /* ti.c: classify line intersections */
 # include "t..c"
 /* determine local environment for intersections */
+static int up1(int);
+int
 interv(i,c)
+	int i, c;
 {
 int ku, kl;
 if (c>=ncol || c == 0)
@@ -25,7 +28,9 @@ if (ku ==2) return(TOP);
 if (kl==BOT) return(2);
 return(0);
 }
+int
 interh(i,c)
+	int i, c;
 {
 int kl, kr;
 if (fullbot[i]== '=' || (dboxflg && (i==0 || i>= nlin-1)))
@@ -48,7 +53,9 @@ if (kl== '=') return(LEFT);
 if (kr== '=') return(RIGHT);
 return(0);
 }
+static int
 up1(i)
+	int i;
 {
 i--;
 while (instead[i] && i>0) i--;

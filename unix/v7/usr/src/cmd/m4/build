@@ -1,0 +1,12 @@
+set -e
+
+YACC=${YACC-../yacc/yacc}
+echo YACC m4y.y
+$YACC m4y.y
+mv y.tab.c m4y.c
+echo CC m4.c
+cc -O2 -Dunix -I. -c m4.c
+echo CC m4y.c
+cc -O2 -Dunix -I. -c m4y.c
+echo LD m4
+cc -s -o m4 m4.o m4y.o

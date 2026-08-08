@@ -1,12 +1,13 @@
 # include "e.h"
 # include "e.def"
 
-move(dir, amt, p) int dir, amt, p; {
+void
+move(int dir, int amt, int p) {
 	int a;
 
 	yyval = p;
 	a = VERT( (EFFPS(ps) * 6 * amt) / 100);
-	printf(".ds %d ", yyval);
+	printf(".ds %d ", YV);
 	if( dir == FWD || dir == BACK )	/* fwd, back */
 		printf("\\h'%s%du'\\*(%d\n", (dir==BACK) ? "-" : "", a, p);
 	else if (dir == UP)

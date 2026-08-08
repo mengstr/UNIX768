@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <unistd.h>
+
 #define	NMOUNT	16
 #define	NAMSIZ	32
 
@@ -6,8 +9,8 @@ struct mtab {
 	char	spec[NAMSIZ];
 } mtab[NMOUNT];
 
-main(argc, argv)
-char **argv;
+int
+main(int argc, char **argv)
 {
 	register struct mtab *mp;
 	register char *p1, *p2;

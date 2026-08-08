@@ -1,5 +1,0 @@
-MACH=mc6800
-SUF=s
-ASAR=arch
-RANLIB=:
-MACHFL=-O -DUFS

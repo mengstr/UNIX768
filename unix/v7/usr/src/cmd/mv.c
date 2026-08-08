@@ -7,6 +7,8 @@
 #include <sys/stat.h>
 #include <sys/dir.h>
 #include <signal.h>
+#include <string.h>
+#include <unistd.h>
 
 #define	DOT	"."
 #define	DOTDOT	".."
@@ -16,13 +18,16 @@
 #define MODEBITS 07777
 #define ROOTINO 2
 
-char	*pname();
-char	*sprintf();
-char	*dname();
+static i32 move(char *source, char *target);
+static i32 mvdir(char *source, char *target);
+static char *pname(char *name);
+static char *dname(char *name);
+static i32 check(char *spth, i32 dinode);
+static i32 chkdot(char *s);
 struct	stat s1, s2;
 
-main(argc, argv)
-register char *argv[];
+int
+main(int argc, register char *argv[])
 {
 	register i, r;
 
@@ -50,11 +55,12 @@ usage:
 	return(1);
 }
 
+static i32
 move(source, target)
 char *source, *target;
 {
 	register c, i;
-	int	status;
+	i16	status;
 	char	buf[MAXN];
 
 	if (stat(source, &s1) < 0) {
@@ -102,7 +108,7 @@ char *source, *target;
 			return(1);
 		}
 		if (i == 0) {
-			execl("/bin/cp", "cp", source, target, 0);
+			execl("/bin/cp", "cp", source, target, (char *)0);
 			fprintf(stderr, "mv: cannot exec cp\n");
 			exit(1);
 		}
@@ -119,6 +125,7 @@ char *source, *target;
 	return(0);
 }
 
+static i32
 mvdir(source, target)
 char *source, *target;
 {
@@ -225,7 +232,7 @@ char *source, *target;
 	return(0);
 }
 
-char *
+static char *
 pname(name)
 register char *name;
 {
@@ -243,7 +250,7 @@ register char *name;
 	return buf[0]? buf : DOT;
 }
 
-char *
+static char *
 dname(name)
 register char *name;
 {
@@ -256,9 +263,10 @@ register char *name;
 	return name;
 }
 
+static i32
 check(spth, dinode)
 char *spth;
-ino_t dinode;
+i32 dinode;
 {
 	char nspth[MAXN];
 	struct stat sbuf;
@@ -285,6 +293,7 @@ ino_t dinode;
 	return(0);
 }
 
+static i32
 chkdot(s)
 register char *s;
 {

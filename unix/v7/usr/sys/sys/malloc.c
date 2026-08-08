@@ -2,6 +2,9 @@
 #include "../h/systm.h"
 #include "../h/map.h"
 
+void mfree(struct map *mp, i32 size, i32 a);
+i32 malloc(struct map *mp, i32 size);
+
 /*
  * Allocate 'size' units from the given
  * map. Return the base of the allocated
@@ -12,10 +15,12 @@
  * is 512 bytes.
  * Algorithm is first-fit.
  */
+i32
 malloc(mp, size)
 struct map *mp;
+i32 size;
 {
-	register unsigned int a;
+	register u32 a;
 	register struct map *bp;
 
 	for (bp=mp; bp->m_size; bp++) {
@@ -40,12 +45,13 @@ struct map *mp;
  * Sort aa into map and combine on
  * one or both ends if possible.
  */
-mfree(mp, size, a)
+void mfree(mp, size, a)
 struct map *mp;
-register int a;
+i32 size;
+i32 a;
 {
 	register struct map *bp;
-	register unsigned int t;
+	register u32 t;
 
 	if ((bp = mp)==coremap && runin) {
 		runin = 0;

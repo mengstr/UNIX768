@@ -4,6 +4,9 @@
 
 #include <sys/types.h>
 #include <sys/ino.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 #define ISIZE	(sizeof(struct dinode))
 #define	BSIZE	512
 #define	NI	(BSIZE/ISIZE)
@@ -14,8 +17,9 @@ struct	ino
 struct	ino	buf[NI];
 int	status;
 
-main(argc, argv)
-char *argv[];
+static int isnumber(char *s);
+
+main(int argc, char **argv)
 {
 	register i, f;
 	unsigned n;
@@ -67,12 +71,13 @@ char *argv[];
 	exit(status);
 }
 
+static int
 isnumber(s)
 char *s;
 {
 	register c;
 
-	while(c = *s++)
+	while((c = *s++))
 		if(c < '0' || c > '9')
 			return(0);
 	return(1);

@@ -1,9 +1,12 @@
 #include "defs"
 #include <signal.h>
 
-dosys(comstring,nohalt)
-register char *comstring;
-int nohalt;
+#ifdef unix
+void intrupt(i16 signo);
+#endif
+
+int
+dosys (register char *comstring, int nohalt)
 {
 register int status;
 
@@ -16,8 +19,10 @@ return(status);
 
 
 
-metas(s)   /* Are there are any  Shell meta-characters? */
-register char *s;
+int
+metas (   /* Are there are any  Shell meta-characters? */
+    register char *s
+)
 {
 register char c;
 
@@ -26,16 +31,15 @@ while( (funny[c = *s++] & META) == 0 )
 return( c );
 }
 
-doshell(comstring,nohalt)
-char *comstring;
-int nohalt;
+int
+doshell (char *comstring, int nohalt)
 {
 if((waitpid = fork()) == 0)
 	{
 	enbint(SIG_DFL);
 	doclose();
 
-	execl(SHELLCOM, "sh", (nohalt ? "-c" : "-ce"), comstring, 0);
+	execl(SHELLCOM, "sh", (nohalt ? "-c" : "-ce"), comstring, (char *)0);
 	fatal("Couldn't load Shell");
 	}
 
@@ -45,10 +49,10 @@ return( await() );
 
 
 
-await()
+int
+await (void)
 {
-int intrupt();
-int status;
+i16 status;
 register int pid;
 
 enbint(SIG_IGN);
@@ -65,7 +69,8 @@ return(status);
 
 
 
-doclose()	/* Close open directory files before exec'ing */
+int
+doclose (void)	/* Close open directory files before exec'ing */
 {
 register struct opendir *od;
 for (od = firstod; od; od = od->nxtopendir)
@@ -77,8 +82,8 @@ for (od = firstod; od; od = od->nxtopendir)
 
 
 
-doexec(str)
-register char *str;
+int
+doexec (register char *str)
 {
 register char *t;
 char *argv[200];
@@ -122,9 +127,8 @@ return( await() );
 
 
 
-touch(force, name)
-int force;
-char *name;
+int
+touch (int force, char *name)
 {
 struct stat stbuff;
 char junk[1];
